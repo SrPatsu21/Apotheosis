@@ -2,7 +2,7 @@
 
 ## 0. Set the license
 
-## 1 Define the main idea
+## 1. Define the main idea
 
 ### Today
 
