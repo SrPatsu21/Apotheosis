@@ -7,7 +7,8 @@
 ### Today
 
     - Roguelike/Soulslike
-    - 2.5D; Rebirth
+    - 2.5D
+    - Rebirth
     - procedural map
     - random mobs
     - do not lose items
