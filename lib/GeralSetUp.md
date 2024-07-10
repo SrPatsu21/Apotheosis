@@ -21,9 +21,12 @@
     <https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens>
 - Better Readability Extension Pack \
     <https://marketplace.visualstudio.com/items?itemName=pinage404.better-readability-extension-pack>
+- file-icons \
+    <https://marketplace.visualstudio.com/items?itemName=file-icons.file-icons>
 
-## Theme
+## Theme (recommendation)
 
 - Dracula At Night \
     <https://marketplace.visualstudio.com/items?itemName=bceskavich.theme-dracula-at-night>
-- similar
+- GitHub Theme(any dark) \
+    <https://marketplace.visualstudio.com/items?itemName=GitHub.github-vscode-theme>
