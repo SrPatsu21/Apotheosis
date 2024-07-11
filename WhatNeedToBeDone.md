@@ -30,7 +30,7 @@
 
 ## 3. Define the libs and set how to use them ❎
 
-### Graphics Bibrary
+### Graphics Library
 
 **Options:**
 
