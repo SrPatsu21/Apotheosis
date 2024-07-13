@@ -35,108 +35,147 @@
 **Options:**
 
 - SFML
+  - score Patsu: 8
+  - OpenGL
+  - Windows, Linux, macOS and Android & iOS (with limitations)
   - Simple
-  - multi-platform
   - Multimedia
   - <https://www.sfml-dev.org/>
 - Qt OpenGL || QGraphicsScene Class
+  - score Patsu: 6
+  - OpenGL
+  - Windows, macOS, and Linux
   - <https://doc.qt.io/qt-6/qtopengl-module.html> || <https://doc.qt.io/qt-6/qgraphicsscene.html>
 - Dear ImGUI
+  - score Patsu: 10
+  - vulkan, OpenGL, Metal, directx, allegro
+  - Windows, macOS, Linux, android
   - has good games
   - strong
   - <https://github.com/ocornut/imgui>
 - bgfx
+  - score Patsu: 9
+  - Direct3D, Metal, OpenGL, Vulkan, WebGL
+  - Android, iOS, Linux, macOS, PlayStation, RaspberryPi, UWP (Universal Windows, Xbox One), Wasm
   - look strong
   - has same good games
   - <https://github.com/bkaradzic/bgfx>
   - <https://bkaradzic.github.io/bgfx/#>
 - GLFW
+  - score Patsu: 8
+  - OpenGL, Vulkan
+  - Windows, macOS, Wayland and X11
   - has many exemples
   - <https://www.glfw.org/>
 - SDL
+  - score Patsu: 7
+  - OpenGL, Direct3D
+  - Windows, macOS, Linux, iOS, and Android
   - old
   - Simple
   - <https://www.libsdl.org/>
   - <https://github.com/libsdl-org/SDL>
-- openFrameworks
-  - hard
-  - no for games
-  - <https://openframeworks.cc/>
 - FLTK
+  - score Patsu: 5
+  - OpenGL
+  - Linux, Windows, macOS
   - not much used
   - <https://www.fltk.org/>
   - <https://github.com/fltk/fltk>
 - nanogui
+  - score Patsu: 7
+  - OpenGL
+  - Windows, Linux, Mac OS
+  - dead
   - has samething
   - <https://github.com/wjakob/nanogui>
-- slint
-  - <https://slint.dev/>
-  - <https://github.com/slint-ui/slint/>
 - xtd
+  - score Patsu: 6
+  - Windows, macOS, Linux, iOS, Android
   - based
   - <https://gammasoft71.github.io/xtd/>
   - <https://github.com/gammasoft71/xtd>
 - Diligent Engine
+  - score Patsu: 7
+  - Windows, macOS, Linux, iOS, and Android
   - <http://diligentgraphics.com/diligent-engine/>
   - <https://github.com/DiligentGraphics/DiligentEngine>
-- Easy3D
-  - <https://github.com/LiangliangNan/Easy3D>
-- Falcor
-  - <https://developer.nvidia.com/falcor>
-  - <https://github.com/NVIDIAGameWorks/Falcor>
 - Irrlicht
+  - score Patsu: 8
+  - OpenGL-ES2 and WebGL
+  - Windows, Linux, OSX
   - <https://irrlicht.sourceforge.io/>
-- Filament
-  - <https://google.github.io/filament/>
-  - <https://github.com/google/filament>
 - Magnum
+  - score Patsu: 8
+  - Linux, Web, Win­dows, ma­cOS
+  - OpenGL, Vulkan
   - <https://magnum.graphics/>
   - <https://github.com/mosra/magnum>
 - OGRE
+  - score Patsu: 9
+  - Direct3D 9 11, Metal, Vulkan, OpenGL
+  - Windows, Linux, Mac OSX, Android and iOS
   - <https://www.ogre3d.org/>
   - <https://www.ogre3d.org/showcase>
   - <https://github.com/OGRECave/ogre>
 - OpenSceneGraph
+  - score Patsu: 7
+  - OpenGL
+  - Windows platforms, OSX, GNU/Linux, IRIX, Solaris
   - <https://openscenegraph.github.io/openscenegraph.io/>
   - <https://openscenegraph.github.io/openscenegraph.io/gallery/screenshots.html>
   - <https://github.com/openscenegraph/OpenSceneGraph>
-- OptiX
-  - [OWL?](https://owl-project.github.io/)
-  - <https://developer.nvidia.com/rtx/ray-tracing/optix>
-- OSPRay
-  - <https://www.ospray.org/>
-- Polyscope
-  - <http://polyscope.run/>
-- Ramses
-  - for cars
-  - <https://ramses3d.org/>
 - The-Forge
+  - score Patsu: 9
+  - Vulkan, directx
+  - Windows, Steam Deck, Android, Apple
   - <https://github.com/ConfettiFX/The-Forge>
-- VulkanSceneGraph
-  - <https://github.com/vsg-dev/VulkanSceneGraph>
 - AnKi 3D Engine
+  - score Patsu: 8
+  - Vulkan, OpenCL
+  - Linux, Windows
   - <http://anki3d.org/>
 - CRYENGINE
+  - score Patsu: 7
+  - DirectX
+  - Windows
+  - multimidia
   - <https://www.cryengine.com/>
 - GODOT
+  - score Patsu: 10
+  - Android, Linux, macOS, Windows Web Editor
   - <https://godotengine.org/>
-- Lumberyard
-  - <https://aws.amazon.com/lumberyard/>
 - LumixEngine
+  - score Patsu: 7
+  - Unity
   - <https://mikulasflorek.itch.io/lumix-engine>
 - O3DE
+  - score Patsu: 8
+  - Windows, macOS, Linux, iOS, Android
   - <https://o3de.org/>
-- Overload
-  - <http://overloadengine.org/>
 - raylib
+  - score Patsu: 9
+  - not a GUI
+  -windows, linux, macos, freebsd, raspberrypi, raspberrypi desktop, android, html5,
   - <https://www.raylib.com/>
 - Rootex
+  - score Patsu: 7
+  - game engine
+  - Windows
   - <https://rootex.readthedocs.io/>
 - Unity3D
+  - score Patsu: 9
+  - directx
+  - windows
   - <https://unity3d.com/>
 - Unreal Engine
+  - score Patsu: 10
+  - Linux, Windows, Mac
   - <https://www.unrealengine.com/>
 - Wicked Engine
+  - score Patsu: 10
+  - vulkan, directx, 
+  - Windows, Linux, Xbox Series X|S, PlayStation 5
   - <https://wickedengine.net/>
 
 ## 4. Set the makefile
@@ -150,4 +189,6 @@
 ## Sources used
 
 - [Emojipedia ✅](https://emojipedia.org/check-mark-button) \
-[Emojipedia ❎](https://emojipedia.org/cross-mark-button)
+[Emojipedia ❎](https://emojipedia.org/cross-mark-button) \
+[Emojipedia 👍](https://emojipedia.org/thumbs-up) \
+[Emojipedia 👎](https://emojipedia.org/thumbs-down)
