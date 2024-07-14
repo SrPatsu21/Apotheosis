@@ -13,9 +13,9 @@
 //   the backend itself (imgui_impl_vulkan.cpp), but should PROBABLY NOT be used by your own engine/app code.
 // Read comments in imgui_impl_vulkan.h.
 
-#include "../lib/imgui-master/imgui.h"
-#include "../lib/imgui-master/backends/imgui_impl_glfw.h"
-#include "../lib/imgui-master/backends/imgui_impl_vulkan.h"
+#include <Dear-ImGui/imgui.h>
+#include <Dear-ImGui/imgui_impl_glfw.h>
+#include <Dear-ImGui/imgui_impl_vulkan.h>
 #include <stdio.h>          // printf, fprintf
 #include <stdlib.h>         // abort
 #define GLFW_INCLUDE_NONE
