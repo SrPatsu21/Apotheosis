@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "lib/**"
+                "lib/",
+                "lib/glfw-3.4/include/"
             ],
             "defines": [],
             "cStandard": "c17",
