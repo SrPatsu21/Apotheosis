@@ -2,8 +2,6 @@
 
 ## libs
 
-### Auto set libs
-
 ### Dear ImGui
 
 - All in one \
@@ -36,13 +34,11 @@
 
 ### Vulkan
 
-- All in one \
-    `wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.283.0/linux/vulkansdk-linux-x86_64-1.3.283.0.tar.xz" && tar -xf lib/vulkansdk-linux-x86_64-1.3.283.0.tar.xz -C lib/ && mv lib/1.3.283.0 lib/Vulkan && rm lib/vulkansdk-linux-x86_64-1.3.283.0.tar.xz`
-- Download
-    `wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.283.0/linux/vulkansdk-linux-x86_64-1.3.283.0.tar.xz"`
-- Unzip \
-    `tar -xf lib/vulkansdk-linux-x86_64-1.3.283.0.tar.xz -C lib/`
-- Rename \
-    `mv lib/1.3.283.0 lib/Vulkan`
-- Remove tar \
-    `rm lib/vulkansdk-linux-x86_64-1.3.283.0.tar.xz`
+- Make sure you hava mingw-w64
+- go to mingw-w64 terminal
+- Run \
+ `pacman -S mingw-w64-x86_64-vulkan-loader`
+ `pacman -S mingw-w64-x86_64-vulkan-headers`
+ `pacman -S mingw-w64-x86_64-vulkanscenegraph`
+ `pacman -S mingw-w64-x86_64-vulkan-utility-libraries`
+ `pacman -S mingw-w64-x86_64-vulkan-validation-layers`
