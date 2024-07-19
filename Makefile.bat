@@ -1,3 +1,5 @@
+cls
+
 @echo off
 
 setlocal
@@ -11,5 +13,7 @@ set "ImGui=.\lib\Dear-ImGui\*.cpp -I.\lib\Dear-ImGui\"
 set "LIBs=%Vulkan% %GLFW% %ImGui%"
 @REM project files path
 set "ProjectFiles=.\src\main.cpp"
+
+@echo on
 
 g++ %LIBs% %ProjectFiles% -o %OutPut%
