@@ -34,11 +34,17 @@
 
 ### Vulkan
 
-- Make sure you hava mingw-w64
-- go to mingw-w64 terminal
-- Run \
- `pacman -S mingw-w64-x86_64-vulkan-loader`
- `pacman -S mingw-w64-x86_64-vulkan-headers`
- `pacman -S mingw-w64-x86_64-vulkanscenegraph`
- `pacman -S mingw-w64-x86_64-vulkan-utility-libraries`
- `pacman -S mingw-w64-x86_64-vulkan-validation-layers`
+- Download the VulkanSDK installer \
+[Vulkan SDK](https://sdk.lunarg.com/sdk/download/1.3.283.0/windows/VulkanSDK-1.3.283.0-Installer.exe)
+- Install VulkanSDK
+- Make sure that Vulkan create an environment variabel named <VULKAN_SDK> \
+    *if this file don't exist, include by yourself, the normal path is `C:\VulkanSDK\1.3.283.0`*
+- Create a file on lib \
+    `mkdir ./lib/VulkanSDK`
+- Copy file to lib \
+    `xcopy $Env:VULKAN_SDK\lib .\lib\VulkanSDK\lib\ /S`
+    `xcopy $Env:VULKAN_SDK\Include .\lib\VulkanSDK\include\ /S`
+
+## Souces
+
+<https://www.rapidtables.com/code/linux/gcc/gcc-l.html>
