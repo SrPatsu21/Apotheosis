@@ -48,3 +48,4 @@
 ## Souces
 
 <https://www.rapidtables.com/code/linux/gcc/gcc-l.html>
+<https://terminalroot.com.br/2023/10/aprenda-a-usar-o-dear-imgui-com-sdl2.html>
