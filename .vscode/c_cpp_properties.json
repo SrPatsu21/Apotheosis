@@ -15,7 +15,8 @@
         {
             "name": "Win64",
             "includePath": [
-                "${workspaceFolder}/lib/**"
+                "${workspaceFolder}/lib/**",
+                "${default}"
             ],
             "defines": [],
             "cStandard": "c17",
