@@ -24,11 +24,13 @@
 ### GLFW
 
 - All in one \
-    `wget "https://github.com/glfw/glfw/archive/refs/tags/3.4.zip" -OutFile ./lib/3.4.zip ; tar -xf ./lib/3.4.zip -C ./lib ; rm ./lib/3.4.zip`
+    `wget "https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.bin.WIN64.zip" -OutFile ./lib/3.4.zip ; tar -xf ./lib/3.4.zip -C ./lib ; mv ./lib/glfw-3.4.bin.WIN64 ./lib/glfw-3.4 ; rm ./lib/3.4.zip`
 - Download \
-    `wget "https://github.com/glfw/glfw/archive/refs/tags/3.4.zip" -OutFile ./lib/3.4.zip`
+    `wget "https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.bin.WIN64.zip" -OutFile ./lib/3.4.zip`
 - Unzip \
     `tar -xf ./lib/3.4.zip -C ./lib`
+- Rename \
+    `mv ./lib/glfw-3.4.bin.WIN64 ./lib/glfw-3.4`
 - Remove zip file \
     `rm ./lib/3.4.zip`
 
