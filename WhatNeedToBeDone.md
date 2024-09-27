@@ -178,6 +178,10 @@
   - Windows, Linux, Xbox Series X|S, PlayStation 5
   - <https://wickedengine.net/>
 
+  ### help with them
+
+    <https://youtu.be/6isbso_GmUk?si=TbQ1ysLd32YDdOWS>
+
 ## 4. Set the makefile
 
 ## 5. config gitignore

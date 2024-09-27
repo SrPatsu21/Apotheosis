@@ -44,6 +44,6 @@
 - Unzip \
     `tar -xf lib/vulkansdk-linux-x86_64-1.3.283.0.tar.xz -C lib/`
 - Rename \
-    `mv lib/1.3.283.0 lib/Vulkan`
+    `mv lib/1.3.283.0 lib/VulkanSDK`
 - Remove tar \
     `rm lib/vulkansdk-linux-x86_64-1.3.283.0.tar.xz`
