@@ -4,6 +4,8 @@
 
 - C/C++ Extension Pack \
     <https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools-extension-pack>
+- Better C++ Syntax \
+    <https://marketplace.visualstudio.com/items?itemName=jeff-hykin.better-cpp-syntax>
 - markdownlint \
     <https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint>
 - Better Comments \
