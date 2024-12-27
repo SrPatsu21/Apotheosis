@@ -1,4 +1,3 @@
 #* libs
-lib/Dear-ImGui
-lib/glfw-3.4
-lib/VulkanSDK
+lib/**/
+build/*
