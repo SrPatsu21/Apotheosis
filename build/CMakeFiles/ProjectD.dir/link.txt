@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/ProjectD.dir/src/main.cpp.o CMakeFiles/ProjectD.dir/src/VulkanApp.cpp.o -o ProjectD.out  /usr/lib/x86_64-linux-gnu/libvulkan.so lib/glfw/src/libglfw3.a libDear-ImGui.a /usr/lib/x86_64-linux-gnu/librt.a -lm -ldl 
