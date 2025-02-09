@@ -56,9 +56,8 @@ find_package(Vulkan REQUIRED)
 if(WIN32)
     set(LIBRARIES "glfw;Vulkan::Vulkan")
 elseif(UNIX)
-    set(LIBRARIES "glfw;Vulkan::Vulkan:pthread;dl;X11;Xrandr;Xi;Xcursor")
+    set(LIBRARIES "glfw;Vulkan::Vulkan;pthread;dl;X11;Xrandr;Xi;Xcursor")
 endif()
-set(LIBRARIES "glfw;Vulkan::Vulkan")
 
 # Use vulkan headers from glfw:
 include_directories(${GLFW_DIR}/deps)
@@ -68,11 +67,19 @@ file(GLOB SOURCES src/*.cpp)
 
 # Create the executable
 add_executable(ProjectD ${SOURCES} ${IMGUI_SOURCES})
-set_target_properties(
-    ProjectD
-    PROPERTIES
-        OUTPUT_NAME "ProjectDOut"
-)
+if(WIN32)
+    set_target_properties(
+        ProjectD
+        PROPERTIES
+            OUTPUT_NAME "ProjectDOut.exe"
+    )
+elseif(UNIX)
+    set_target_properties(
+        ProjectD
+        PROPERTIES
+            OUTPUT_NAME "ProjectDOut"
+    )
+endif()
 
 # Link libraries
 target_link_libraries(ProjectD ${LIBRARIES})

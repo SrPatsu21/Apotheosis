@@ -1,3 +1,4 @@
 #* libs
 lib/**/
 build
+build-windows
