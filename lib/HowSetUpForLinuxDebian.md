@@ -71,3 +71,14 @@
     `cmake ..`
 - Run
     `make`
+
+## Build for Windows
+
+- Create folder
+    `mkdir build-windows`
+- Get Inside
+    `cd build-windows`
+- Build
+    `cmake .. -DCMAKE_TOOLCHAIN_FILE=../toolchain-mingw.cmake`
+- Run
+    `make`

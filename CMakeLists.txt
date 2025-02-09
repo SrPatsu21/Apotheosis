@@ -3,8 +3,16 @@ project(ProjectD)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DVK_PROTOTYPES")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_PROTOTYPES")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DVK_PROTOTYPES")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_PROTOTYPES")
+
+# Define platform-specific compiler flags
+if(WIN32)
+    add_definitions(-DVK_USE_PLATFORM_WIN32_KHR)
+elseif(UNIX)
+    add_definitions(-DVK_USE_PLATFORM_XCB_KHR)
+endif()
 
 # Force debug
 if(NOT CMAKE_BUILD_TYPE)
@@ -43,6 +51,13 @@ find_package(Vulkan REQUIRED)
 #find_library(VULKAN_LIBRARY
     #NAMES vulkan vulkan-1)
 #set(LIBRARIES "glfw;${VULKAN_LIBRARY}")
+
+# Link libraries
+if(WIN32)
+    set(LIBRARIES "glfw;Vulkan::Vulkan")
+elseif(UNIX)
+    set(LIBRARIES "glfw;Vulkan::Vulkan:pthread;dl;X11;Xrandr;Xi;Xcursor")
+endif()
 set(LIBRARIES "glfw;Vulkan::Vulkan")
 
 # Use vulkan headers from glfw:
