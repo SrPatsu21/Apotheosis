@@ -6,6 +6,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DVK_PROTOTYPES")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_PROTOTYPES")
+set(CMAKE_PREFIX_PATH
+# LINUX SPECIFIC
+    ${LINUX_VENDOR_BINARIES_DIR}/vulkan-loader
+    # PLATFORM AGNOSTIC
+    ${PLATFORM_AGNOSTIC_VENDOR_BINARIES_DIR}/vulkan-headers
+)
 
 # Define platform-specific compiler flags
 if(WIN32)
@@ -21,6 +27,8 @@ endif()
 
 # Add Vulkan
 find_package(Vulkan REQUIRED)
+find_package(VulkanLoader REQUIRED)
+find_package(VulkanHeaders REQUIRED CONFIG)
 
 # GLFW setup
 add_subdirectory(lib/glfw)
@@ -54,9 +62,9 @@ find_package(Vulkan REQUIRED)
 
 # Link libraries
 if(WIN32)
-    set(LIBRARIES "glfw;Vulkan::Vulkan")
+    set(LIBRARIES "glfw;Vulkan::Headers;Vulkan::Loader")
 elseif(UNIX)
-    set(LIBRARIES "glfw;Vulkan::Vulkan;pthread;dl;X11;Xrandr;Xi;Xcursor")
+    set(LIBRARIES "glfw;Vulkan::Headers;Vulkan::Loader;pthread;dl;X11;Xrandr;Xi;Xcursor")
 endif()
 
 # Use vulkan headers from glfw:
@@ -68,11 +76,11 @@ file(GLOB SOURCES src/*.cpp)
 # Create the executable
 add_executable(ProjectD ${SOURCES} ${IMGUI_SOURCES})
 if(WIN32)
-    set_target_properties(
-        ProjectD
-        PROPERTIES
-            OUTPUT_NAME "ProjectDOut.exe"
-    )
+    # set_target_properties(
+    #     ProjectD
+    #     PROPERTIES
+    #         OUTPUT_NAME "ProjectDOut.exe"
+    # )
 elseif(UNIX)
     set_target_properties(
         ProjectD
