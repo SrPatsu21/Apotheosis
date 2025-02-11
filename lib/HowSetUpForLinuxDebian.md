@@ -65,7 +65,7 @@
     `cmake -S . -B build -D UPDATE_DEPS=On`
     `cmake --build build`
 - download Vulkan Headers for windows
-    `git clone https://github.com/KhronosGroup/Vulkan-Headers.git`
+    `git clone git@github.com:KhronosGroup/Vulkan-Headers.git`
     `cd Vulkan-Headers/`
     `cmake -S . -B build/`
     `cmake --install build --prefix build/install`
@@ -89,12 +89,12 @@
 - Build
     ```sheel
     cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=../toolchain-mingw.cmake \
-    -DUPDATE_DEPS=ON \
-    -DCMAKE_INSTALL_PREFIX="../lib/Vulkan-Loader" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -S"../lib/Vulkan-Loader" \
-    -B"../build-windows"
+    -D CMAKE_TOOLCHAIN_FILE=../toolchain-mingw.cmake \
+    -D UPDATE_DEPS=ON \
+    -D CMAKE_INSTALL_PREFIX="../lib/Vulkan-Loader" \
+    -D CMAKE_BUILD_TYPE=Release \
+    -S "../lib/Vulkan-Loader" \
+    -B "../build-windows"
     ```
 
     `cmake .. -DCMAKE_TOOLCHAIN_FILE=../toolchain-mingw.cmake -DUPDATE_DEPS=ON -DCMAKE_INSTALL_PREFIX="$vulkan_loader_vendor_win_dir" -DCMAKE_BUILD_TYPE=Release -S"$vulkan_loader_source_dir" -B"$vulkan_loader_win_build_dir"`
