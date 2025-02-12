@@ -76,16 +76,18 @@ file(GLOB SOURCES src/*.cpp)
 # Create the executable
 add_executable(ProjectD ${SOURCES} ${IMGUI_SOURCES})
 if(WIN32)
-    # set_target_properties(
-    #     ProjectD
-    #     PROPERTIES
-    #         OUTPUT_NAME "ProjectDOut.exe"
-    # )
+    set_target_properties(
+        ProjectD
+        PROPERTIES
+            OUTPUT_NAME "ProjectD"
+            SUFFIX ".exe"
+    )
 elseif(UNIX)
     set_target_properties(
         ProjectD
         PROPERTIES
-            OUTPUT_NAME "ProjectDOut"
+            OUTPUT_NAME "ProjectD"
+            SUFFIX ".out"
     )
 endif()
 
