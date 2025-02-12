@@ -58,17 +58,12 @@
     `sudo apt update`
 - install
     `sudo apt install vulkan-sdk`
-- download Vulkan Loader for windows
+- download Vulkan for windows crosscomplile
     `cd lib/`
-    `git clone git@github.com:KhronosGroup/Vulkan-Loader.git`
-    `cd Vulkan-Loader`
-    `cmake -S . -B build -D UPDATE_DEPS=On`
-    `cmake --build build`
-- download Vulkan Headers for windows
-    `git clone git@github.com:KhronosGroup/Vulkan-Headers.git`
-    `cd Vulkan-Headers/`
-    `cmake -S . -B build/`
-    `cmake --install build --prefix build/install`
+    `wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe"`
+    `sudo apt install 7zip`
+    `7z x VulkanSDK-1.3.296.0-Installer.exe -o./vulkan-sdk-win`
+    `rm VulkanSDK-1.3.296.0-Installer.exe`
 ## Build
 
 - Create folder
@@ -87,16 +82,10 @@
 - Get Inside
     `cd build-windows`
 - Build
-    ```sheel
-    cmake .. \
-    -D CMAKE_TOOLCHAIN_FILE=../toolchain-mingw.cmake \
-    -D UPDATE_DEPS=ON \
-    -D CMAKE_INSTALL_PREFIX="../lib/Vulkan-Loader" \
-    -D CMAKE_BUILD_TYPE=Release \
-    -S "../lib/Vulkan-Loader" \
-    -B "../build-windows"
     ```
-
-    `cmake .. -DCMAKE_TOOLCHAIN_FILE=../toolchain-mingw.cmake -DUPDATE_DEPS=ON -DCMAKE_INSTALL_PREFIX="$vulkan_loader_vendor_win_dir" -DCMAKE_BUILD_TYPE=Release -S"$vulkan_loader_source_dir" -B"$vulkan_loader_win_build_dir"`
+        cmake .. \
+        -D CMAKE_TOOLCHAIN_FILE=../toolchain-mingw.cmake \
+        -D UPDATE_DEPS=ON
+    ```
 - Run
     `make`
