@@ -90,4 +90,9 @@ project(ProjectD)
     endif()
 
 # Link libraries
+if(WIN32)
+    # Link against the Vulkan loader library
+    target_link_libraries(ProjectD vulkan-1)
+endif()
+
 target_link_libraries(ProjectD ${LIBRARIES})
