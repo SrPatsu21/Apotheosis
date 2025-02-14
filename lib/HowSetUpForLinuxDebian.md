@@ -64,6 +64,7 @@
     `sudo apt install 7zip`
     `7z x VulkanSDK-1.3.296.0-Installer.exe -o./vulkan-sdk-win`
     `rm VulkanSDK-1.3.296.0-Installer.exe`
+
 ## Build
 
 - Create folder
@@ -84,7 +85,7 @@
 - Build
     ```
         cmake .. \
-        -D CMAKE_TOOLCHAIN_FILE=../toolchain-mingw.cmake \
+        -D CMAKE_TOOLCHAIN_FILE=../toolchain-mingw.cmake
     ```
     <!-- could be util
         -D UPDATE_DEPS=ON

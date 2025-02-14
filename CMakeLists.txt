@@ -92,7 +92,7 @@ project(ProjectD)
 # Link libraries
 if(WIN32)
     # Link against the Vulkan loader library
-    target_link_libraries(ProjectD vulkan-1)
+    target_link_libraries(ProjectD vulkan-1 -static-libgcc -static-libstdc++)
 endif()
 
 target_link_libraries(ProjectD ${LIBRARIES})
