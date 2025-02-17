@@ -18,7 +18,7 @@
 ### GLFW
 
 - All in one \
-    `wget -P lib/ "https://github.com/glfw/glfw/archive/refs/tags/3.4.zip" && unzip lib/3.4.zip -d lib/ && mv lib/glfw-3.4 lib/glfw && rm lib/3.4.zip && sudo apt install -y wayland-protocols libwayland-bin libwayland-dev libxkbcommon-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev pkg-config mingw-w64-x86-64-dev mingw-w64`
+    `wget -P lib/ "https://github.com/glfw/glfw/archive/refs/tags/3.4.zip" && unzip lib/3.4.zip -d lib/ && mv lib/glfw-3.4 lib/glfw && rm lib/3.4.zip && sudo apt install wayland-protocols libwayland-bin libwayland-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev pkg-config mingw-w64 mingw-w64-x86-64-dev`
 - Download \
     `wget -P lib/ "https://github.com/glfw/glfw/archive/refs/tags/3.4.zip"`
 - Unzip \
@@ -49,7 +49,7 @@
 ### Vulkan
 
 - All in one \
-    `wget -qO - "https://packages.lunarg.com/lunarg-signing-key-pub.asc" | sudo apt-key add - && sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.296-noble.list "https://packages.lunarg.com/vulkan/1.3.296/lunarg-vulkan-1.3.296-noble.list" && sudo apt update && sudo apt install vulkan-sdk`
+    `wget -qO - "https://packages.lunarg.com/lunarg-signing-key-pub.asc" | sudo apt-key add - && sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.296-noble.list "https://packages.lunarg.com/vulkan/1.3.296/lunarg-vulkan-1.3.296-noble.list" && sudo apt update && sudo apt install vulkan-sdk && wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe" && cd lib/ && sudo apt install 7zip && rm VulkanSDK-1.3.296.0-Installer.exe`
 - apt key \
     `wget -qO - "https://packages.lunarg.com/lunarg-signing-key-pub.asc" | sudo apt-key add -`
 - apt sources \
