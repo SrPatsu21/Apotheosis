@@ -27,16 +27,18 @@
     `mv lib/glfw-3.4 lib/glfw`
 - Remove zip file \
     `rm lib/3.4.zip`
+- lib
+    `sudo apt install libgl-dev`
 - Install wayland
     `sudo apt install wayland-protocols`
     `sudo apt install libwayland-bin`
     `sudo apt install libwayland-dev`
 - Install xkbcommon
-    `sudo apt install libxkbcommon-dev `
+    `sudo apt install libxkbcommon-dev`
 - Install libxrandr
     `sudo apt install libxrandr-dev`
 - Install libxinerama
-    `sudo apt install libxinerama-dev `
+    `sudo apt install libxinerama-dev`
 - Install libxcursor
     `sudo apt install libxcursor-dev`
 - Install libxi
@@ -49,15 +51,15 @@
 ### Vulkan
 
 - All in one \
-    `wget -qO - "https://packages.lunarg.com/lunarg-signing-key-pub.asc" | sudo apt-key add - && sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.296-noble.list "https://packages.lunarg.com/vulkan/1.3.296/lunarg-vulkan-1.3.296-noble.list" && sudo apt update && sudo apt install vulkan-sdk && wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe" && cd lib/ && sudo apt install 7zip && rm VulkanSDK-1.3.296.0-Installer.exe`
+    `curl -fsSL https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.gpg > /dev/null && sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.296-noble.list "https://packages.lunarg.com/vulkan/1.3.296/lunarg-vulkan-1.3.296-noble.list" && sudo apt update && sudo apt install vulkan-utility-libraries-dev && wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe" && cd lib/ && sudo apt install 7zip && rm VulkanSDK-1.3.296.0-Installer.exe`
 - apt key \
-    `wget -qO - "https://packages.lunarg.com/lunarg-signing-key-pub.asc" | sudo apt-key add -`
+    `curl -fsSL https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.gpg > /dev/null`
 - apt sources \
     `sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.296-noble.list "https://packages.lunarg.com/vulkan/1.3.296/lunarg-vulkan-1.3.296-noble.list"`
 - apt update
     `sudo apt update`
 - install
-    `sudo apt install vulkan-sdk`
+    `sudo apt install vulkan-utility-libraries-dev libvulkan-dev vulkan-tools`
 - download Vulkan for windows crosscomplile
     `wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe"`
     `cd lib/`
@@ -83,7 +85,7 @@
 - Get Inside
     `cd build-windows`
 - Build
-    ```
+    ```bash
         cmake .. \
         -D CMAKE_TOOLCHAIN_FILE=../toolchain-mingw.cmake
     ```
