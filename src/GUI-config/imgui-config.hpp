@@ -24,7 +24,7 @@
 #include <thread>
 #include <chrono>
 
-// Window Minimal size
+// Set the minimum number of image sampler descriptors in the Vulkan descriptor pool
 #define IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE 100
 
 // if need Volk headers

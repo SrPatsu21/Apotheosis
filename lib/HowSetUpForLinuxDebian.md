@@ -85,6 +85,7 @@
 - Get Inside
     `cd build-windows`
 - Build
+
     ```bash
         cmake .. \
         -D CMAKE_TOOLCHAIN_FILE=../toolchain-mingw.cmake
