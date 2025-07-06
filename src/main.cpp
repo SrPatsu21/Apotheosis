@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <stdexcept>
 
 struct UBO {
     glm::mat4 model;
@@ -17,6 +18,20 @@ VkDeviceMemory uboMemory;
 void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
                   VkBuffer &buffer, VkDeviceMemory &bufferMemory);
 
+uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(g_PhysicalDevice, &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) &&
+            (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+
+    throw std::runtime_error("Failed to find suitable memory type!");
+}
+
 int main(int, char**)
 {
     glfwSetErrorCallback(glfw_error_callback);
@@ -24,7 +39,7 @@ int main(int, char**)
         return 1;
 
     // Create window with Vulkan context
-    GLFWmonitor* primary = glfwGetPrimaryMonitor(); 
+    GLFWmonitor* primary = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(primary);
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

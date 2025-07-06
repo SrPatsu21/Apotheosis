@@ -94,31 +94,41 @@ set(SHADERS
 )
 
 # Shader compilation
-set(SHADER_DIR ${CMAKE_SOURCE_DIR}/src/client/Shaders)
-set(COMPILED_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
+    set(SHADER_DIR ${CMAKE_SOURCE_DIR}/src/client/Shaders)
+    set(COMPILED_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
 
-file(MAKE_DIRECTORY ${COMPILED_SHADER_DIR})
+    file(MAKE_DIRECTORY ${COMPILED_SHADER_DIR})
 
-set(SHADERS
-    ${SHADER_DIR}/vertex.glsl
-    ${SHADER_DIR}/fragment.glsl
-)
-
-set(SHADER_OUTPUTS "")
-
-foreach(SHADER ${SHADERS})
-    get_filename_component(SHADER_NAME ${SHADER} NAME)
-    set(SPV_FILE ${COMPILED_SHADER_DIR}/${SHADER_NAME}.spv)
-
-    add_custom_command(
-        OUTPUT ${SPV_FILE}
-        COMMAND ${GLSLANG_VALIDATOR} -V ${SHADER} -o ${SPV_FILE}
-        DEPENDS ${SHADER}
-        COMMENT "Compiling ${SHADER_NAME} to SPIR-V"
+    set(SHADERS
+        vertex.glsl
+        fragment.glsl
     )
 
-    list(APPEND SHADER_OUTPUTS ${SPV_FILE})
-endforeach()
+    set(SHADER_OUTPUTS "")
+
+    foreach(SHADER_NAME IN LISTS SHADERS)
+        set(SHADER ${SHADER_DIR}/${SHADER_NAME})
+        set(SPV_FILE ${COMPILED_SHADER_DIR}/${SHADER_NAME}.spv)
+
+        # Detect stage based on filename
+        if(SHADER_NAME MATCHES "vertex.glsl")
+            set(STAGE "vert")
+        elseif(SHADER_NAME MATCHES "fragment.glsl")
+            set(STAGE "frag")
+        else()
+            message(FATAL_ERROR "Unknown shader stage for ${SHADER_NAME}")
+        endif()
+
+        add_custom_command(
+            OUTPUT ${SPV_FILE}
+            COMMAND ${GLSLANG_VALIDATOR} -V -S ${STAGE} ${SHADER} -o ${SPV_FILE}
+            DEPENDS ${SHADER}
+            COMMENT "Compiling ${SHADER_NAME} to SPIR-V with stage ${STAGE}"
+            VERBATIM
+        )
+
+        list(APPEND SHADER_OUTPUTS ${SPV_FILE})
+    endforeach()
 
 add_custom_target(Shaders ALL DEPENDS ${SHADER_OUTPUTS})
 
