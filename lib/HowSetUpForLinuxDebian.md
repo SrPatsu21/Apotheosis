@@ -84,7 +84,16 @@
 ### GLS Lang Validator
 - apt
     `sudo apt install glslang-tools`
+- download
+    `wget -P lib/ "https://github.com/assimp/assimp/archive/refs/tags/v5.2.5.zip"`
+    `7z x lib/v5.2.5.zip -o./lib/assimp`
+    `mv lib/assimp/assimp-5.2.5/* lib/assimp/`
+    `rm -R lib/assimp/assimp-5.2.5`
+    `rm lib/v5.2.5.zip`
 
+### Assimp
+- apt (optional)
+    `sudo apt-get install libassimp-dev`
 ## Build
 
 - Create folder

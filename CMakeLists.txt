@@ -98,6 +98,10 @@ set(STB_DIR ${CMAKE_SOURCE_DIR}/lib/stb)
 include_directories(${STB_DIR})
 set(STB_SOURCES src/client/stb_image_impl.cpp)
 
+# assimp
+add_subdirectory(lib/assimp)
+include_directories(lib/assimp/include)
+
 # Shader compilation
     set(SHADER_DIR ${CMAKE_SOURCE_DIR}/src/client/Shaders)
     set(COMPILED_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
@@ -139,9 +143,9 @@ add_custom_target(Shaders ALL DEPENDS ${SHADER_OUTPUTS})
 
 # Libraries
     if(WIN32)
-        set(LIBRARIES glfw)
+        set(LIBRARIES glfw assimp)
     elseif(UNIX)
-        set(LIBRARIES glfw Vulkan::Vulkan pthread dl X11 Xrandr Xi Xcursor glm::glm)
+        set(LIBRARIES glfw Vulkan::Vulkan pthread dl X11 Xrandr Xi Xcursor glm::glm assimp)
     endif()
 
     # Use Vulkan headers from GLFW
