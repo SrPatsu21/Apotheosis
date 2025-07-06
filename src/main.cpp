@@ -72,7 +72,7 @@ int main(int, char**)
     ImGui_ImplVulkanH_Window* wd = &g_MainWindowData;
     SetupVulkanWindow(wd, surface, w, h);
 
-    // Create UBO buffer (now that Vulkan is initialized)
+    // Create UBO buffer
     VkDeviceSize bufferSize = sizeof(UBO);
     CreateBuffer(
         bufferSize,
@@ -111,27 +111,33 @@ int main(int, char**)
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    // Main loop
-    while (!glfwWindowShouldClose(window))
+    bool should_close = false;
+    int score = 0;
+
+    while (!glfwWindowShouldClose(window) && !should_close)
     {
         glfwPollEvents();
 
         int fb_width, fb_height;
         glfwGetFramebufferSize(window, &fb_width, &fb_height);
-        if (fb_width > 0 && fb_height > 0 && (g_SwapChainRebuild || g_MainWindowData.Width != fb_width || g_MainWindowData.Height != fb_height))
+        if (fb_width > 0 && fb_height > 0 &&
+            (g_SwapChainRebuild || g_MainWindowData.Width != fb_width || g_MainWindowData.Height != fb_height))
         {
             ImGui_ImplVulkan_SetMinImageCount(g_MinImageCount);
-            ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_QueueFamily, g_Allocator, fb_width, fb_height, g_MinImageCount);
+            ImGui_ImplVulkanH_CreateOrResizeWindow(
+                g_Instance, g_PhysicalDevice, g_Device,
+                &g_MainWindowData, g_QueueFamily, g_Allocator,
+                fb_width, fb_height, g_MinImageCount);
             g_MainWindowData.FrameIndex = 0;
             g_SwapChainRebuild = false;
         }
-        if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0)
-        {
+
+        if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0) {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             continue;
         }
 
-        // Update UBO each frame
+        // Update UBO
         UBO ubo{};
         ubo.model = glm::mat4(1.0f);
         ubo.view = glm::lookAt(
@@ -145,7 +151,7 @@ int main(int, char**)
             0.1f,
             100.0f
         );
-        ubo.proj[1][1] *= -1; // Vulkan correction
+        ubo.proj[1][1] *= -1;
 
         void* data;
         vkMapMemory(g_Device, uboMemory, 0, sizeof(ubo), 0, &data);
@@ -155,6 +161,23 @@ int main(int, char**)
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+
+        // ImGui UI
+        ImGui::Begin("Painel de Controle");
+
+        if (ImGui::Button("Fechar Aplicação")) {
+            should_close = true;
+        }
+
+        ImGui::Separator();
+
+        ImGui::Text("Mini-jogo: Clique para pontuar!");
+        if (ImGui::Button("Clique Aqui!")) {
+            score++;
+        }
+        ImGui::Text("Pontuação: %d", score);
+
+        ImGui::End();
 
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
