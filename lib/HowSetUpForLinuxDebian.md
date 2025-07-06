@@ -76,6 +76,10 @@
     `7z x lib/1.0.1.zip -o./lib/glm`
     `rm lib/1.0.1.zip`
 
+### GLS Lang Validator
+- apt
+    `sudo apt install glslang-tools`
+
 ## Build
 
 - Create folder

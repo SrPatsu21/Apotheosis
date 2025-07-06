@@ -4,9 +4,10 @@ project(ProjectD)
 # Set C++ standard
     set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    #????
+
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DVK_PROTOTYPES")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_PROTOTYPES -static-libgcc -static-libstdc++")
+
     if(WIN32)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lpthread -Wl,--no-whole-archive")
     endif()
@@ -60,25 +61,67 @@ project(ProjectD)
     )
 
 # GLM setup
-if(WIN32)
-    # When cross-compiling for Windows, use vendored GLM
-    set(GLM_PATH "${CMAKE_SOURCE_DIR}/lib/glm/glm-1.0.1")
-    include_directories(${GLM_PATH})
-else()
-    # On Linux host, use system GLM
-    find_package(glm REQUIRED)
-endif()
-
-# Libraries
-
-    # Link libraries
     if(WIN32)
-        set(LIBRARIES "glfw;")
-    elseif(UNIX)
-        set(LIBRARIES "glfw;Vulkan::Vulkan;pthread;dl;X11;Xrandr;Xi;Xcursor;glm::glm;")
+        # When cross-compiling for Windows, use vendored GLM
+        set(GLM_PATH "${CMAKE_SOURCE_DIR}/lib/glm/glm-1.0.1")
+        include_directories(${GLM_PATH})
+    else()
+        # On Linux host, use system GLM
+        find_package(glm REQUIRED)
     endif()
 
-    # Use Vulkan headers from GLFW:
+    # glslangValidator setup
+    find_program(GLSLANG_VALIDATOR glslangValidator
+        PATHS
+            ${VULKAN_SDK_PATH}/Bin
+            /usr/bin
+            /usr/local/bin
+    )
+    if(NOT GLSLANG_VALIDATOR)
+        message(FATAL_ERROR "glslangValidator not found!")
+    endif()
+    message(STATUS "glslangValidator found: ${GLSLANG_VALIDATOR}")
+
+# Shader compilation
+set(SHADER_DIR ${CMAKE_SOURCE_DIR}/src/client/Shaders)
+set(COMPILED_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
+
+file(MAKE_DIRECTORY ${COMPILED_SHADER_DIR})
+
+set(SHADERS
+    ${SHADER_DIR}/vertex.glsl
+    ${SHADER_DIR}/fragment.glsl
+)
+
+set(SHADER_OUTPUTS "")
+
+foreach(SHADER ${SHADERS})
+    get_filename_component(SHADER_NAME ${SHADER} NAME)
+    set(SPV_FILE ${COMPILED_SHADER_DIR}/${SHADER_NAME}.spv)
+
+    add_custom_command(
+        OUTPUT ${SPV_FILE}
+        COMMAND ${GLSLANG_VALIDATOR} -V ${SHADER} -o ${SPV_FILE}
+        DEPENDS ${SHADER}
+        COMMENT "Compiling ${SHADER_NAME} to SPIR-V"
+    )
+
+    list(APPEND SHADER_OUTPUTS ${SPV_FILE})
+endforeach()
+
+add_custom_target(Shaders ALL DEPENDS ${SHADER_OUTPUTS})
+add_dependencies(ProjectD Shaders)
+
+
+
+# Libraries
+    if(WIN32)
+        set(LIBRARIES glfw)
+    elseif(UNIX)
+        set(LIBRARIES glfw Vulkan::Vulkan pthread dl X11 Xrandr Xi Xcursor glm::glm)
+    endif()
+
+    # Use Vulkan headers from GLFW
     include_directories(${GLFW_DIR}/deps)
 
 # Add source files
@@ -86,6 +129,7 @@ endif()
 
 # Create the executable
     add_executable(ProjectD ${SOURCES} ${IMGUI_SOURCES})
+
     if(WIN32)
         set_target_properties(
             ProjectD
