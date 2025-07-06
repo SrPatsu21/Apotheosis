@@ -59,13 +59,23 @@ project(ProjectD)
         ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
     )
 
+# GLM setup
+if(WIN32)
+    # When cross-compiling for Windows, use vendored GLM
+    set(GLM_PATH "${CMAKE_SOURCE_DIR}/lib/glm/glm-1.0.1")
+    include_directories(${GLM_PATH})
+else()
+    # On Linux host, use system GLM
+    find_package(glm REQUIRED)
+endif()
+
 # Libraries
 
     # Link libraries
     if(WIN32)
         set(LIBRARIES "glfw;")
     elseif(UNIX)
-        set(LIBRARIES "glfw;Vulkan::Vulkan;pthread;dl;X11;Xrandr;Xi;Xcursor")
+        set(LIBRARIES "glfw;Vulkan::Vulkan;pthread;dl;X11;Xrandr;Xi;Xcursor;glm::glm;")
     endif()
 
     # Use Vulkan headers from GLFW:

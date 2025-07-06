@@ -34,8 +34,6 @@
 
 - Vulkan
   high-performance, modern GPU API
-- Vulkan-Hpp
-  Modern C++ Vulkan bindings.
 - DEARImGUI
   fast debug/dev UI (optional, good for tools/debug overlays)
 - GLFW

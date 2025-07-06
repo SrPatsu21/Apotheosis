@@ -1,5 +1,9 @@
 #include "./GUI-config/imgui-config.hpp"
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 int main(int, char**)
 {
     glfwSetErrorCallback(glfw_error_callback);

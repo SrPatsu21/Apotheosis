@@ -51,7 +51,7 @@
 ### Vulkan
 
 - All in one \
-    `curl -fsSL https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.gpg > /dev/null && sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.296-noble.list "https://packages.lunarg.com/vulkan/1.3.296/lunarg-vulkan-1.3.296-noble.list" && sudo apt install vulkan-utility-libraries-dev && wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe" && cd lib/ && sudo apt install 7zip && 7z x VulkanSDK-1.3.296.0-Installer.exe -o./vulkan-sdk-win && rm VulkanSDK-1.3.296.0-Installer.exe`
+    `curl -fsSL https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.gpg > /dev/null && sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.296-noble.list "https://packages.lunarg.com/vulkan/1.3.296/lunarg-vulkan-1.3.296-noble.list" && sudo apt install vulkan-utility-libraries-dev && wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe" && sudo apt install 7zip && 7z x VulkanSDK-1.3.296.0-Installer.exe -o./vulkan-sdk-win && rm VulkanSDK-1.3.296.0-Installer.exe`
 - apt key \
     `curl -fsSL https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.gpg > /dev/null`
 - apt sources \
@@ -62,10 +62,19 @@
     `sudo apt install vulkan-utility-libraries-dev libvulkan-dev vulkan-tools`
 - download Vulkan for windows crosscomplile
     `wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe"`
-    `cd lib/`
     `sudo apt install 7zip`
-    `7z x VulkanSDK-1.3.296.0-Installer.exe -o./vulkan-sdk-win`
-    `rm VulkanSDK-1.3.296.0-Installer.exe`
+    `7z x ./lib/VulkanSDK-1.3.296.0-Installer.exe -o./lib/vulkan-sdk-win`
+    `rm ./lib/VulkanSDK-1.3.296.0-Installer.exe`
+
+### GLM
+- all in one
+    ``
+- apt
+    `sudo apt install libglm-dev`
+- windows cross compile
+    `wget -P lib/ "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip"`
+    `7z x lib/1.0.1.zip -o./lib/glm`
+    `rm lib/1.0.1.zip`
 
 ## Build
 
