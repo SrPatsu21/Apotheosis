@@ -93,6 +93,17 @@ set(SHADERS
     ${SHADER_DIR}/fragment.glsl
 )
 
+# Shader compilation
+set(SHADER_DIR ${CMAKE_SOURCE_DIR}/src/client/Shaders)
+set(COMPILED_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
+
+file(MAKE_DIRECTORY ${COMPILED_SHADER_DIR})
+
+set(SHADERS
+    ${SHADER_DIR}/vertex.glsl
+    ${SHADER_DIR}/fragment.glsl
+)
+
 set(SHADER_OUTPUTS "")
 
 foreach(SHADER ${SHADERS})
@@ -110,9 +121,6 @@ foreach(SHADER ${SHADERS})
 endforeach()
 
 add_custom_target(Shaders ALL DEPENDS ${SHADER_OUTPUTS})
-add_dependencies(ProjectD Shaders)
-
-
 
 # Libraries
     if(WIN32)
@@ -129,6 +137,7 @@ add_dependencies(ProjectD Shaders)
 
 # Create the executable
     add_executable(ProjectD ${SOURCES} ${IMGUI_SOURCES})
+    add_dependencies(ProjectD Shaders)
 
     if(WIN32)
         set_target_properties(
