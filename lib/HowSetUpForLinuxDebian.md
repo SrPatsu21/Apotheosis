@@ -76,6 +76,11 @@
     `7z x lib/1.0.1.zip -o./lib/glm`
     `rm lib/1.0.1.zip`
 
+### STD
+- downlaod (se precisar)
+    `mkdir -p lib/stb`
+    `curl -o lib/stb/stb_image.h https://raw.githubusercontent.com/nothings/stb/master/stb_image.h`
+
 ### GLS Lang Validator
 - apt
     `sudo apt install glslang-tools`

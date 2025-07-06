@@ -93,6 +93,11 @@ set(SHADERS
     ${SHADER_DIR}/fragment.glsl
 )
 
+# stb_image
+set(STB_DIR ${CMAKE_SOURCE_DIR}/lib/stb)
+include_directories(${STB_DIR})
+set(STB_SOURCES src/client/stb_image_impl.cpp)
+
 # Shader compilation
     set(SHADER_DIR ${CMAKE_SOURCE_DIR}/src/client/Shaders)
     set(COMPILED_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
@@ -146,7 +151,7 @@ add_custom_target(Shaders ALL DEPENDS ${SHADER_OUTPUTS})
     file(GLOB SOURCES src/*.cpp)
 
 # Create the executable
-    add_executable(ProjectD ${SOURCES} ${IMGUI_SOURCES})
+    add_executable(ProjectD ${SOURCES} ${IMGUI_SOURCES} ${STB_SOURCES})
     add_dependencies(ProjectD Shaders)
 
     if(WIN32)
