@@ -2,6 +2,9 @@
 
 ## libs
 
+- all
+    `wget -P lib/ "https://github.com/ocornut/imgui/archive/refs/tags/v1.92.0.zip" && unzip lib/v1.92.0.zip -d lib/ && mv lib/imgui-1.92.0 lib/Dear-ImGui && rm lib/v1.92.0.zip && wget -P lib/ "https://github.com/glfw/glfw/archive/refs/tags/3.4.zip" && unzip lib/3.4.zip -d lib/ && mv lib/glfw-3.4 lib/glfw && rm lib/3.4.zip && sudo apt install wayland-protocols libwayland-bin libwayland-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxkbcommon-dev pkg-config mingw-w64 mingw-w64-x86-64-dev && curl -fsSL https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.gpg > /dev/null && sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.296-noble.list "https://packages.lunarg.com/vulkan/1.3.296/lunarg-vulkan-1.3.296-noble.list && sudo apt install vulkan-utility-libraries-dev libvulkan-dev vulkan-tools && wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe" && sudo apt install 7zip && 7z x ./lib/VulkanSDK-1.3.296.0-Installer.exe -o./lib/vulkan-sdk-win && rm ./lib/VulkanSDK-1.3.296.0-Installer.exe && sudo apt install libglm-dev && wget -P lib/ "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip" && 7z x lib/1.0.1.zip -o./lib/glm && rm lib/1.0.1.zip && mkdir -p lib/stb && curl -o lib/stb/stb_image.h https://raw.githubusercontent.com/nothings/stb/master/stb_image.h && sudo apt install glslang-tools && sudo apt-get install libassimp-dev && wget -P lib/ "https://github.com/assimp/assimp/archive/refs/tags/v5.2.5.zip" && 7z x lib/v5.2.5.zip -o./lib/assimp && mv lib/assimp/assimp-5.2.5/* lib/assimp/ && rm -R lib/assimp/assimp-5.2.5 && rm lib/v5.2.5.zip && `
+
 ### Dear ImGui
 
 - All in one \
@@ -51,7 +54,7 @@
 ### Vulkan
 
 - All in one \
-    `curl -fsSL https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.gpg > /dev/null && sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.296-noble.list "https://packages.lunarg.com/vulkan/1.3.296/lunarg-vulkan-1.3.296-noble.list" && sudo apt install vulkan-utility-libraries-dev && wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe" && sudo apt install 7zip && 7z x VulkanSDK-1.3.296.0-Installer.exe -o./vulkan-sdk-win && rm VulkanSDK-1.3.296.0-Installer.exe`
+    `curl -fsSL https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.gpg > /dev/null && sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.296-noble.list "https://packages.lunarg.com/vulkan/1.3.296/lunarg-vulkan-1.3.296-noble.list && sudo apt install vulkan-utility-libraries-dev libvulkan-dev vulkan-tools && wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe" && sudo apt install 7zip && 7z x ./lib/VulkanSDK-1.3.296.0-Installer.exe -o./lib/vulkan-sdk-win && rm ./lib/VulkanSDK-1.3.296.0-Installer.exe`
 - apt key \
     `curl -fsSL https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.gpg > /dev/null`
 - apt sources \
@@ -68,7 +71,7 @@
 
 ### GLM
 - all in one
-    ``
+    `sudo apt install libglm-dev && wget -P lib/ "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip" && 7z x lib/1.0.1.zip -o./lib/glm && rm lib/1.0.1.zip`
 - apt
     `sudo apt install libglm-dev`
 - windows cross compile
@@ -77,6 +80,8 @@
     `rm lib/1.0.1.zip`
 
 ### STD
+- all in one
+    `mkdir -p lib/stb && curl -o lib/stb/stb_image.h https://raw.githubusercontent.com/nothings/stb/master/stb_image.h`
 - downlaod (se precisar)
     `mkdir -p lib/stb`
     `curl -o lib/stb/stb_image.h https://raw.githubusercontent.com/nothings/stb/master/stb_image.h`
@@ -84,6 +89,12 @@
 ### GLS Lang Validator
 - apt
     `sudo apt install glslang-tools`
+
+### Assimp
+- all in one
+    `sudo apt-get install libassimp-dev && wget -P lib/ "https://github.com/assimp/assimp/archive/refs/tags/v5.2.5.zip" && 7z x lib/v5.2.5.zip -o./lib/assimp && mv lib/assimp/assimp-5.2.5/* lib/assimp/ && rm -R lib/assimp/assimp-5.2.5 && rm lib/v5.2.5.zip`
+- apt (optional)
+    `sudo apt-get install libassimp-dev`
 - download
     `wget -P lib/ "https://github.com/assimp/assimp/archive/refs/tags/v5.2.5.zip"`
     `7z x lib/v5.2.5.zip -o./lib/assimp`
@@ -91,9 +102,6 @@
     `rm -R lib/assimp/assimp-5.2.5`
     `rm lib/v5.2.5.zip`
 
-### Assimp
-- apt (optional)
-    `sudo apt-get install libassimp-dev`
 ## Build
 
 - Create folder
