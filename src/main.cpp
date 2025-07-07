@@ -1,12 +1,32 @@
-#include "./GUI-config/imgui-config.hpp"
+#include "./client/imgui-config.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "./client/Vertex.hpp"
+
+#include <vector>
 #include <stdexcept>
+#include <cstring>
+#include <cstdio>
+#include <stb_image.h>
+
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+
+VkBuffer vertexBuffer;
+VkDeviceMemory vertexBufferMemory;
+
+VkBuffer indexBuffer;
+VkDeviceMemory indexBufferMemory;
+
+uint32_t indexCount;
+
+VkPipeline yourGraphicsPipeline;
+VkPipelineLayout yourPipelineLayout;
+VkDescriptorSet yourDescriptorSet;
+
 
 struct UBO {
     glm::mat4 model;
@@ -37,6 +57,12 @@ uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
 
 int main(int, char**)
 {
+    VkBuffer vertexBuffer;
+    VkDeviceMemory vertexBufferMemory;
+
+    VkBuffer indexBuffer;
+    VkDeviceMemory indexBufferMemory;
+
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return 1;
@@ -117,6 +143,81 @@ int main(int, char**)
     bool should_close = false;
     int score = 0;
 
+    Assimp::Importer importer;
+    const aiScene* scene = importer.ReadFile(
+        "./assets/cube.obj",
+        aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals
+    );
+
+    if (!scene || !scene->mMeshes[0]) {
+        throw std::runtime_error("Failed to load cube.obj with Assimp");
+    }
+
+    aiMesh* mesh = scene->mMeshes[0];
+
+    // Converta mesh->mVertices e mesh->mTextureCoords[0] para seu buffer Vulkan
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
+
+    for (unsigned i = 0; i < mesh->mNumVertices; ++i) {
+        Vertex v{};
+        v.pos = glm::vec3(
+            mesh->mVertices[i].x,
+            mesh->mVertices[i].y,
+            mesh->mVertices[i].z
+        );
+        if (mesh->mTextureCoords[0]) {
+            v.uv = glm::vec2(
+                mesh->mTextureCoords[0][i].x,
+                mesh->mTextureCoords[0][i].y
+            );
+        }
+        vertices.push_back(v);
+    }
+
+    for (unsigned i = 0; i < mesh->mNumFaces; ++i) {
+        aiFace face = mesh->mFaces[i];
+        for (unsigned j = 0; j < face.mNumIndices; ++j) {
+            indices.push_back(face.mIndices[j]);
+        }
+    }
+
+    int texW, texH, texChannels;
+    stbi_uc* pixels = stbi_load("./assets/texture.png", &texW, &texH, &texChannels, STBI_rgb_alpha);
+    if (!pixels) {
+        throw std::runtime_error("Failed to load texture.png");
+    }
+    uint32_t indexCount = indices.size();
+    // … crie VkImage e copie os pixels para a GPU
+    stbi_image_free(pixels);
+
+    VkDeviceSize vertexBufferSize = sizeof(vertices[0]) * vertices.size();
+    VkDeviceSize indexBufferSize = sizeof(indices[0]) * indices.size();
+
+    CreateBuffer(
+        vertexBufferSize,
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        vertexBuffer, vertexBufferMemory
+    );
+    CreateBuffer(
+        indexBufferSize,
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        indexBuffer, indexBufferMemory
+    );
+
+    // Copiar dados
+    void* data;
+    vkMapMemory(g_Device, vertexBufferMemory, 0, vertexBufferSize, 0, &data);
+    memcpy(data, vertices.data(), (size_t)vertexBufferSize);
+    vkUnmapMemory(g_Device, vertexBufferMemory);
+
+    vkMapMemory(g_Device, indexBufferMemory, 0, indexBufferSize, 0, &data);
+    memcpy(data, indices.data(), (size_t)indexBufferSize);
+    vkUnmapMemory(g_Device, indexBufferMemory);
+
+
     while (!glfwWindowShouldClose(window) && !should_close)
     {
         glfwPollEvents();
@@ -155,6 +256,16 @@ int main(int, char**)
             100.0f
         );
         ubo.proj[1][1] *= -1;
+
+        static float rotation = 0.0f;
+        rotation += 0.5f;
+
+        ubo.model = glm::rotate(
+            glm::mat4(1.0f),
+            glm::radians(rotation),
+            glm::vec3(0.0f, 1.0f, 0.0f)
+        );
+
 
         void* data;
         vkMapMemory(g_Device, uboMemory, 0, sizeof(ubo), 0, &data);

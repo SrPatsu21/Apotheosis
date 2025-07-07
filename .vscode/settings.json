@@ -3,6 +3,11 @@
 "editor.fontLigatures": true,
 "files.associations": {
     "cstdlib": "cpp",
-    "iostream": "cpp"
+    "iostream": "cpp",
+    "stdexcept": "cpp",
+    "array": "cpp",
+    "string": "cpp",
+    "string_view": "cpp",
+    "span": "cpp"
 }
 }

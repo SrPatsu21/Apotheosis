@@ -24,6 +24,19 @@
 #include <thread>
 #include <chrono>
 
+extern VkBuffer vertexBuffer;
+extern VkDeviceMemory vertexBufferMemory;
+
+extern VkBuffer indexBuffer;
+extern VkDeviceMemory indexBufferMemory;
+
+extern uint32_t indexCount;
+
+extern VkPipeline yourGraphicsPipeline;
+extern VkPipelineLayout yourPipelineLayout;
+extern VkDescriptorSet yourDescriptorSet;
+
+
 // Set the minimum number of image sampler descriptors in the Vulkan descriptor pool
 // #define IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE 100
 
@@ -336,6 +349,20 @@ static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
         info.pClearValues = &wd->ClearValue;
         vkCmdBeginRenderPass(fd->CommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
     }
+
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(fd->CommandBuffer, 0, 1, &vertexBuffer, offsets);
+    vkCmdBindIndexBuffer(fd->CommandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+    // Supondo que você já tenha configurado o pipeline em algum lugar (não está no código atual)
+    vkCmdBindPipeline(fd->CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, yourGraphicsPipeline);
+
+    // Aqui você também deve dar bind no descriptor set com o UBO + sampler/texture
+    vkCmdBindDescriptorSets(
+        fd->CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        yourPipelineLayout, 0, 1, &yourDescriptorSet, 0, nullptr);
+
+    vkCmdDrawIndexed(fd->CommandBuffer, indexCount, 1, 0, 0, 0);
 
     // Record dear imgui primitives into command buffer
     ImGui_ImplVulkan_RenderDrawData(draw_data, fd->CommandBuffer);

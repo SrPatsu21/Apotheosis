@@ -70,6 +70,7 @@
     `rm ./lib/VulkanSDK-1.3.296.0-Installer.exe`
 
 ### GLM
+
 - all in one
     `sudo apt install libglm-dev && wget -P lib/ "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip" && 7z x lib/1.0.1.zip -o./lib/glm && rm lib/1.0.1.zip`
 - apt
@@ -80,6 +81,7 @@
     `rm lib/1.0.1.zip`
 
 ### STD
+
 - all in one
     `mkdir -p lib/stb && curl -o lib/stb/stb_image.h https://raw.githubusercontent.com/nothings/stb/master/stb_image.h`
 - downlaod (se precisar)
@@ -87,10 +89,12 @@
     `curl -o lib/stb/stb_image.h https://raw.githubusercontent.com/nothings/stb/master/stb_image.h`
 
 ### GLS Lang Validator
+
 - apt
     `sudo apt install glslang-tools`
 
 ### Assimp
+
 - all in one
     `sudo apt-get install libassimp-dev && wget -P lib/ https://github.com/assimp/assimp/archive/refs/tags/v5.3.1.zip && 7z x lib/v5.3.1.zip -o./lib/assimp && mv lib/assimp/assimp-5.3.1/* lib/assimp/ && rm -R lib/assimp/assimp-5.3.1 && rm lib/v5.3.1.zip`
 - apt (optional)
