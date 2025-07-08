@@ -8,6 +8,13 @@
 VkInstance instance;
 VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 VkDevice device;
+VkRenderPass createRenderPass(VkDevice device, VkFormat swapchainImageFormat);
+VkPipeline createGraphicsPipeline(
+    VkDevice device,
+    VkExtent2D swapchainExtent,
+    VkRenderPass renderPass,
+    ShaderModules& shaders,
+    VkPipelineLayout& pipelineLayout);
 
 void pickPhysicalDevice() {
     uint32_t deviceCount = 0;
@@ -110,8 +117,17 @@ int main() {
         "shaders/fragment.glsl.spv"
     );
 
-    // TODO: create render pass
-    // TODO: create graphics pipeline with shaders.vertModule and shaders.fragModule
+    // hardcoded for now
+    VkFormat swapchainImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+    VkExtent2D swapchainExtent = {800, 600};
+
+    // Create render pass
+    VkRenderPass renderPass = createRenderPass(device, swapchainImageFormat);
+
+    // Create pipeline
+    VkPipelineLayout pipelineLayout;
+    VkPipeline graphicsPipeline = createGraphicsPipeline(device, swapchainExtent, renderPass, shaders, pipelineLayout);
+
     // TODO: create swapchain, framebuffers
 
     while (!glfwWindowShouldClose(window)) {
@@ -121,6 +137,9 @@ int main() {
     }
 
     // Cleanup
+    vkDestroyPipeline(device, graphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    vkDestroyRenderPass(device, renderPass, nullptr);
     shaderLoader.destroy(shaders);
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);
