@@ -47,8 +47,6 @@
   Mesh Loading
 - stb_image
   Help load PNG/JPG/TGA, etc. image files.
-- Vulkan Memory Allocator (VMA)
-  Eases Vulkan memory management. __if needed__
 
 ## 4. Set the makefile
 
