@@ -37,12 +37,12 @@ project(ProjectD)
     endif()
 
 # GLFW setup
-    add_subdirectory(lib/glfw)
     option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
     option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
     option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
     option(GLFW_INSTALL "Generate installation target" OFF)
     option(GLFW_DOCUMENT_INTERNALS "Include internals in documentation" OFF)
+    add_subdirectory(lib/glfw)
     # add_subdirectory(${GLFW_DIR} binary_dir EXCLUDE_FROM_ALL)
     include_directories(lib/glfw/include)
 
@@ -180,4 +180,5 @@ if(WIN32)
     target_link_libraries(ProjectD vulkan-1 -static-libgcc -static-libstdc++)
 endif()
 
+target_link_libraries(ProjectD glfw)
 target_link_libraries(ProjectD ${LIBRARIES})
