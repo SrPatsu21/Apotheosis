@@ -86,8 +86,9 @@ VkPipeline createGraphicsPipeline(
     VkExtent2D swapchainExtent,
     VkRenderPass renderPass,
     ShaderModules& shaders,
-    VkPipelineLayout& pipelineLayout) {
-
+    VkPipelineLayout& pipelineLayout,
+    VkDescriptorSetLayout descriptorSetLayout) // 🔷 novo argumento
+{
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -102,9 +103,10 @@ VkPipeline createGraphicsPipeline(
 
     VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
-    // Vertex input: no vertex buffer for now
+    // Vertex input
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
     auto bindingDescription = getBindingDescription();
     auto attributeDescriptions = getAttributeDescriptions();
 
@@ -112,7 +114,6 @@ VkPipeline createGraphicsPipeline(
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
     vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -167,6 +168,8 @@ VkPipeline createGraphicsPipeline(
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
