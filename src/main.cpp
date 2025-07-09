@@ -394,11 +394,11 @@ int main() {
     VkQueue graphicsQueue;
     createLogicalDevice(graphicsQueueFamily, graphicsQueue);
 
-    // Create render pass
-    VkRenderPass renderPass = createRenderPass(device, swapchainImageFormat);
-
     // Create swapchain
     createSwapchain(physicalDevice, device, surface, graphicsQueueFamily, window);
+
+    // Create render pass
+    VkRenderPass renderPass = createRenderPass(device, swapchainImageFormat);
 
     // Load shaders
     ShaderLoader shaderLoader(device);
