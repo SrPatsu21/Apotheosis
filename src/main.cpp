@@ -4,6 +4,7 @@
 #include <vector>
 #include <stdexcept>
 #include "client/ShaderLoader.hpp"
+#include "client/Vertex.hpp"
 #include <glm/glm.hpp>
 #include <cstring>
 
@@ -11,19 +12,13 @@ VkInstance instance;
 VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 VkDevice device;
 VkRenderPass createRenderPass(VkDevice device, VkFormat swapchainImageFormat);
-VkPipeline createGraphicsPipeline(VkDevice device, VkExtent2D swapchainExtent, VkRenderPass renderPass, ShaderModules& shaders, VkPipelineLayout& pipelineLayout);
 VkBuffer vertexBuffer;
 VkDeviceMemory vertexBufferMemory;
 
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec3 color;
-};
-
 const std::vector<Vertex> vertices = {
-    {{ 0.0f, -0.5f, 0.0f }, {1.0f, 0.0f, 0.0f}},
-    {{ 0.5f,  0.5f, 0.0f }, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f,  0.5f, 0.0f }, {0.0f, 0.0f, 1.0f}}
+    Vertex({ 0.0f, -0.5f, 0.0f }, {1.0f, 0.0f, 0.0f}),
+    Vertex({ 0.5f,  0.5f, 0.0f }, {0.0f, 1.0f, 0.0f}),
+    Vertex({-0.5f,  0.5f, 0.0f }, {0.0f, 0.0f, 1.0f})
 };
 
 VkCommandPool commandPool;
@@ -61,7 +56,7 @@ void createCommandPool(uint32_t graphicsQueueFamily) {
 
 std::vector<VkCommandBuffer> commandBuffers;
 
-void createCommandBuffers(VkRenderPass renderPass, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout, VkFramebuffer framebuffer) {
+void createCommandBuffers(VkRenderPass renderPass, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout) {
     commandBuffers.resize(swapchainFramebuffers.size());
 
     VkCommandBufferAllocateInfo allocInfo{};
@@ -399,11 +394,11 @@ int main() {
     VkQueue graphicsQueue;
     createLogicalDevice(graphicsQueueFamily, graphicsQueue);
 
-    // Create swapchain
-    createSwapchain(physicalDevice, device, surface, graphicsQueueFamily, window);
-
     // Create render pass
     VkRenderPass renderPass = createRenderPass(device, swapchainImageFormat);
+
+    // Create swapchain
+    createSwapchain(physicalDevice, device, surface, graphicsQueueFamily, window);
 
     // Load shaders
     ShaderLoader shaderLoader(device);
@@ -429,7 +424,7 @@ int main() {
     createCommandPool(graphicsQueueFamily);
 
     // Create command buffers
-    createCommandBuffers(renderPass, graphicsPipeline, pipelineLayout, swapchainFramebuffers[0]);
+    createCommandBuffers(renderPass, graphicsPipeline, pipelineLayout);
 
     //* main loop
     while (!glfwWindowShouldClose(window)) {

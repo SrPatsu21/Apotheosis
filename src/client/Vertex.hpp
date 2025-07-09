@@ -4,5 +4,7 @@
 
 struct Vertex {
     glm::vec3 pos;
-    glm::vec2 uv;
+    glm::vec3 color;
+
+    Vertex(const glm::vec3& p, const glm::vec3& c) : pos(p), color(c) {}
 };

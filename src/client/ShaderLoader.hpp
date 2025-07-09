@@ -3,12 +3,38 @@
 #include <vulkan/vulkan.h>
 #include <string>
 #include <vector>
+#include <array>
 #include <fstream>
+#include "Vertex.hpp"
 
 struct ShaderModules {
     VkShaderModule vertModule;
     VkShaderModule fragModule;
 };
+
+VkVertexInputBindingDescription getBindingDescription() {
+    VkVertexInputBindingDescription bindingDescription{};
+    bindingDescription.binding = 0;
+    bindingDescription.stride = sizeof(Vertex);
+    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    return bindingDescription;
+}
+
+std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
+    std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+
+    attributeDescriptions[0].binding = 0;
+    attributeDescriptions[0].location = 0;
+    attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+    attributeDescriptions[1].binding = 0;
+    attributeDescriptions[1].location = 1;
+    attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+    return attributeDescriptions;
+}
 
 VkRenderPass createRenderPass(VkDevice device, VkFormat swapchainImageFormat) {
     VkAttachmentDescription colorAttachment{};
@@ -79,8 +105,14 @@ VkPipeline createGraphicsPipeline(
     // Vertex input: no vertex buffer for now
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    auto bindingDescription = getBindingDescription();
+    auto attributeDescriptions = getAttributeDescriptions();
+
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
