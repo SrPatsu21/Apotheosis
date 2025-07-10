@@ -11,20 +11,87 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <cstring>
 
+//* Core Vulkan objects
+/*
+The Vulkan instance represents your connection to the Vulkan library and driver.
+It owns the API state for your application. Think of it as "initializing Vulkan."
+*/
 VkInstance instance;
+
+/*
+Represents the GPU (hardware) you select to run your Vulkan app on.
+You query the available GPUs and pick one that supports the features you need.
+*/
 VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+
+/*
+Represents the logical device, which is your app's interface to the GPU you selected (physicalDevice).
+It is configured with queues, extensions, etc. — and is what you use to actually create and control GPU resources.
+*/
 VkDevice device;
+
+//* Vertex and Index Buffers
+/*
+A GPU buffer that holds the mesh's vertex data (positions, normals, etc.).
+A vertex, also called a corner, is a point where two or more curves, lines, or line segments meet or intersect.
+more <https://en.wikipedia.org/wiki/Vertex_(geometry)>
+*/
 VkBuffer vertexBuffer;
+
+/*
+The actual memory allocation on the GPU that backs the vertexBuffer.
+(Vulkan separates buffer objects and memory allocations explicitly.)
+*/
 VkDeviceMemory vertexBufferMemory;
-VkDescriptorSetLayout descriptorSetLayout;
-VkDescriptorPool descriptorPool;
-VkDescriptorSet descriptorSet;
-VkBuffer uniformBuffer;
-VkDeviceMemory uniformBufferMemory;
+
+/*
+Same as vertexBuffer, but for indices (used in indexed drawing).
+*/
 VkBuffer indexBuffer;
+/*
+GPU memory backing the indexBuffer.
+*/
 VkDeviceMemory indexBufferMemory;
+
+//* Uniform Buffer
+/*
+A buffer that holds uniform data, such as camera matrices or scene parameters, that are the same for all vertices/fragments in a draw call.
+*/
+VkBuffer uniformBuffer;
+/*
+The memory backing the uniformBuffer.
+*/
+VkDeviceMemory uniformBufferMemory;
+
+//* Descriptors
+/*
+Defines the layout of resources (uniforms, samplers, etc.) that shaders will access.
+Specifies what kinds of descriptors are expected and their bindings.
+*/
+VkDescriptorSetLayout descriptorSetLayout;
+/*
+A pool from which descriptor sets are allocated.
+Descriptors are lightweight GPU-side handles to resources like uniform buffers or textures.
+*/
+VkDescriptorPool descriptorPool;
+/*
+A descriptor set, allocated from descriptorPool, which binds your actual resources to shader binding points as defined by descriptorSetLayout.
+*/
+VkDescriptorSet descriptorSet;
+
+//* Depth Buffer
+/*
+A GPU image resource that stores the depth buffer for your render pass.
+It is needed for proper depth testing in 3D scenes.
+*/
 VkImage depthImage;
+/*
+Memory backing the depthImage.
+*/
 VkDeviceMemory depthImageMemory;
+/*
+A view of the depthImage, which is used when attaching it to a framebuffer.
+*/
 VkImageView depthImageView;
 
 
