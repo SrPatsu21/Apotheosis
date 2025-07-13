@@ -13,13 +13,13 @@ private:
     A vertex, also called a corner, is a point where two or more curves, lines, or line segments meet or intersect.
     more <https://en.wikipedia.org/wiki/Vertex_(geometry)>
     */
-    VkBuffer* vertexBuffer;
+    VkBuffer vertexBuffer;
 
     /*
     The actual memory allocation on the GPU that backs the vertexBuffer.
     (Vulkan separates buffer objects and memory allocations explicitly.)
     */
-    VkDeviceMemory* vertexBufferMemory;
+    VkDeviceMemory vertexBufferMemory;
 
 public:
     /*
@@ -41,7 +41,7 @@ public:
             - suitable memory type is not found,
             - memory mapping fails.
     */
-    VertexManager(const std::vector<Vertex>* vertices);
+    VertexManager(const std::vector<Vertex> vertices);
     /*
     @brief Destructor. Cleans up the vertex buffer and its allocated memory.
 
@@ -50,6 +50,6 @@ public:
     */
     ~VertexManager();
 
-    VkBuffer* getVertexBuffer() const {return vertexBuffer;}
-    VkDeviceMemory* getVertexBufferMemory() const {return vertexBufferMemory;}
+    VkBuffer getVertexBuffer() const {return vertexBuffer;}
+    VkDeviceMemory getVertexBufferMemory() const {return vertexBufferMemory;}
 };

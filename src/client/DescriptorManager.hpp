@@ -27,16 +27,16 @@ private:
     Defines the layout of resources (uniforms, samplers, etc.) that shaders will access.
     Specifies what kinds of descriptors are expected and their bindings.
     */
-    VkDescriptorSetLayout* descriptorSetLayout;
+    VkDescriptorSetLayout descriptorSetLayout;
     /*
     A pool from which descriptor sets are allocated.
     Descriptors are lightweight GPU-side handles to resources like uniform buffers or textures.
     */
-    VkDescriptorPool* descriptorPool;
+    VkDescriptorPool descriptorPool;
     /*
     A descriptor set, allocated from descriptorPool, which binds your actual resources to shader binding points as defined by descriptorSetLayout.
     */
-    VkDescriptorSet* descriptorSet;
+    VkDescriptorSet descriptorSet;
 public:
     /*
     Constructor.
@@ -52,14 +52,14 @@ public:
 
     @throws std::runtime_error if descriptor set layout creation, pool creation, or descriptor set allocation fails.
     */
-    DescriptorManager(VkBuffer* uniformBuffer);
+    DescriptorManager(VkBuffer uniformBuffer);
     /*
     defines what kind of resources your shaders expect to be bound, and where
     @param VkDevice* device
     @return VkDescriptorSetLayout* descriptorSetLayout
     @throws "failed to create descriptor pool!"
     */
-    void createDescriptorSetLayout(VkDevice* device);
+    void createDescriptorSetLayout(VkDevice device);
 
     /*
     creates a descriptor pool, allocates a descriptor set, and writes the uniform buffer into the descriptor set.
@@ -69,11 +69,11 @@ public:
     @return VkDescriptorPool* descriptorPool, VkDescriptorSet* descriptorSet
     @throws "failed to allocate descriptor set!"
     */
-    void createDescriptorPoolAndSet(VkDevice* device, VkBuffer* uniformBuffer);
+    void createDescriptorPoolAndSet(VkDevice device, VkBuffer uniformBuffer);
 
-    VkDescriptorSetLayout* getLayout() const { return descriptorSetLayout; }
-    VkDescriptorPool* getPool() const { return descriptorPool; }
-    VkDescriptorSet* getSet() const { return descriptorSet; }
+    VkDescriptorSetLayout getLayout() const { return descriptorSetLayout; }
+    VkDescriptorPool getPool() const { return descriptorPool; }
+    VkDescriptorSet getSet() const { return descriptorSet; }
 
     /*
     */

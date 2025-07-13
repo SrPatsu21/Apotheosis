@@ -9,11 +9,11 @@ private:
     /*
     A buffer that holds uniform data, such as camera matrices or scene parameters, that are the same for all vertices/fragments in a draw call.
     */
-    VkBuffer* uniformBuffer;
+    VkBuffer uniformBuffer;
     /*
     The memory backing the uniformBuffer.
     */
-    VkDeviceMemory* uniformBufferMemory;
+    VkDeviceMemory uniformBufferMemory;
     /*
     @brief Creates a Vulkan uniform buffer and allocates memory for it.
 
@@ -42,6 +42,6 @@ public:
     */
     ~CameraBufferManager();
 
-    VkBuffer* getUniformBuffer() const { return uniformBuffer; }
-    VkDeviceMemory* getUniformBufferMemory() const { return uniformBufferMemory; }
+    VkBuffer getUniformBuffer() const { return uniformBuffer; }
+    VkDeviceMemory getUniformBufferMemory() const { return uniformBufferMemory; }
 };

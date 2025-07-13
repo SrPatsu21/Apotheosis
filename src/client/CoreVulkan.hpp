@@ -14,19 +14,19 @@ private:
     The Vulkan instance represents your connection to the Vulkan library and driver.
     It owns the API state for your application. Think of it as "initializing Vulkan."
     */
-    static VkInstance* instance;
+    static VkInstance instance;
 
     /*
     Represents the GPU (hardware) you select to run your Vulkan app on.
     You query the available GPUs and pick one that supports the features you need.
     */
-    static VkPhysicalDevice* physicalDevice;
+    static VkPhysicalDevice physicalDevice;
 
     /*
     Represents the logical device, which is your app's interface to the GPU you selected (physicalDevice).
     It is configured with queues, extensions, etc. — and is what you use to actually create and control GPU resources.
     */
-    static VkDevice* device;
+    static VkDevice device;
 
     /**
     @brief Cached depth format supported by the selected GPU.
@@ -36,7 +36,7 @@ private:
 
     The value is guaranteed to be valid only after calling `CoreVulkan::init()`.
     */
-    static VkFormat* depthFormat;
+    static VkFormat depthFormat;
     /*
     Constructor.
     Creates the Vulkan instance, picks a suitable physical device, and creates a logical device.
@@ -135,10 +135,10 @@ public:
      */
     static void destroy();
 
-    static VkInstance* getInstance() { return instance; }
-    static VkPhysicalDevice* getPhysicalDevice() { return physicalDevice; }
-    static VkDevice* getDevice() { return device; }
-    static VkFormat* getDepthFormat() { return depthFormat; }
+    static VkInstance getInstance() { return instance; }
+    static VkPhysicalDevice getPhysicalDevice() { return physicalDevice; }
+    static VkDevice getDevice() { return device; }
+    static VkFormat getDepthFormat() { return depthFormat; }
 
 
 };

@@ -10,11 +10,11 @@ private:
     /*
     Same as vertexBuffer, but for indices (used in indexed drawing).
     */
-    VkBuffer* indexBuffer;
+    VkBuffer indexBuffer;
     /*
     GPU memory backing the indexBuffer.
     */
-    VkDeviceMemory* indexBufferMemory;
+    VkDeviceMemory indexBufferMemory;
 public:
     /*
     @brief Constructs an IndexManager and creates an index buffer on the GPU.
@@ -35,7 +35,7 @@ public:
             - suitable memory type is not found,
             - memory mapping fails.
     */
-    IndexManager(const std::vector<uint16_t>* indices);
+    IndexManager(const std::vector<uint16_t> indices);
     /*
     @brief Destructor. Cleans up the index buffer and its allocated memory.
 
@@ -44,6 +44,6 @@ public:
     */
     ~IndexManager();
 
-    VkBuffer* getIndexBuffer() const {return indexBuffer;}
-    VkDeviceMemory* getIndexBufferMemory() const {return indexBufferMemory;}
+    VkBuffer getIndexBuffer() const {return indexBuffer;}
+    VkDeviceMemory getIndexBufferMemory() const {return indexBufferMemory;}
 };

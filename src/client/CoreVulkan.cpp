@@ -24,22 +24,22 @@ void CoreVulkan::init(uint32_t& graphicsQueueFamily, VkQueue& graphicsQueue)
 
 void CoreVulkan::destroy()
 {
-    vkDestroyDevice(*CoreVulkan::device, nullptr);
-    vkDestroyInstance(*CoreVulkan::instance, nullptr);
+    vkDestroyDevice(CoreVulkan::device, nullptr);
+    vkDestroyInstance(CoreVulkan::instance, nullptr);
 };
 
 void CoreVulkan::pickPhysicalDevice() {
     uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(*CoreVulkan::instance, &deviceCount, nullptr);
+    vkEnumeratePhysicalDevices(CoreVulkan::instance, &deviceCount, nullptr);
     if (deviceCount == 0) {
         throw std::runtime_error("failed to find GPUs with Vulkan support!");
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(*CoreVulkan::instance, &deviceCount, devices.data());
+    vkEnumeratePhysicalDevices(CoreVulkan::instance, &deviceCount, devices.data());
 
     // Just pick the first one for now
-    CoreVulkan::physicalDevice = &devices[0];
+    CoreVulkan::physicalDevice = devices[0];
 }
 
 void CoreVulkan::createInstance() {
@@ -60,7 +60,7 @@ void CoreVulkan::createInstance() {
     createInfo.enabledExtensionCount = glfwExtCount;
     createInfo.ppEnabledExtensionNames = glfwExts;
 
-    if (vkCreateInstance(&createInfo, nullptr, CoreVulkan::instance) != VK_SUCCESS) {
+    if (vkCreateInstance(&createInfo, nullptr, &CoreVulkan::instance) != VK_SUCCESS) {
         std::cerr << "Failed to create Vulkan instance\n";
     }
 }
@@ -68,9 +68,9 @@ void CoreVulkan::createInstance() {
 void CoreVulkan::createLogicalDevice(uint32_t& graphicsQueueFamily, VkQueue& graphicsQueue) {
     // Find queue family
     uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(*CoreVulkan::physicalDevice, &queueFamilyCount, nullptr);
+    vkGetPhysicalDeviceQueueFamilyProperties(CoreVulkan::physicalDevice, &queueFamilyCount, nullptr);
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(*CoreVulkan::physicalDevice, &queueFamilyCount, queueFamilies.data());
+    vkGetPhysicalDeviceQueueFamilyProperties(CoreVulkan::physicalDevice, &queueFamilyCount, queueFamilies.data());
 
     bool found = false;
     for (uint32_t i = 0; i < queueFamilyCount; ++i) {
@@ -107,11 +107,11 @@ void CoreVulkan::createLogicalDevice(uint32_t& graphicsQueueFamily, VkQueue& gra
     createInfo.enabledExtensionCount = 1;
     createInfo.ppEnabledExtensionNames = deviceExtensions;
 
-    if (vkCreateDevice(*CoreVulkan::physicalDevice, &createInfo, nullptr, CoreVulkan::device) != VK_SUCCESS) {
+    if (vkCreateDevice(CoreVulkan::physicalDevice, &createInfo, nullptr, &CoreVulkan::device) != VK_SUCCESS) {
         throw std::runtime_error("failed to create logical device!");
     }
 
-    vkGetDeviceQueue(*CoreVulkan::device, graphicsQueueFamily, 0, &graphicsQueue);
+    vkGetDeviceQueue(CoreVulkan::device, graphicsQueueFamily, 0, &graphicsQueue);
 }
 
 void CoreVulkan::findDepthFormat() {
@@ -123,27 +123,12 @@ void CoreVulkan::findDepthFormat() {
 
     for (VkFormat format : candidates) {
         VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(*CoreVulkan::physicalDevice, format, &props);
+        vkGetPhysicalDeviceFormatProperties(CoreVulkan::physicalDevice, format, &props);
 
         if (props.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-            *CoreVulkan::depthFormat = format;
+            CoreVulkan::depthFormat = format;
         }
     }
 
     throw std::runtime_error("failed to find supported depth format!");
-}
-
-VkInstance* CoreVulkan::getInstance()
-{
-    return CoreVulkan::instance;
-}
-
-VkPhysicalDevice* CoreVulkan::getPhysicalDevice()
-{
-    return CoreVulkan::physicalDevice;
-}
-
-VkDevice* CoreVulkan::getDevice()
-{
-    return CoreVulkan::device;
 }

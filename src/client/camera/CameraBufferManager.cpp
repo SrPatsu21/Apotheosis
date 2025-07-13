@@ -9,19 +9,19 @@ void CameraBufferManager::createUniformBuffer(){
         bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        if (vkCreateBuffer(*CoreVulkan::getDevice(), &bufferInfo, nullptr, this->uniformBuffer) != VK_SUCCESS) {
+        if (vkCreateBuffer(CoreVulkan::getDevice(), &bufferInfo, nullptr, &this->uniformBuffer) != VK_SUCCESS) {
             throw std::runtime_error("failed to create uniform buffer!");
         }
 
         VkMemoryRequirements memRequirements;
-        vkGetBufferMemoryRequirements(*CoreVulkan::getDevice(), *this->uniformBuffer, &memRequirements);
+        vkGetBufferMemoryRequirements(CoreVulkan::getDevice(), this->uniformBuffer, &memRequirements);
 
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
 
         VkPhysicalDeviceMemoryProperties memProperties;
-        vkGetPhysicalDeviceMemoryProperties(*CoreVulkan::getPhysicalDevice(), &memProperties);
+        vkGetPhysicalDeviceMemoryProperties(CoreVulkan::getPhysicalDevice(), &memProperties);
 
         bool memTypeFound = false;
         for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
@@ -39,11 +39,11 @@ void CameraBufferManager::createUniformBuffer(){
             throw std::runtime_error("failed to find suitable memory type for uniform buffer!");
         }
 
-        if (vkAllocateMemory(*CoreVulkan::getDevice(), &allocInfo, nullptr, this->uniformBufferMemory) != VK_SUCCESS) {
+        if (vkAllocateMemory(CoreVulkan::getDevice(), &allocInfo, nullptr, &this->uniformBufferMemory) != VK_SUCCESS) {
             throw std::runtime_error("failed to allocate uniform buffer memory!");
         }
 
-        vkBindBufferMemory(*CoreVulkan::getDevice(), *this->uniformBuffer, *this->uniformBufferMemory, 0);
+        vkBindBufferMemory(CoreVulkan::getDevice(), this->uniformBuffer, this->uniformBufferMemory, 0);
     }
 
     CameraBufferManager::CameraBufferManager()
@@ -52,6 +52,6 @@ void CameraBufferManager::createUniformBuffer(){
     };
     CameraBufferManager::~CameraBufferManager()
     {
-        vkDestroyBuffer(*CoreVulkan::getDevice(), *this->uniformBuffer, nullptr);
-        vkFreeMemory(*CoreVulkan::getDevice(), *this->uniformBufferMemory, nullptr);
+        vkDestroyBuffer(CoreVulkan::getDevice(), this->uniformBuffer, nullptr);
+        vkFreeMemory(CoreVulkan::getDevice(), this->uniformBufferMemory, nullptr);
     };
