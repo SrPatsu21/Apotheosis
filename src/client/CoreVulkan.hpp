@@ -9,7 +9,6 @@
 class CoreVulkan
 {
 private:
-    //* Core Vulkan objects
     /*
     The Vulkan instance represents your connection to the Vulkan library and driver.
     It owns the API state for your application. Think of it as "initializing Vulkan."
@@ -134,6 +133,8 @@ public:
     Cleans up Vulkan objects in the correct order.
      */
     static void destroy();
+
+    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
     static VkInstance getInstance() { return instance; }
     static VkPhysicalDevice getPhysicalDevice() { return physicalDevice; }

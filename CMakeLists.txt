@@ -83,7 +83,7 @@ project(ProjectD)
     message(STATUS "glslangValidator found: ${GLSLANG_VALIDATOR}")
 
 # Shader compilation
-set(SHADER_DIR ${CMAKE_SOURCE_DIR}/src/client/Shaders)
+set(SHADER_DIR ${CMAKE_SOURCE_DIR}/src/client/assets/shaders)
 set(COMPILED_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
 
 file(MAKE_DIRECTORY ${COMPILED_SHADER_DIR})

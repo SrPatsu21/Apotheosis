@@ -6,9 +6,6 @@
 #include <iostream>
 #include <vector>
 #include <stdexcept>
-#include "ShaderLoader.hpp"
-#include "utils/Vertex.hpp"
-#include "utils/UniformBufferObject.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -20,54 +17,6 @@ public:
 
 private:
 
-//* Vertex and Index Buffers
-/*
-A GPU buffer that holds the mesh's vertex data (positions, normals, etc.).
-A vertex, also called a corner, is a point where two or more curves, lines, or line segments meet or intersect.
-more <https://en.wikipedia.org/wiki/Vertex_(geometry)>
-*/
-VkBuffer vertexBuffer;
-
-/*
-The actual memory allocation on the GPU that backs the vertexBuffer.
-(Vulkan separates buffer objects and memory allocations explicitly.)
-*/
-VkDeviceMemory vertexBufferMemory;
-
-/*
-Same as vertexBuffer, but for indices (used in indexed drawing).
-*/
-VkBuffer indexBuffer;
-/*
-GPU memory backing the indexBuffer.
-*/
-VkDeviceMemory indexBufferMemory;
-
-//* Uniform Buffer
-/*
-A buffer that holds uniform data, such as camera matrices or scene parameters, that are the same for all vertices/fragments in a draw call.
-*/
-VkBuffer uniformBuffer;
-/*
-The memory backing the uniformBuffer.
-*/
-VkDeviceMemory uniformBufferMemory;
-
-//* Depth Buffer
-/*
-A GPU image resource that stores the depth buffer for your render pass.
-It is needed for proper depth testing in 3D scenes.
-*/
-VkImage depthImage;
-/*
-Memory backing the depthImage.
-*/
-VkDeviceMemory depthImageMemory;
-/*
-A view of the depthImage, which is used when attaching it to a framebuffer.
-*/
-VkImageView depthImageView;
-
 //* Command Pool
 /*
 A Vulkan object that manages the memory used to allocate and record command buffers.
@@ -75,6 +24,13 @@ Command buffers are the actual "scripts" of GPU instructions that you submit to 
 You allocate command buffers from a command pool.
 */
 VkCommandPool commandPool;
+
+/*
+The list of Vulkan command buffers, one for each framebuffer in the swapchain.
+Each command buffer records all the rendering commands for a single frame.
+These are allocated from the command pool and reused every frame.
+*/
+std::vector<VkCommandBuffer> commandBuffers;
 
 //* Framebuffers
 /*
@@ -111,6 +67,8 @@ The CPU waits on this fence to make sure the GPU is done with the previous frame
 Helps prevent overwriting resources still in use.
 */
 VkFence inFlightFence;
+
+
 
 //TODO remove
 const std::vector<Vertex> vertices = {
