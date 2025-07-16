@@ -1,52 +1,21 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
+#include "CoreVulkan.hpp"
+#include "mash/VertexManager.hpp"
 
-#include <GLFW/glfw3.h>
-#include <iostream>
-#include <vector>
-#include <stdexcept>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <cstring>
+// #include <stdexcept>
+// #include <glm/glm.hpp>
+// #include <glm/gtc/matrix_transform.hpp>
+// #include <glm/gtc/type_ptr.hpp>
+// #include <cstring>
 
 class Renderer {
 public:
+    Renderer();
     void run();
 
+    ~Renderer();
 private:
-
-//* Command Pool
-/*
-A Vulkan object that manages the memory used to allocate and record command buffers.
-Command buffers are the actual "scripts" of GPU instructions that you submit to a queue.
-You allocate command buffers from a command pool.
-*/
-VkCommandPool commandPool;
-
-/*
-The list of Vulkan command buffers, one for each framebuffer in the swapchain.
-Each command buffer records all the rendering commands for a single frame.
-These are allocated from the command pool and reused every frame.
-*/
-std::vector<VkCommandBuffer> commandBuffers;
-
-//* Framebuffers
-/*
-A list of framebuffers — one for each swapchain image.
-A framebuffer is what your render pass writes into. It combines attachments:
-color (the swapchain image) and optionally depth/stencil.
-You need one framebuffer per swapchain image.
-*/
-std::vector<VkFramebuffer> swapchainFramebuffers;
-
-//* Swapchain Extent
-/*
-The dimensions (width & height) of the swapchain images, in pixels.
-This usually matches the window's size and defines the resolution you render at.
-*/
-VkExtent2D swapchainExtent;
 
 //* Synchronization — Semaphores and Fence
 /*
@@ -68,7 +37,29 @@ Helps prevent overwriting resources still in use.
 */
 VkFence inFlightFence;
 
-
+/**
+ * @brief Creates the Vulkan synchronization objects used per-frame.
+ *
+ * This function initializes the semaphores and fence needed to coordinate
+ * rendering and presentation in a single frame:
+ *
+ * - `imageAvailableSemaphore`: Signaled when an image from the swapchain becomes available
+ *   for rendering. It is waited on before recording drawing commands.
+ *
+ * - `renderFinishedSemaphore`: Signaled when rendering of the current frame finishes.
+ *   It is waited on before presenting the rendered image to the screen.
+ *
+ * - `inFlightFence`: A fence that signals when the GPU is done processing commands
+ *   for the current frame, allowing the CPU to safely reuse resources.
+ *   This fence is initialized in a signaled state so the first frame can proceed without blocking.
+ *
+ * Throws a std::runtime_error if any Vulkan call to create these synchronization
+ * objects fails.
+ *
+ * @note The objects are created for the current frame. In a multi-frame setup,
+ * you'd create multiple sets of these per frame in flight.
+ */
+void createSyncObjects();
 
 //TODO remove
 const std::vector<Vertex> vertices = {
