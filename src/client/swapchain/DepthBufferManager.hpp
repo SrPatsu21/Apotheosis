@@ -42,13 +42,13 @@ public:
     ~DepthBufferManager();
 
 
-    VkImage DepthBufferManager::getDepthImage() const {
+    VkImage getDepthImage() const {
         return depthImage;
     }
-    VkDeviceMemory DepthBufferManager::getDepthImageMemory() const {
+    VkDeviceMemory getDepthImageMemory() const {
         return depthImageMemory;
     }
-    VkImageView DepthBufferManager::getDepthImageView() const {
+    VkImageView getDepthImageView() const {
         return depthImageView;
     }
 };

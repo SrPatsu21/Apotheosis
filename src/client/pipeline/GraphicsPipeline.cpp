@@ -1,7 +1,4 @@
 #include "GraphicsPipeline.hpp"
-#include "../mash/Vertex.hpp"
-
-#include <array>
 #include <stdexcept>
 
 GraphicsPipeline::GraphicsPipeline(
@@ -11,8 +8,6 @@ GraphicsPipeline::GraphicsPipeline(
     VkShaderModule fragShaderModule,
     VkDescriptorSetLayout descriptorSetLayout
 ) {
-    VkDevice device = CoreVulkan::getDevice();
-
     // Shader stages
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -42,7 +37,7 @@ GraphicsPipeline::GraphicsPipeline(
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(CoreVulkan::getDevice(), &pipelineLayoutInfo, nullptr, &this->pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
@@ -58,31 +53,28 @@ GraphicsPipeline::GraphicsPipeline(
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.layout = pipelineLayout;
+    pipelineInfo.layout = this->pipelineLayout;
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
 
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(CoreVulkan::getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &this->graphicsPipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 }
 
 GraphicsPipeline::~GraphicsPipeline() {
-    VkDevice device = CoreVulkan::getDevice();
-    if (graphicsPipeline != VK_NULL_HANDLE) {
-        vkDestroyPipeline(device, graphicsPipeline, nullptr);
+    if (this->graphicsPipeline != VK_NULL_HANDLE) {
+        vkDestroyPipeline(CoreVulkan::getDevice(), this->graphicsPipeline, nullptr);
     }
-    if (pipelineLayout != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    if (this->pipelineLayout != VK_NULL_HANDLE) {
+        vkDestroyPipelineLayout(CoreVulkan::getDevice(), this->pipelineLayout, nullptr);
     }
 }
 
 VkPipelineVertexInputStateCreateInfo GraphicsPipeline::createVertexInputState() {
-    static VkVertexInputBindingDescription bindingDescription{
-        0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX
-    };
+    this->bindingDescription = { 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
 
-    static std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions {{
+    this->attributeDescriptions = {{
         { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos) },
         { 0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color) }
     }};
@@ -90,9 +82,9 @@ VkPipelineVertexInputStateCreateInfo GraphicsPipeline::createVertexInputState() 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 1;
-    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+    vertexInputInfo.pVertexBindingDescriptions = &this->bindingDescription;
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(this->attributeDescriptions.size());
+    vertexInputInfo.pVertexAttributeDescriptions = this->attributeDescriptions.data();
 
     return vertexInputInfo;
 }
@@ -106,22 +98,20 @@ VkPipelineInputAssemblyStateCreateInfo GraphicsPipeline::createInputAssemblyStat
 }
 
 VkPipelineViewportStateCreateInfo GraphicsPipeline::createViewportState(VkExtent2D extent) {
-    static VkViewport viewport{
+    this->viewport = {
         0.0f, 0.0f,
         static_cast<float>(extent.width), static_cast<float>(extent.height),
         0.0f, 1.0f
     };
 
-    static VkRect2D scissor{
-        {0, 0}, extent
-    };
+    this->scissor = { {0, 0}, extent };
 
     VkPipelineViewportStateCreateInfo viewportState{};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     viewportState.viewportCount = 1;
-    viewportState.pViewports = &viewport;
+    viewportState.pViewports = &this->viewport;
     viewportState.scissorCount = 1;
-    viewportState.pScissors = &scissor;
+    viewportState.pScissors = &this->scissor;
 
     return viewportState;
 }
@@ -159,9 +149,8 @@ VkPipelineDepthStencilStateCreateInfo GraphicsPipeline::createDepthStencilState(
 }
 
 VkPipelineColorBlendStateCreateInfo GraphicsPipeline::createColorBlendState() {
-    static VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-    colorBlendAttachment.blendEnable = VK_FALSE;
-    colorBlendAttachment.colorWriteMask =
+    this->colorBlendAttachment.blendEnable = VK_FALSE;
+    this->colorBlendAttachment.colorWriteMask =
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
         VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
@@ -169,7 +158,7 @@ VkPipelineColorBlendStateCreateInfo GraphicsPipeline::createColorBlendState() {
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     colorBlending.logicOpEnable = VK_FALSE;
     colorBlending.attachmentCount = 1;
-    colorBlending.pAttachments = &colorBlendAttachment;
+    colorBlending.pAttachments = &this->colorBlendAttachment;
 
     return colorBlending;
 }

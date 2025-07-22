@@ -9,12 +9,12 @@
 // #include <glm/gtc/type_ptr.hpp>
 // #include <cstring>
 
-class Renderer {
+class Render {
 public:
-    Renderer();
-    void run();
+    Render();
+    int run();
 
-    ~Renderer();
+    ~Render();
 private:
 
 //* Synchronization — Semaphores and Fence

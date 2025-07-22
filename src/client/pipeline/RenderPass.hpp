@@ -1,62 +1,49 @@
+#pragma once
 
-VkRenderPass createRenderPass(VkDevice device, VkPhysicalDevice physicalDevice, VkFormat swapchainImageFormat){
-    VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = swapchainImageFormat;
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+#include "../CoreVulkan.hpp"
 
-    VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = findDepthFormat(physicalDevice);
-    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    /**
+    @class RenderPass
+    @brief Manages the creation and lifetime of a Vulkan render pass.
 
-    VkAttachmentReference colorAttachmentRef{};
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    VkAttachmentReference depthAttachmentRef{};
-    depthAttachmentRef.attachment = 1;
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    This class encapsulates a Vulkan render pass with a single subpass,
+    which uses one color attachment and one depth-stencil attachment.
+    The render pass is created at construction and automatically destroyed
+    at destruction.
+    */
+class RenderPass {
+private:
+    /**
+    @brief Vulkan render pass handle managed by this class.
 
+    Holds the VkRenderPass created during construction, which defines the
+    attachments, subpasses, and dependencies for rendering. It is valid
+    for the lifetime of this object and destroyed in the destructor.
 
-    VkSubpassDescription subpass{};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef;
-    subpass.pDepthStencilAttachment = &depthAttachmentRef;
+    Initialized to VK_NULL_HANDLE before creation.
+    */
+    VkRenderPass renderPass{VK_NULL_HANDLE};
 
-    VkSubpassDependency dependency{};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+public:
+    /**
+    @brief Constructs a RenderPass object and creates the Vulkan render pass.
 
-    VkRenderPassCreateInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
+    Creates a render pass with:
+    - One color attachment matching the swapchain image format.
+    - One depth-stencil attachment using CoreVulkan::getDepthFormat().
+    - A single graphics subpass using both attachments.
+    - A dependency from the external subpass to the graphics subpass to ensure proper synchronization.
 
-    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-    renderPassInfo.pAttachments = attachments.data();
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
+    @param swapchainImageFormat The format of the swapchain images.
 
-    VkRenderPass renderPass;
-    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create render pass!");
-    }
+    @throws std::runtime_error if vkCreateRenderPass fails.
+    */
+    RenderPass(VkFormat swapchainImageFormat);
 
-    return renderPass;
-}
+    /**
+    @brief Destroys the Vulkan render pass and cleans up resources.
+    */
+    ~RenderPass();
+
+    VkRenderPass get() const { return renderPass; }
+};

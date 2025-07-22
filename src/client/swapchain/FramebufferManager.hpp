@@ -32,7 +32,7 @@ public:
      * @param swapchainManager Reference to the SwapchainManager for image views and extent.
      * @param depthBufferManager Reference to the DepthBufferManager for depth image view.
      */
-    FramebufferManager(VkRenderPass renderPass, const SwapchainManager& swapchainManager, const DepthBufferManager& depthBufferManager);
+    FramebufferManager(VkRenderPass renderPass, const SwapchainManager* swapchainManager, const DepthBufferManager* depthBufferManager);
 
     /**
      * @brief Destroys all Vulkan framebuffers.

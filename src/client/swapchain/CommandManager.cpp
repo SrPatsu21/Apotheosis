@@ -15,17 +15,9 @@ void createCommandPool(uint32_t graphicsQueueFamily) {
 */
 
 CommandManager::CommandManager(
-    uint32_t graphicsQueueFamily,
-    VkRenderPass renderPass,
-    VkPipeline graphicsPipeline,
-    VkPipelineLayout pipelineLayout,
-    const std::vector<VkFramebuffer>& framebuffers,
-    VkExtent2D extent,
-    VkBuffer vertexBuffer,
-    VkBuffer indexBuffer,
-    const std::vector<uint16_t>& indices,
-    VkDescriptorSet descriptorSet
-) {
+    uint32_t graphicsQueueFamily, VkRenderPass renderPass, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout,
+    const std::vector<VkFramebuffer>& framebuffers, VkExtent2D extent, VkBuffer vertexBuffer, VkBuffer indexBuffer,
+    const std::vector<uint16_t>& indices, VkDescriptorSet descriptorSet) {
     // Create command pool
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;

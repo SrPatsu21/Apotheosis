@@ -96,14 +96,14 @@ set(SHADERS
 # stb_image
 set(STB_DIR ${CMAKE_SOURCE_DIR}/lib/stb)
 include_directories(${STB_DIR})
-set(STB_SOURCES src/client/stb_image_impl.cpp)
+set(STB_SOURCES src/client/image/stb_image_impl.cpp)
 
 # assimp
 add_subdirectory(lib/assimp)
 include_directories(lib/assimp/include)
 
 # Shader compilation
-    set(SHADER_DIR ${CMAKE_SOURCE_DIR}/src/client/Shaders)
+    set(SHADER_DIR ${CMAKE_SOURCE_DIR}/src/client/assets/shaders)
     set(COMPILED_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
 
     file(MAKE_DIRECTORY ${COMPILED_SHADER_DIR})
@@ -152,7 +152,7 @@ add_custom_target(Shaders ALL DEPENDS ${SHADER_OUTPUTS})
     include_directories(${GLFW_DIR}/deps)
 
 # Add source files
-    file(GLOB SOURCES src/*.cpp)
+    file(GLOB_RECURSE SOURCES src/*.cpp)
 
 # Create the executable
     add_executable(ProjectD ${SOURCES} ${IMGUI_SOURCES} ${STB_SOURCES})

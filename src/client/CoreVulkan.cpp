@@ -1,8 +1,15 @@
 #include "CoreVulkan.hpp"
 
+//* pre set vars, need because of static
+VkInstance CoreVulkan::instance = VK_NULL_HANDLE;
+VkDevice CoreVulkan::device = VK_NULL_HANDLE;
+VkPhysicalDevice CoreVulkan::physicalDevice = VK_NULL_HANDLE;
+VkFormat CoreVulkan::depthFormat = VK_FORMAT_UNDEFINED;
+
+
 void CoreVulkan::init(uint32_t& graphicsQueueFamily, VkQueue& graphicsQueue)
 {
-    if (instance != nullptr) {
+    if (instance != VK_NULL_HANDLE) {
         return;
     }
 
@@ -127,6 +134,7 @@ void CoreVulkan::findDepthFormat() {
 
         if (props.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
             depthFormat = format;
+            return;
         }
     }
 

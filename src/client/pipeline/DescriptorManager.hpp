@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CoreVulkan.hpp"
+#include "../CoreVulkan.hpp"
 #include <glm/glm.hpp>
 
 /*
@@ -38,7 +38,7 @@ private:
     */
     VkDescriptorSet descriptorSet;
 public:
-    /*
+    /**
     Constructor.
     Initializes the descriptor management system for Vulkan.
 
@@ -47,7 +47,6 @@ public:
     After construction, the DescriptorManager holds all the Vulkan descriptor resources
     needed to bind the uniform buffer to the shaders.
 
-    @param device Pointer to the logical Vulkan device.
     @param uniformBuffer Pointer to the Vulkan buffer that holds uniform data (e.g., camera matrices).
 
     @throws std::runtime_error if descriptor set layout creation, pool creation, or descriptor set allocation fails.

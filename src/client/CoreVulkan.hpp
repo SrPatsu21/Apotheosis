@@ -134,7 +134,7 @@ public:
      */
     static void destroy();
 
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    static uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
     static VkInstance getInstance() { return instance; }
     static VkPhysicalDevice getPhysicalDevice() { return physicalDevice; }

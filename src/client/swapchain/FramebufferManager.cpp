@@ -1,9 +1,9 @@
 #include "FramebufferManager.hpp"
 
-FramebufferManager::FramebufferManager(VkRenderPass renderPass, const SwapchainManager& swapchainManager, const DepthBufferManager& depthBufferManager) {
-    const auto& swapchainImageViews = swapchainManager.getImageViews();
-    VkImageView depthImageView = depthBufferManager.getDepthImageView();
-    VkExtent2D extent = swapchainManager.getExtent();
+FramebufferManager::FramebufferManager(VkRenderPass renderPass, const SwapchainManager* swapchainManager, const DepthBufferManager* depthBufferManager) {
+    const auto& swapchainImageViews = swapchainManager->getImageViews();
+    VkImageView depthImageView = depthBufferManager->getDepthImageView();
+    VkExtent2D extent = swapchainManager->getExtent();
 
     this->swapchainFramebuffers.resize(swapchainImageViews.size());
 
