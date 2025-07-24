@@ -67,6 +67,27 @@ int Render::run(){
     createSyncObjects();
 
     // Create vertex buffer
+    const std::vector<Vertex> vertices = {
+        // Base quadrada
+        Vertex({-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}),
+        Vertex({ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}),
+        Vertex({ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f}),
+        Vertex({-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 0.0f}),
+
+        // Topo
+        Vertex({0.0f, 0.8f, 0.0f}, {1.0f, 0.0f, 1.0f})
+    };
+    const std::vector<uint16_t> indices = {
+        // Base (quadrado)
+        0, 1, 2,
+        2, 3, 0,
+
+        // Lados (triângulos)
+        0, 1, 4,
+        1, 2, 4,
+        2, 3, 4,
+        3, 0, 4
+    };
     VertexManager* pyramidVertex = new VertexManager(vertices);
     IndexManager* pyramidIndex = new IndexManager(indices);
 
@@ -136,7 +157,10 @@ int Render::run(){
         presentInfo.pImageIndices = &imageIndex;
         presentInfo.pResults = nullptr;
 
-        vkQueuePresentKHR(graphicsQueue, &presentInfo);
+        VkResult presentResult = vkQueuePresentKHR(graphicsQueue, &presentInfo);
+        if (presentResult != VK_SUCCESS) {
+            throw std::runtime_error("failed to present swap chain image!");
+        }
     }
 
     //* cleanup

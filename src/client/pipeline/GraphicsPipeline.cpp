@@ -1,13 +1,8 @@
 #include "GraphicsPipeline.hpp"
 #include <stdexcept>
 
-GraphicsPipeline::GraphicsPipeline(
-    VkExtent2D swapchainExtent,
-    VkRenderPass renderPass,
-    VkShaderModule vertShaderModule,
-    VkShaderModule fragShaderModule,
-    VkDescriptorSetLayout descriptorSetLayout
-) {
+GraphicsPipeline::GraphicsPipeline(VkExtent2D swapchainExtent, VkRenderPass renderPass, VkShaderModule vertShaderModule,
+    VkShaderModule fragShaderModule, VkDescriptorSetLayout descriptorSetLayout) {
     // Shader stages
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
