@@ -42,6 +42,8 @@ public:
     */
     ~CameraBufferManager();
 
+    void updateUniformBuffer(float aspectRatio);
+
     VkBuffer getUniformBuffer() const { return uniformBuffer; }
     VkDeviceMemory getUniformBufferMemory() const { return uniformBufferMemory; }
 };

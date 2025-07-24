@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../CoreVulkan.hpp"
+#include "../camera/CameraBufferManager.hpp"
 #include <glm/glm.hpp>
 
 /*
@@ -51,24 +52,23 @@ public:
 
     @throws std::runtime_error if descriptor set layout creation, pool creation, or descriptor set allocation fails.
     */
-    DescriptorManager(VkBuffer uniformBuffer);
+    DescriptorManager(CameraBufferManager* cameraBufferManager);
     /*
     defines what kind of resources your shaders expect to be bound, and where
-    @param VkDevice* device
     @return VkDescriptorSetLayout* descriptorSetLayout
     @throws "failed to create descriptor pool!"
     */
-    void createDescriptorSetLayout(VkDevice device);
+    void createDescriptorSetLayout();
 
     /*
     creates a descriptor pool, allocates a descriptor set, and writes the uniform buffer into the descriptor set.
     So, it essentially sets up everything needed to bind your uniform buffer to your shaders at runtime.
-    @param VkDevice* device
     @param VkBuffer* uniformBuffer
+    @param CameraBufferManager* cameraBufferManager
     @return VkDescriptorPool* descriptorPool, VkDescriptorSet* descriptorSet
     @throws "failed to allocate descriptor set!"
     */
-    void createDescriptorPoolAndSet(VkDevice device, VkBuffer uniformBuffer);
+    void createDescriptorPoolAndSet(CameraBufferManager* cameraBufferManager);
 
     VkDescriptorSetLayout getLayout() const { return descriptorSetLayout; }
     VkDescriptorPool getPool() const { return descriptorPool; }

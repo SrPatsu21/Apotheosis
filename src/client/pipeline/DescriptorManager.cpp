@@ -1,12 +1,13 @@
 #include "DescriptorManager.hpp"
+#include "../camera/UniformBufferObject.hpp"
 
-DescriptorManager::DescriptorManager(VkBuffer uniformBuffer)
+DescriptorManager::DescriptorManager(CameraBufferManager* cameraBufferManager)
 {
-    createDescriptorSetLayout(CoreVulkan::getDevice());
-    createDescriptorPoolAndSet(CoreVulkan::getDevice(), uniformBuffer);
+    createDescriptorSetLayout();
+    createDescriptorPoolAndSet(cameraBufferManager);
 };
 
-void DescriptorManager::createDescriptorSetLayout(VkDevice device) {
+void DescriptorManager::createDescriptorSetLayout() {
     VkDescriptorSetLayoutBinding uboLayoutBinding{};
     uboLayoutBinding.binding = 0;
     uboLayoutBinding.descriptorCount = 1;
@@ -19,12 +20,12 @@ void DescriptorManager::createDescriptorSetLayout(VkDevice device) {
     layoutInfo.bindingCount = 1;
     layoutInfo.pBindings = &uboLayoutBinding;
 
-    if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &this->descriptorSetLayout) != VK_SUCCESS) {
+    if (vkCreateDescriptorSetLayout(CoreVulkan::getDevice(), &layoutInfo, nullptr, &this->descriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
 }
 
-void DescriptorManager::createDescriptorPoolAndSet(VkDevice device, VkBuffer uniformBuffer)
+void DescriptorManager::createDescriptorPoolAndSet(CameraBufferManager* cameraBufferManager)
 {
     VkDescriptorPoolSize poolSize{};
     poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -36,7 +37,7 @@ void DescriptorManager::createDescriptorPoolAndSet(VkDevice device, VkBuffer uni
     poolInfo.pPoolSizes = &poolSize;
     poolInfo.maxSets = 1;
 
-    if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &this->descriptorPool) != VK_SUCCESS) {
+    if (vkCreateDescriptorPool(CoreVulkan::getDevice(), &poolInfo, nullptr, &this->descriptorPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor pool!");
     }
 
@@ -46,14 +47,14 @@ void DescriptorManager::createDescriptorPoolAndSet(VkDevice device, VkBuffer uni
     allocInfo.descriptorSetCount = 1;
     allocInfo.pSetLayouts = &this->descriptorSetLayout;
 
-    if (vkAllocateDescriptorSets(device, &allocInfo, &this->descriptorSet) != VK_SUCCESS) {
+    if (vkAllocateDescriptorSets(CoreVulkan::getDevice(), &allocInfo, &this->descriptorSet) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate descriptor set!");
     }
 
     VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = uniformBuffer;
+    bufferInfo.buffer = cameraBufferManager->getUniformBuffer();
     bufferInfo.offset = 0;
-    bufferInfo.range = sizeof(glm::mat4);
+    bufferInfo.range = sizeof(UniformBufferObject);
 
     VkWriteDescriptorSet descriptorWrite{};
     descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -64,7 +65,7 @@ void DescriptorManager::createDescriptorPoolAndSet(VkDevice device, VkBuffer uni
     descriptorWrite.descriptorCount = 1;
     descriptorWrite.pBufferInfo = &bufferInfo;
 
-    vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+    vkUpdateDescriptorSets(CoreVulkan::getDevice(), 1, &descriptorWrite, 0, nullptr);
 }
 
 DescriptorManager::~DescriptorManager()

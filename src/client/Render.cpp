@@ -11,6 +11,7 @@
 #include "mash/VertexManager.hpp"
 #include "mash/IndexManager.hpp"
 #include "swapchain/CommandManager.hpp"
+#include "camera/UniformBufferObject.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -51,7 +52,7 @@ int Render::run(){
     ShaderLoader* shaderLoader = new ShaderLoader("shaders/vertex.glsl.spv", "shaders/fragment.glsl.spv");
 
     // Create descript
-    DescriptorManager* descriptorManager = new DescriptorManager(cameraBufferManager->getUniformBuffer());
+    DescriptorManager* descriptorManager = new DescriptorManager(cameraBufferManager);
 
     // Create graphics pipeline
     GraphicsPipeline* graphicsPipeline = new GraphicsPipeline(swapchainManager->getExtent(), renderPass->get(),
@@ -112,12 +113,18 @@ int Render::run(){
                                         0.1f, 10.0f);
         proj[1][1] *= -1;
 
-        glm::mat4 mvp = proj * view * model;
+        UniformBufferObject ubo{};
+        ubo.model = model;
+        ubo.view = view;
+        ubo.proj = proj;
 
         void* data;
-        vkMapMemory(CoreVulkan::getDevice(), cameraBufferManager->getUniformBufferMemory(), 0, sizeof(mvp), 0, &data);
-        memcpy(data, &mvp, sizeof(mvp));
+        vkMapMemory(CoreVulkan::getDevice(), cameraBufferManager->getUniformBufferMemory(), 0, sizeof(ubo), 0, &data);
+        memcpy(data, &ubo, sizeof(ubo));
         vkUnmapMemory(CoreVulkan::getDevice(), cameraBufferManager->getUniformBufferMemory());
+
+        float aspectRatio = (float)swapchainManager->getExtent().width / (float)swapchainManager->getExtent().height;
+        cameraBufferManager->updateUniformBuffer(aspectRatio);
 
         vkWaitForFences(CoreVulkan::getDevice(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
         vkResetFences(CoreVulkan::getDevice(), 1, &inFlightFence);
