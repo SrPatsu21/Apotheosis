@@ -1,4 +1,5 @@
 #include "FramebufferManager.hpp"
+#include <array>
 
 FramebufferManager::FramebufferManager(VkRenderPass renderPass, const SwapchainManager* swapchainManager, const DepthBufferManager* depthBufferManager) {
     const auto& swapchainImageViews = swapchainManager->getImageViews();
@@ -8,7 +9,7 @@ FramebufferManager::FramebufferManager(VkRenderPass renderPass, const SwapchainM
     this->swapchainFramebuffers.resize(swapchainImageViews.size());
 
     for (size_t i = 0; i < swapchainImageViews.size(); ++i) {
-        std::vector<VkImageView> attachments = {
+        std::array<VkImageView, 2> attachments = {
             swapchainImageViews[i],
             depthImageView
         };
