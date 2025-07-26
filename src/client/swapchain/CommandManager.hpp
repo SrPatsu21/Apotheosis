@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../CoreVulkan.hpp"
+#include "../pipeline/GraphicsPipeline.hpp"
 
 /**
  * @class CommandManager
@@ -41,8 +42,7 @@ public:
      *
      * @param graphicsQueueFamily The queue family index that supports graphics commands.
      * @param renderPass The Vulkan render pass used for rendering.
-     * @param graphicsPipeline The graphics pipeline to bind when rendering.
-     * @param pipelineLayout The pipeline layout used with the pipeline and descriptor sets.
+     * @param graphicsPipeline The graphics pipeline class.
      * @param framebuffers The list of framebuffers, one per swapchain image.
      * @param extent The rendering extent (resolution) of each framebuffer.
      * @param vertexBuffer The Vulkan vertex buffer to bind.
@@ -55,8 +55,7 @@ public:
     CommandManager(
         uint32_t graphicsQueueFamily,
         VkRenderPass renderPass,
-        VkPipeline graphicsPipeline,
-        VkPipelineLayout pipelineLayout,
+        GraphicsPipeline* graphicsPipeline,
         const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent,
         VkBuffer vertexBuffer,

@@ -50,11 +50,14 @@ void CameraBufferManager::createUniformBuffer(){
     vkBindBufferMemory(CoreVulkan::getDevice(), this->uniformBuffer, this->uniformBufferMemory, 0);
 }
 
-void CameraBufferManager::updateUniformBuffer(float aspectRatio) {
+void CameraBufferManager::updateUniformBuffer(SwapchainManager* swapchainManager, float time) {
     UniformBufferObject ubo{};
 
-    // Model: identity (no transformations for now)
-    ubo.model = glm::mat4(1.0f);
+    // Model: identity
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::rotate(model, time, glm::vec3(1.0f, 0.0f, 0.0f));
+        model = glm::rotate(model, time, glm::vec3(0.0f, 0.2f, 0.0f));
+        model = glm::rotate(model, time, glm::vec3(0.0f, 0.0f, 0.5f));
 
     // View: camera looking at -Z (as if it were at (2,2,2) looking at (0,0,0))
     ubo.view = glm::lookAt(
@@ -63,10 +66,7 @@ void CameraBufferManager::updateUniformBuffer(float aspectRatio) {
         glm::vec3(0.0f, 0.0f, 1.0f)   // "up"
     );
 
-    // Projection: perspective
-    ubo.proj = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 10.0f);
-
-    // Vulkan inverts the Y axis in the projection
+    ubo.proj = glm::perspective(glm::radians(45.0f), swapchainManager->getExtent().width / (float) swapchainManager->getExtent().height, 0.1f, 10.0f);
     ubo.proj[1][1] *= -1;
 
     void* data;

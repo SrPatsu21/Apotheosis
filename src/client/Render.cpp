@@ -13,9 +13,6 @@
 #include "swapchain/CommandManager.hpp"
 #include "camera/UniformBufferObject.hpp"
 
-#include <glm/gtc/matrix_transform.hpp>
-
-
 Render::Render(){};
 
 int Render::run(){
@@ -89,12 +86,14 @@ int Render::run(){
         2, 3, 4,
         3, 0, 4
     };
+    std::cout << "vertices:" << vertices.size() << " \n ";
+    std::cout << "indices:" << indices.size() << " \n ";
+
     VertexManager* pyramidVertex = new VertexManager(vertices);
     IndexManager* pyramidIndex = new IndexManager(indices);
 
     // Create command
-    CommandManager* commandManager = new CommandManager(graphicsQueueFamily, renderPass->get(), graphicsPipeline->getPipeline(),
-    graphicsPipeline->getLayout(), framebufferManager->getFramebuffers(), swapchainManager->getExtent(), pyramidVertex->getVertexBuffer(),
+    CommandManager* commandManager = new CommandManager(graphicsQueueFamily, renderPass->get(), graphicsPipeline, framebufferManager->getFramebuffers(), swapchainManager->getExtent(), pyramidVertex->getVertexBuffer(),
     pyramidIndex->getIndexBuffer(), indices, descriptorManager->getSet());
 
     std::cout << "loop \n";
@@ -103,28 +102,7 @@ int Render::run(){
         glfwPollEvents();
         float time = glfwGetTime();
 
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, time, glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::rotate(model, time, glm::vec3(0.0f, 0.2f, 0.0f));
-        model = glm::rotate(model, time, glm::vec3(0.0f, 0.0f, 0.5f));
-        glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
-        glm::mat4 proj = glm::perspective(glm::radians(45.0f),
-                                        swapchainManager->getExtent().width / (float) swapchainManager->getExtent().height,
-                                        0.1f, 10.0f);
-        proj[1][1] *= -1;
-
-        UniformBufferObject ubo{};
-        ubo.model = model;
-        ubo.view = view;
-        ubo.proj = proj;
-
-        void* data;
-        vkMapMemory(CoreVulkan::getDevice(), cameraBufferManager->getUniformBufferMemory(), 0, sizeof(ubo), 0, &data);
-        memcpy(data, &ubo, sizeof(ubo));
-        vkUnmapMemory(CoreVulkan::getDevice(), cameraBufferManager->getUniformBufferMemory());
-
-        float aspectRatio = (float)swapchainManager->getExtent().width / (float)swapchainManager->getExtent().height;
-        cameraBufferManager->updateUniformBuffer(aspectRatio);
+        cameraBufferManager->updateUniformBuffer(swapchainManager, time);
 
         vkWaitForFences(CoreVulkan::getDevice(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
         vkResetFences(CoreVulkan::getDevice(), 1, &inFlightFence);
@@ -168,6 +146,10 @@ int Render::run(){
         if (presentResult != VK_SUCCESS) {
             throw std::runtime_error("failed to present swap chain image!");
         }
+        // std::cout << "Recording command buffer #" << imageIndex << "\n";
+        // std::cout << "Binding pipeline, vertex/index buffers...\n";
+        // std::cout << "Issuing draw command with " << indices.size() << " indices.\n";
+
     }
 
     //* cleanup

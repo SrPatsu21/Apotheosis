@@ -1,5 +1,7 @@
 #include "CommandManager.hpp"
+#include "../camera/UniformBufferObject.hpp"
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 //TODO refactore into 2 function
 /*
@@ -16,7 +18,7 @@ void createCommandPool(uint32_t graphicsQueueFamily) {
 */
 
 CommandManager::CommandManager(
-    uint32_t graphicsQueueFamily, VkRenderPass renderPass, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout,
+    uint32_t graphicsQueueFamily, VkRenderPass renderPass, GraphicsPipeline* graphicsPipeline,
     const std::vector<VkFramebuffer>& framebuffers, VkExtent2D extent, VkBuffer vertexBuffer, VkBuffer indexBuffer,
     const std::vector<uint16_t>& indices, VkDescriptorSet descriptorSet) {
     // Create command pool
@@ -69,7 +71,7 @@ CommandManager::CommandManager(
 
         vkCmdBeginRenderPass(this->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(this->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+        vkCmdBindPipeline(this->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->getPipeline());
 
         // Bind dos vertex/index buffers
         VkBuffer vertexBuffers[] = {vertexBuffer};
@@ -79,11 +81,24 @@ CommandManager::CommandManager(
         vkCmdBindIndexBuffer(this->commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
         // Bind descriptor sets
-        vkCmdBindDescriptorSets(this->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+        vkCmdBindDescriptorSets(this->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->getLayout(), 0, 1, &descriptorSet, 0, nullptr);
 
         // Push da modelMatrix
-        glm::mat4 modelMatrix = glm::mat4(1.0f); // ou sua matriz de transformação específica
-        vkCmdPushConstants(this->commandBuffers[i], pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &modelMatrix);
+        glm::mat4 model = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 view = glm::lookAt(glm::vec3(2, 2, 2), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+        glm::mat4 proj = glm::perspective(glm::radians(45.0f), extent.width / (float)extent.height, 0.1f, 10.0f);
+        proj[1][1] *= -1; // Vulkan
+
+        glm::mat4 mvp = proj * view * model;
+
+        // vkCmdPushConstants(this->commandBuffers[i], graphicsPipeline->getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mvp);
+
+        VkViewport viewport = graphicsPipeline->getViewport();
+        VkRect2D scissor = graphicsPipeline->getScissor();
+
+        vkCmdSetViewport(commandBuffers[i], 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffers[i], 0, 1, &scissor);
+
 
         // Draw
         vkCmdDrawIndexed(this->commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../CoreVulkan.hpp"
+#include "../swapchain/SwapchainManager.hpp"
 #include <glm/glm.hpp>
 
 class CameraBufferManager
@@ -42,7 +43,7 @@ public:
     */
     ~CameraBufferManager();
 
-    void updateUniformBuffer(float aspectRatio);
+    void updateUniformBuffer(SwapchainManager* swapchainManager, float time);
 
     VkBuffer getUniformBuffer() const { return uniformBuffer; }
     VkDeviceMemory getUniformBufferMemory() const { return uniformBufferMemory; }
