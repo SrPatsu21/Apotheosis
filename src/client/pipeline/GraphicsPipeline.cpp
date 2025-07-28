@@ -44,6 +44,16 @@ GraphicsPipeline::GraphicsPipeline(VkExtent2D swapchainExtent, VkRenderPass rend
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
+    // Dynamic State
+    std::vector<VkDynamicState> dynamicStates = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+    VkPipelineDynamicStateCreateInfo dynamicInfo{};
+    dynamicInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicInfo.dynamicStateCount = dynamicStates.size();
+    dynamicInfo.pDynamicStates = dynamicStates.data();
+
     // Graphics pipeline
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -57,6 +67,7 @@ GraphicsPipeline::GraphicsPipeline(VkExtent2D swapchainExtent, VkRenderPass rend
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.layout = this->pipelineLayout;
+    pipelineInfo.pDynamicState = &dynamicInfo;
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
 

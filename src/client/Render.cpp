@@ -96,6 +96,13 @@ int Render::run(){
     CommandManager* commandManager = new CommandManager(graphicsQueueFamily, renderPass->get(), graphicsPipeline, framebufferManager->getFramebuffers(), swapchainManager->getExtent(), pyramidVertex->getVertexBuffer(),
     pyramidIndex->getIndexBuffer(), indices, descriptorManager->getSet());
 
+
+    // VkPhysicalDeviceProperties deviceProperties;
+    // vkGetPhysicalDeviceProperties(CoreVulkan::getPhysicalDevice(), &deviceProperties);
+
+    // std::cout << "Push Constant Max Size: " << deviceProperties.limits.maxPushConstantsSize << " bytes\n";
+
+
     std::cout << "loop \n";
     //main loop
     while (!glfwWindowShouldClose(window)) {
