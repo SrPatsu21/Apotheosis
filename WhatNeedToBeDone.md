@@ -30,14 +30,14 @@
 
 ## 3. Define the libs and set how to use them ❎
 
-### Graphics Library
+### libraries
 
 - Vulkan
-  high-performance, modern GPU API
+  high-performance, modern GPU API. [Introduction](https://vulkan-tutorial.com/Introduction)
 - DEARImGUI
-  fast debug/dev UI (optional, good for tools/debug overlays)
+  fast debug/dev UI (optional, good for tools/debug overlays). [Introduction](https://github.com/ocornut/imgui/?tab=readme-ov-file#dear-imgui)
 - GLFW
-  cross-platform window and input handling
+  cross-platform window and input handling. [Introduction](https://www.glfw.org/docs/latest/quick.html)
 - GLM
   OpenGL-style math library: matrices, vectors.
   Use GLM to build model, view, projection matrices.
