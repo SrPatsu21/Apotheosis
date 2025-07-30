@@ -24,6 +24,13 @@ project(ProjectD)
         set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
     endif()
 
+# Release mode
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        message(STATUS "Compiling in Release mode")
+        add_compile_definitions(NDEBUG)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native")
+    endif()
+
 # Vulkan
     if(UNIX)
         find_package(Vulkan REQUIRED)
