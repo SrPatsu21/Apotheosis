@@ -31,8 +31,7 @@ int Render::run(){
     CoreVulkan::init(graphicsQueueFamily, graphicsQueue);
 
     // Create surface
-    VkSurfaceKHR surface;
-    if (glfwCreateWindowSurface(CoreVulkan::getInstance(), window, nullptr, &surface) != VK_SUCCESS) {
+    if (glfwCreateWindowSurface(CoreVulkan::getInstance(), window, nullptr, &this->surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
 

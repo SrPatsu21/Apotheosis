@@ -17,25 +17,33 @@ public:
     ~Render();
 private:
 
-//* Synchronization — Semaphores and Fence
-/*
+/**
 A semaphore that signals when an image from the swapchain is ready for rendering.
 You wait on this before recording and submitting your draw commands.
 */
 VkSemaphore imageAvailableSemaphore;
 
-/*
+/**
 A semaphore that signals when rendering is finished and the rendered image can now be presented to the screen.
 The presentation queue waits on this before swapping the image onto the screen.
 */
 VkSemaphore renderFinishedSemaphore;
 
-/*
+/**
 A fence that signals when the GPU has finished processing a frame.
 The CPU waits on this fence to make sure the GPU is done with the previous frame before starting the next one.
 Helps prevent overwriting resources still in use.
 */
 VkFence inFlightFence;
+
+/**
+@brief Vulkan window surface handle.
+
+Represents the platform-specific surface to which Vulkan will present rendered images.
+Created using GLFW (or another windowing system) and required for swapchain creation.
+Acts as the bridge between Vulkan and the window system.
+*/
+VkSurfaceKHR surface;
 
 /**
  * @brief Creates the Vulkan synchronization objects used per-frame.
