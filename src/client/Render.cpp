@@ -18,25 +18,19 @@ Render::Render(){};
 int Render::run(){
 
     if (!glfwInit()) {
-        std::cerr << "Failed to init GLFW\n";
-        return -1;
+        throw std::runtime_error("Failed to init GLFW");
     }
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);  // no OpenGL
-    GLFWwindow* window = glfwCreateWindow(800, 600, "ProjectD", nullptr, nullptr); // screen config
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // block resize
+    GLFWwindow* window = glfwCreateWindow(this->width, this->height, "ProjectD", nullptr, nullptr); // screen config
 
+    //TODO better description
     //Create Vulkan instance
-    uint32_t graphicsQueueFamily = 0;
-    VkQueue graphicsQueue;
-    CoreVulkan::init(graphicsQueueFamily, graphicsQueue);
-
-    // Create surface
-    if (glfwCreateWindowSurface(CoreVulkan::getInstance(), window, nullptr, &this->surface) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create window surface!");
-    }
+    CoreVulkan::init(window);
 
     // Create swapchain
-    SwapchainManager* swapchainManager = new SwapchainManager(surface, graphicsQueueFamily, window);
+    SwapchainManager* swapchainManager = new SwapchainManager(CoreVulkan::getSurface(), CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value(), window);
 
     // Create render pass
     RenderPass* renderPass = new RenderPass(swapchainManager->getImageFormat());
@@ -92,7 +86,7 @@ int Render::run(){
     IndexManager* pyramidIndex = new IndexManager(indices);
 
     // Create command
-    CommandManager* commandManager = new CommandManager(graphicsQueueFamily, renderPass->get(), graphicsPipeline, framebufferManager->getFramebuffers(), swapchainManager->getExtent(), pyramidVertex->getVertexBuffer(),
+    CommandManager* commandManager = new CommandManager(CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value(), renderPass->get(), graphicsPipeline, framebufferManager->getFramebuffers(), swapchainManager->getExtent(), pyramidVertex->getVertexBuffer(),
     pyramidIndex->getIndexBuffer(), indices, descriptorManager->getSet());
 
 
@@ -132,7 +126,7 @@ int Render::run(){
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFence) != VK_SUCCESS) {
+        if (vkQueueSubmit(CoreVulkan::getPresentQueue(), 1, &submitInfo, inFlightFence) != VK_SUCCESS) {
             throw std::runtime_error("failed to submit draw command buffer!");
         }
 
@@ -148,7 +142,7 @@ int Render::run(){
         presentInfo.pImageIndices = &imageIndex;
         presentInfo.pResults = nullptr;
 
-        VkResult presentResult = vkQueuePresentKHR(graphicsQueue, &presentInfo);
+        VkResult presentResult = vkQueuePresentKHR(CoreVulkan::getPresentQueue(), &presentInfo);
         if (presentResult != VK_SUCCESS) {
             throw std::runtime_error("failed to present swap chain image!");
         }
@@ -159,7 +153,7 @@ int Render::run(){
     }
 
     //* cleanup
-    vkQueueWaitIdle(graphicsQueue);
+    vkQueueWaitIdle(CoreVulkan::getPresentQueue());
     vkDeviceWaitIdle(CoreVulkan::getDevice());
     delete(commandManager);
     delete(pyramidIndex);
@@ -172,11 +166,27 @@ int Render::run(){
     delete(cameraBufferManager);
     delete(renderPass);
     delete(swapchainManager);
-    vkDestroySurfaceKHR(CoreVulkan::getInstance(), surface, nullptr);
+    CoreVulkan::destroy();
     glfwDestroyWindow(window);
     glfwTerminate();
 
     return 0;
+};
+
+void Render::initWindow() {
+
+};
+
+void Render::initVulkan(){
+
+};
+
+void Render::mainLoop(){
+
+};
+
+void Render::cleanup(){
+
 };
 
 void Render::createSyncObjects() {

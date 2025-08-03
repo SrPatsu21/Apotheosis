@@ -17,6 +17,12 @@ public:
     ~Render();
 private:
 
+//screen width in px
+uint32_t width = 800;
+
+// screen height in px
+uint32_t height = 600;
+
 /**
 A semaphore that signals when an image from the swapchain is ready for rendering.
 You wait on this before recording and submitting your draw commands.
@@ -36,14 +42,10 @@ Helps prevent overwriting resources still in use.
 */
 VkFence inFlightFence;
 
-/**
-@brief Vulkan window surface handle.
-
-Represents the platform-specific surface to which Vulkan will present rendered images.
-Created using GLFW (or another windowing system) and required for swapchain creation.
-Acts as the bridge between Vulkan and the window system.
-*/
-VkSurfaceKHR surface;
+void initWindow();
+void initVulkan();
+void mainLoop();
+void cleanup();
 
 /**
  * @brief Creates the Vulkan synchronization objects used per-frame.

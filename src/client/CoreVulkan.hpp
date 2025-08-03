@@ -5,6 +5,50 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <vector>
+#include <cstring>
+#include <map>
+#include <optional>
+
+/**
+@brief Requested Vulkan validation layers.
+
+List of validation layers to enable during instance creation.
+Primarily used to catch common Vulkan API misuses and provide detailed debugging information.
+"VK_LAYER_KHRONOS_validation" is the standard layer maintained by Khronos Group.
+Only enabled in debug builds.
+*/
+const static std::vector<const char*> validationLayers = {
+    "VK_LAYER_KHRONOS_validation"
+};
+
+#ifdef NDEBUG
+    /**
+    @brief Flag to enable Vulkan validation layers.
+
+    Controls whether validation layers should be enabled.
+    Set to true in debug builds for additional runtime error checking and diagnostics.
+    Set to false in release builds to avoid performance overhead.
+    */
+    const static bool enableValidationLayers = false;
+#else
+    /**
+    @brief Flag to enable Vulkan validation layers.
+
+    Controls whether validation layers should be enabled.
+    Set to true in debug builds for additional runtime error checking and diagnostics.
+    Set to false in release builds to avoid performance overhead.
+    */
+    const static bool enableValidationLayers = true;
+#endif
+
+struct QueueFamilyIndices {
+    std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentFamily;
+
+    bool isComplete() {
+        return graphicsFamily.has_value() && presentFamily.has_value();
+    }
+};
 
 class CoreVulkan
 {
@@ -36,6 +80,18 @@ private:
     The value is guaranteed to be valid only after calling `CoreVulkan::init()`.
     */
     static VkFormat depthFormat;
+    /**
+    @brief Vulkan window surface handle.
+
+    Represents the platform-specific surface to which Vulkan will present rendered images.
+    Created using GLFW (or another windowing system) and required for swapchain creation.
+    Acts as the bridge between Vulkan and the window system.
+    */
+    static VkSurfaceKHR surface;
+
+    //TODO docs
+    static VkQueue presentQueue;
+    static QueueFamilyIndices graphicsQueueFamilyIndices;
     /*
     Constructor.
     Creates the Vulkan instance, picks a suitable physical device, and creates a logical device.
@@ -76,7 +132,7 @@ private:
     The function assumes `CoreVulkan::physicalDevice` has already been initialized.
     The logical device is configured with default physical device features and enables the swapchain extension.
     */
-    static void createLogicalDevice(uint32_t& graphicsQueueFamily, VkQueue& graphicsQueue);
+    static void createLogicalDevice();
 
     /**
     @brief Determines the best supported depth format for the selected GPU.
@@ -107,10 +163,19 @@ private:
     @throws std::runtime_error if instance creation fails.
     */
     static void createInstance();
+
+    //TODO docs
+    bool static checkValidationLayerSupport();
+    int static rateDeviceSuitability(VkPhysicalDevice physicalDevice);
+    QueueFamilyIndices static findQueueFamilies(VkPhysicalDevice physicalDevice);
+    bool static isDeviceSuitable(VkPhysicalDevice physicalDevice);
+    void static createSurface(GLFWwindow* window);
+
 public:
     // Deleting the copy constructor to prevent copies
     CoreVulkan(const CoreVulkan& obj) = delete;
 
+    //TODO remake the docs
     /**
     @brief Initializes the Vulkan core objects.
 
@@ -123,23 +188,23 @@ public:
     If the Vulkan instance was already initialized (`CoreVulkan::instance != nullptr`), 
     this function returns immediately and does nothing.
 
-    @param graphicsQueueFamily Reference to an integer to receive the index of the selected graphics queue family.
-    @param graphicsQueue Reference to a VkQueue handle to receive the created graphics queue.
-
     @throws std::runtime_error if any of the initialization steps fail (e.g., instance creation, device creation, depth format not supported).
     */
-    static void init(uint32_t& graphicsQueueFamily, VkQueue& graphicsQueue);
-    /*
+    static void init(GLFWwindow* window);
+    /**
     Cleans up Vulkan objects in the correct order.
-     */
+    */
     static void destroy();
 
+    //TODO docs
     static uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
     static VkInstance getInstance() { return instance; }
     static VkPhysicalDevice getPhysicalDevice() { return physicalDevice; }
     static VkDevice getDevice() { return device; }
     static VkFormat getDepthFormat() { return depthFormat; }
-
+    static VkQueue getPresentQueue() { return presentQueue; }
+    static QueueFamilyIndices getGraphicsQueueFamilyIndices() { return graphicsQueueFamilyIndices; }
+    static VkSurfaceKHR getSurface() { return surface; }
 
 };
