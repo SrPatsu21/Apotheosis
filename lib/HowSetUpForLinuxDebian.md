@@ -21,7 +21,7 @@
 ### GLFW
 
 - All in one \
-    `wget -P lib/ "https://github.com/glfw/glfw/archive/refs/tags/3.4.zip" && unzip lib/3.4.zip -d lib/ && mv lib/glfw-3.4 lib/glfw && rm lib/3.4.zip && sudo apt install wayland-protocols libwayland-bin libwayland-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxkbcommon-dev pkg-config mingw-w64 mingw-w64-x86-64-dev`
+    `wget -P lib/ "https://github.com/glfw/glfw/archive/refs/tags/3.4.zip" && unzip lib/3.4.zip -d lib/ && mv lib/glfw-3.4 lib/glfw && rm lib/3.4.zip && sudo apt install wayland-protocols libwayland-bin libwayland-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxkbcommon-dev pkg-config mingw-w64 mingw-w64-x86-64-dev libgl1-mesa-dev`
 - Download \
     `wget -P lib/ "https://github.com/glfw/glfw/archive/refs/tags/3.4.zip"`
 - Unzip \
@@ -50,6 +50,8 @@
     `sudo apt install pkg-config`
 - Install mingw-w64
     `sudo apt install mingw-w64 mingw-w64-x86-64-dev`
+- Install libgl1-mesa-dev
+    `sudo apt install libgl1-mesa-dev`
 
 ### Vulkan
 
