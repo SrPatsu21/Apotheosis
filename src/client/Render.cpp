@@ -45,8 +45,7 @@ int Render::run(){
     DescriptorManager* descriptorManager = new DescriptorManager(cameraBufferManager);
 
     // Create graphics pipeline
-    GraphicsPipeline* graphicsPipeline = new GraphicsPipeline(swapchainManager->getExtent(), renderPass->get(),
-     shaderLoader->getVertModule(), shaderLoader->getFragModule(), descriptorManager->getLayout());
+    GraphicsPipeline* graphicsPipeline = new GraphicsPipeline(swapchainManager->getExtent(), renderPass->get(), shaderLoader->getVertModule(), shaderLoader->getFragModule(), descriptorManager->getLayout());
 
     //Create DepthResources
     DepthBufferManager* depthBufferManager = new DepthBufferManager(swapchainManager->getExtent());
