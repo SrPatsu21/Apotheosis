@@ -28,6 +28,8 @@
 
 ## Theme (recommendation)
 
+- C/C++ Theme
+    <https://marketplace.visualstudio.com/items?itemName=Xen.ccpp-theme>
 - Dracula At Night \
     <https://marketplace.visualstudio.com/items?itemName=bceskavich.theme-dracula-at-night>
 - GitHub Theme(any dark) \
