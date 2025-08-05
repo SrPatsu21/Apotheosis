@@ -196,6 +196,7 @@ private:
      */
     bool static checkValidationLayerSupport();
 
+    //TODO docs
     /**
      * @brief Scores a physical device based on its suitability for the application.
      *
@@ -211,7 +212,7 @@ private:
      * @return An integer score representing the suitability of the device.
      *         A score of 0 means the device is not suitable.
      */
-    int static rateDeviceSuitability(VkPhysicalDevice physicalDevice);
+    int static rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
     /**
      * @brief Finds queue families with graphics and presentation support.
      *
@@ -224,6 +225,7 @@ private:
      *         It may be incomplete if the device does not support required features.
      */
     QueueFamilyIndices static findQueueFamilies(VkPhysicalDevice physicalDevice);
+    //TODO rebuild docs
     /**
      * @brief Determines whether a physical device is suitable for use.
      *
@@ -233,7 +235,9 @@ private:
      * @param physicalDevice The physical device to test.
      * @return true if the device meets the minimum requirements, false otherwise.
      */
-    bool static isDeviceSuitable(VkPhysicalDevice physicalDevice);
+    bool static isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
+    //TODO docs
+    bool static checkDeviceExtensionSupport(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
     /**
      * @brief Creates a Vulkan surface from a GLFW window.
      *
@@ -247,6 +251,7 @@ private:
     void static createSurface(GLFWwindow* window);
 
 public:
+    static const std::vector<const char*> DEVICE_EXTENSIONS;
     // Deleting the copy constructor to prevent copies
     CoreVulkan(const CoreVulkan& obj) = delete;
 

@@ -9,7 +9,9 @@ VkFormat CoreVulkan::depthFormat = VK_FORMAT_UNDEFINED;
 QueueFamilyIndices CoreVulkan::graphicsQueueFamilyIndices{};
 VkQueue CoreVulkan::presentQueue = VK_NULL_HANDLE;
 VkSurfaceKHR CoreVulkan::surface = VK_NULL_HANDLE;
-
+const std::vector<const char*> CoreVulkan::DEVICE_EXTENSIONS = { //* Enable swapchain extension
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
 
 void CoreVulkan::init(GLFWwindow* window)
 {
@@ -56,8 +58,9 @@ void CoreVulkan::pickPhysicalDevice() {
     // Use an ordered map to automatically sort candidates by score
     std::multimap<int, VkPhysicalDevice> candidates;
 
+
     for (const auto& device : devices) {
-        int score = rateDeviceSuitability(device);
+        int score = rateDeviceSuitability(device, CoreVulkan::DEVICE_EXTENSIONS);
         candidates.insert(std::make_pair(score, device));
     }
 
@@ -154,18 +157,14 @@ void CoreVulkan::createLogicalDevice() {
     // Device info
     VkPhysicalDeviceFeatures deviceFeatures{}; //* enable features if needed
 
-    const std::vector<const char*> deviceExtensions = { //* Enable swapchain extension
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
-
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pEnabledFeatures = &deviceFeatures;
 
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(CoreVulkan::DEVICE_EXTENSIONS.size());
+    createInfo.ppEnabledExtensionNames = CoreVulkan::DEVICE_EXTENSIONS.data();
 
     if (enableValidationLayers) {
         //debug
@@ -240,7 +239,7 @@ bool CoreVulkan::checkValidationLayerSupport() {
     return true;
 }
 
-int CoreVulkan::rateDeviceSuitability(VkPhysicalDevice physicalDevice) {
+int CoreVulkan::rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions) {
     VkPhysicalDeviceProperties deviceProperties;
     VkPhysicalDeviceFeatures deviceFeatures;
     vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
@@ -257,7 +256,7 @@ int CoreVulkan::rateDeviceSuitability(VkPhysicalDevice physicalDevice) {
     score += deviceProperties.limits.maxImageDimension2D;
 
     // Application can't function without geometry shaders
-    if (!deviceFeatures.geometryShader) {
+    if (!deviceFeatures.geometryShader && !isDeviceSuitable(physicalDevice, deviceExtensions)) {
         return 0;
     }
 
@@ -293,10 +292,28 @@ QueueFamilyIndices CoreVulkan::findQueueFamilies(VkPhysicalDevice physicalDevice
     return indices;
 }
 
-bool CoreVulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice) {
+bool CoreVulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions) {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
-    return indices.graphicsFamily.has_value();
+    bool extensionsSupported = checkDeviceExtensionSupport(physicalDevice, deviceExtensions);
+
+    return indices.isComplete() && extensionsSupported;
+}
+
+bool CoreVulkan::checkDeviceExtensionSupport(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions) {
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+    for (const auto& extension : availableExtensions) {
+        requiredExtensions.erase(std::string(extension.extensionName));
+    }
+
+    return requiredExtensions.empty();
 }
 
 void CoreVulkan::createSurface(GLFWwindow* window)
