@@ -2,6 +2,7 @@
 #include <set>
 
 //* pre set vars, need because of static
+
 VkInstance CoreVulkan::instance = VK_NULL_HANDLE;
 VkDevice CoreVulkan::device = VK_NULL_HANDLE;
 VkPhysicalDevice CoreVulkan::physicalDevice = VK_NULL_HANDLE;
@@ -13,7 +14,9 @@ const std::vector<const char*> CoreVulkan::DEVICE_EXTENSIONS = { //* Enable swap
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-void CoreVulkan::init(GLFWwindow* window)
+//* functions
+
+void CoreVulkan::init()
 {
     if (CoreVulkan::instance != VK_NULL_HANDLE) {
         return;
@@ -21,62 +24,6 @@ void CoreVulkan::init(GLFWwindow* window)
 
     // Create Vulkan instance
     createInstance();
-
-    // create surface
-    createSurface(window);
-
-    // Pick a physical GPU
-    physicalDevice = VK_NULL_HANDLE;
-    pickPhysicalDevice();
-
-    // Create logical device
-    createLogicalDevice();
-
-    // find the Depth Format of GPU
-    findDepthFormat();
-}
-
-void CoreVulkan::destroy()
-{
-    vkDestroyDevice(CoreVulkan::device, nullptr);
-    vkDestroyInstance(CoreVulkan::instance, nullptr);
-    vkDestroySurfaceKHR(CoreVulkan::instance, CoreVulkan::surface, nullptr);
-
-};
-
-//TODO make user able to select the device and save this config
-void CoreVulkan::pickPhysicalDevice() {
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(CoreVulkan::instance, &deviceCount, nullptr);
-    if (deviceCount == 0) {
-        throw std::runtime_error("failed to find GPUs with Vulkan support!");
-    }
-
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(CoreVulkan::instance, &deviceCount, devices.data());
-
-    // Use an ordered map to automatically sort candidates by score
-    std::multimap<int, VkPhysicalDevice> candidates;
-
-
-    for (const auto& device : devices) {
-        int score = rateDeviceSuitability(device, CoreVulkan::DEVICE_EXTENSIONS);
-        candidates.insert(std::make_pair(score, device));
-    }
-
-    // Check if the best candidate is suitable at all
-    if (candidates.rbegin()->first > 0) {
-        CoreVulkan::physicalDevice = candidates.rbegin()->second;
-
-        #ifndef NDEBUG
-            VkPhysicalDeviceProperties deviceProperties;
-            vkGetPhysicalDeviceProperties(CoreVulkan::physicalDevice, &deviceProperties);
-            std::cout << "GPU name: " << deviceProperties.deviceName << std::endl;
-        #endif
-
-    } else {
-        throw std::runtime_error("failed to find a suitable GPU!");
-    }
 }
 
 void CoreVulkan::createInstance() {
@@ -129,6 +76,100 @@ void CoreVulkan::createInstance() {
             }
             std::cout << std::endl;
         #endif
+}
+
+void CoreVulkan::createSurface(GLFWwindow* window)
+{
+    if (glfwCreateWindowSurface(CoreVulkan::getInstance(), window, nullptr, &CoreVulkan::surface) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create window surface!");
+    }
+};
+
+void CoreVulkan::pickPhysicalDevice() {
+    //TODO extend this to implement device selection based on features, queue families, performance, etc.
+    //TODO make user able to select the device and save this config
+
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(CoreVulkan::instance, &deviceCount, nullptr);
+    if (deviceCount == 0) {
+        throw std::runtime_error("failed to find GPUs with Vulkan support!");
+    }
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(CoreVulkan::instance, &deviceCount, devices.data());
+
+    // Use an ordered map to automatically sort candidates by score
+    std::multimap<int, VkPhysicalDevice> candidates;
+
+    for (const auto& device : devices) {
+        int score = rateDeviceSuitability(device, CoreVulkan::DEVICE_EXTENSIONS);
+        candidates.insert(std::make_pair(score, device));
+    }
+
+    // Check if the best candidate is suitable at all
+    if (candidates.rbegin()->first > 0) {
+        CoreVulkan::physicalDevice = candidates.rbegin()->second;
+
+        #ifndef NDEBUG
+            VkPhysicalDeviceProperties deviceProperties;
+            vkGetPhysicalDeviceProperties(CoreVulkan::physicalDevice, &deviceProperties);
+            std::cout << "GPU name: " << deviceProperties.deviceName << std::endl;
+        #endif
+
+    } else {
+        throw std::runtime_error("failed to find a suitable GPU!");
+    }
+}
+
+int CoreVulkan::rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions) {
+    VkPhysicalDeviceProperties deviceProperties;
+    VkPhysicalDeviceFeatures deviceFeatures;
+    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+    vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+
+        // Application can't function without geometry shaders
+    if (!deviceFeatures.geometryShader && !isDeviceSuitable(physicalDevice, deviceExtensions)) {
+        return 0;
+    }
+
+    int score = 0;
+
+    // Discrete GPUs have a significant performance advantage
+    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+        score += 1000;
+    }
+
+    // Maximum possible size of textures affects graphics quality
+    score += deviceProperties.limits.maxImageDimension2D;
+
+    return score;
+}
+
+bool CoreVulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions) {
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+
+    //* check Device Extension Support
+    bool extensionsSupported = false;
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+    for (const auto& extension : availableExtensions) {
+        requiredExtensions.erase(std::string(extension.extensionName));
+    }
+
+    //* swap chain support
+    bool swapChainAdequate = false;
+    if (extensionsSupported) {
+        SwapchainSupportDetails swapChainSupport = CoreVulkan::querySwapchainSupport(CoreVulkan::surface);
+        swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+    }
+
+    return indices.isComplete() && extensionsSupported && swapChainAdequate;
 }
 
 void CoreVulkan::createLogicalDevice() {
@@ -239,30 +280,6 @@ bool CoreVulkan::checkValidationLayerSupport() {
     return true;
 }
 
-int CoreVulkan::rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions) {
-    VkPhysicalDeviceProperties deviceProperties;
-    VkPhysicalDeviceFeatures deviceFeatures;
-    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-    vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
-
-    int score = 0;
-
-    // Discrete GPUs have a significant performance advantage
-    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-        score += 1000;
-    }
-
-    // Maximum possible size of textures affects graphics quality
-    score += deviceProperties.limits.maxImageDimension2D;
-
-    // Application can't function without geometry shaders
-    if (!deviceFeatures.geometryShader && !isDeviceSuitable(physicalDevice, deviceExtensions)) {
-        return 0;
-    }
-
-    return score;
-}
-
 QueueFamilyIndices CoreVulkan::findQueueFamilies(VkPhysicalDevice physicalDevice) {
     QueueFamilyIndices indices;
 
@@ -292,33 +309,31 @@ QueueFamilyIndices CoreVulkan::findQueueFamilies(VkPhysicalDevice physicalDevice
     return indices;
 }
 
-bool CoreVulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions) {
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+SwapchainSupportDetails CoreVulkan::querySwapchainSupport(VkSurfaceKHR surface) {
+    SwapchainSupportDetails details;
 
-    bool extensionsSupported = checkDeviceExtensionSupport(physicalDevice, deviceExtensions);
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(CoreVulkan::getPhysicalDevice(), surface, &details.capabilities);
 
-    return indices.isComplete() && extensionsSupported;
-}
-
-bool CoreVulkan::checkDeviceExtensionSupport(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions) {
-    uint32_t extensionCount;
-    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
-
-    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
-
-    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
-
-    for (const auto& extension : availableExtensions) {
-        requiredExtensions.erase(std::string(extension.extensionName));
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(CoreVulkan::getPhysicalDevice(), surface, &formatCount, nullptr);
+    if (formatCount != 0) {
+        details.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(CoreVulkan::getPhysicalDevice(), surface, &formatCount, details.formats.data());
     }
 
-    return requiredExtensions.empty();
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(CoreVulkan::getPhysicalDevice(), surface, &presentModeCount, nullptr);
+    if (presentModeCount != 0) {
+        details.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(CoreVulkan::getPhysicalDevice(), surface, &presentModeCount, details.presentModes.data());
+    }
+
+    return details;
 }
 
-void CoreVulkan::createSurface(GLFWwindow* window)
+void CoreVulkan::destroy()
 {
-    if (glfwCreateWindowSurface(CoreVulkan::getInstance(), window, nullptr, &CoreVulkan::surface) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create window surface!");
-    }
+    vkDestroyDevice(CoreVulkan::device, nullptr);
+    vkDestroySurfaceKHR(CoreVulkan::instance, CoreVulkan::surface, nullptr);
+    vkDestroyInstance(CoreVulkan::instance, nullptr);
 };

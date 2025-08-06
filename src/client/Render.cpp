@@ -26,8 +26,21 @@ int Render::run(){
     GLFWwindow* window = glfwCreateWindow(this->width, this->height, "ProjectD", nullptr, nullptr); // screen config
 
     //TODO better description
+    //* Core Vulkan
     //Create Vulkan instance
-    CoreVulkan::init(window);
+    CoreVulkan::init();
+
+    // create surface
+    CoreVulkan::createSurface(window);
+
+    // Pick a physical GPU
+    CoreVulkan::pickPhysicalDevice();
+
+    // Create logical device
+    CoreVulkan::createLogicalDevice();
+
+    // find the Depth Format of GPU
+    CoreVulkan::findDepthFormat();
 
     // Create swapchain
     SwapchainManager* swapchainManager = new SwapchainManager(CoreVulkan::getSurface(), CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value(), window);
