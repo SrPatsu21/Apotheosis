@@ -112,12 +112,27 @@ void SwapchainManager::createSwapchainInternal(VkSurfaceKHR surface, VkSurfaceFo
 void SwapchainManager::createImageViews() {
     this->swapchainImageViews.resize(this->swapchainImages.size());
 
-    for (size_t i = 0; i < this->swapchainImages.size(); ++i) {
+    for (size_t i = 0; i < this->swapchainImages.size(); i++) {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = this->swapchainImages[i];
+        //TODO 3D?
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         viewInfo.format = this->swapchainImageFormat;
+
+        /*
+        The components field allows you to swizzle the color channels around.
+        For example, you can map all of the channels to the red channel for a monochrome texture.
+        You can also map constant values of 0 and 1 to a channel.
+        */
+        viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+        /*
+        The subresourceRange field describes what the image's purpose is and which part of the image should be accessed
+        */
         viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         viewInfo.subresourceRange.baseMipLevel = 0;
         viewInfo.subresourceRange.levelCount = 1;
