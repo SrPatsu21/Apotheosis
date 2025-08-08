@@ -15,8 +15,7 @@
 const static std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
-
-#ifdef NDEBUG
+#ifdef DISABLE_VALIDATION_LAYERS
         const static bool enableValidationLayers = false;
 #else
         const static bool enableValidationLayers = true;

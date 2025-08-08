@@ -66,10 +66,13 @@
 - install
     `sudo apt install vulkan-utility-libraries-dev libvulkan-dev vulkan-tools vulkan-validationlayers`
 - download Vulkan for windows crosscomplile
-    `wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe"`
-    `sudo apt install 7zip`
-    `7z x ./lib/VulkanSDK-1.3.296.0-Installer.exe -o./lib/vulkan-sdk-win`
-    `rm ./lib/VulkanSDK-1.3.296.0-Installer.exe`
+
+    ```shell
+        wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe"
+        sudo apt install 7zip wine
+        7z x ./lib/VulkanSDK-1.3.296.0-Installer.exe -o./lib/vulkan-sdk-win
+        rm ./lib/VulkanSDK-1.3.296.0-Installer.exe
+    ```
 
 ### GLM
 
@@ -110,29 +113,42 @@
 
 ## Build
 
-- Create folder
-    `mkdir build`
-- Get Inside
-    `cd build`
-- Build
-    `cmake ..`
-- Run
-    `make`
+```shell
+mkdir build_release
+cd build_release
+cmake ..
+make
+```
 
 ## Build for Windows
 
-- Create folder
-    `mkdir build-windows`
-- Get Inside
-    `cd build-windows`
-- Build
+```bash
+mkdir build-windows
+cd build-windows
+cmake .. -D CMAKE_TOOLCHAIN_FILE=../toolchain-mingw.cmake
+make
+```
+<!-- could be util
+-D UPDATE_DEPS=ON
+-->
 
-    ```bash
-        cmake .. \
-        -D CMAKE_TOOLCHAIN_FILE=../toolchain-mingw.cmake
-    ```
-    <!-- could be util
-        -D UPDATE_DEPS=ON
-     -->
-- Run
-    `make`
+## Build Release
+
+```shell
+mkdir build-release
+cd build-release
+cmake .. -DCMAKE_BUILD_TYPE=Release # for realease
+make
+```
+
+## Build for Windows Release
+
+```bash
+mkdir build-windows-release
+cd build-windows-release
+cmake .. -D CMAKE_TOOLCHAIN_FILE=../toolchain-mingw.cmake -DCMAKE_BUILD_TYPE=Release # for realease
+make
+```
+<!-- could be util
+-D UPDATE_DEPS=ON
+-->

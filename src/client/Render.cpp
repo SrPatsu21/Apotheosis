@@ -71,28 +71,22 @@ int Render::run(){
 
     // Create vertex buffer
     const std::vector<Vertex> vertices = {
-        // Base quadrada
-        Vertex({-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}),
-        Vertex({ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}),
-        Vertex({ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f}),
-        Vertex({-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 0.0f}),
+        Vertex({-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}), // 0
+        Vertex({ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}), // 1
+        Vertex({ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f}), // 2
+        Vertex({-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 0.0f}), // 3
 
-        // Topo
-        Vertex({0.0f, 0.8f, 0.0f}, {1.0f, 0.0f, 1.0f})
+        Vertex({ 0.0f, 0.8f,  0.0f}, {1.0f, 0.0f, 1.0f})  // 4
     };
     const std::vector<uint16_t> indices = {
-        // Base (quadrado)
         0, 1, 2,
-        2, 3, 0,
+        0, 2, 3,
 
-        // Lados (triângulos)
-        0, 1, 4,
-        1, 2, 4,
-        2, 3, 4,
-        3, 0, 4
+        0, 4, 1,
+        1, 4, 2,
+        2, 4, 3,
+        3, 4, 0
     };
-    std::cout << "vertices:" << vertices.size() << " \n ";
-    std::cout << "indices:" << indices.size() << " \n ";
 
     VertexManager* pyramidVertex = new VertexManager(vertices);
     IndexManager* pyramidIndex = new IndexManager(indices);
@@ -108,7 +102,6 @@ int Render::run(){
     // std::cout << "Push Constant Max Size: " << deviceProperties.limits.maxPushConstantsSize << " bytes\n";
 
 
-    std::cout << "loop \n";
     //main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -178,6 +171,11 @@ int Render::run(){
     delete(cameraBufferManager);
     delete(renderPass);
     delete(swapchainManager);
+    //semaphore and fence
+    vkDestroySemaphore(CoreVulkan::getDevice(), this->renderFinishedSemaphore, nullptr);
+    vkDestroySemaphore(CoreVulkan::getDevice(), this->imageAvailableSemaphore, nullptr);
+    vkDestroyFence(CoreVulkan::getDevice(), this->inFlightFence, nullptr);
+    //clean vulkan
     CoreVulkan::destroy();
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -217,7 +215,8 @@ void Render::createSyncObjects() {
 }
 
 Render::~Render(){
-    vkDestroySemaphore(CoreVulkan::getDevice(), this->renderFinishedSemaphore, nullptr);
-    vkDestroySemaphore(CoreVulkan::getDevice(), this->imageAvailableSemaphore, nullptr);
-    vkDestroyFence(CoreVulkan::getDevice(), this->inFlightFence, nullptr);
+    // cant be here bescaouse of device
+    // vkDestroySemaphore(CoreVulkan::getDevice(), this->renderFinishedSemaphore, nullptr);
+    // vkDestroySemaphore(CoreVulkan::getDevice(), this->imageAvailableSemaphore, nullptr);
+    // vkDestroyFence(CoreVulkan::getDevice(), this->inFlightFence, nullptr);
 }

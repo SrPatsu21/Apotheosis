@@ -24,11 +24,19 @@ project(ProjectD)
         set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
     endif()
 
+# Disable layers
+if (CMAKE_BUILD_TYPE STREQUAL "Release" OR WIN32)
+    add_compile_definitions(DISABLE_VALIDATION_LAYERS)
+endif()
+
 # Release mode
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
         message(STATUS "Compiling in Release mode")
         add_compile_definitions(NDEBUG)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native")
+        if(UNIX)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=array-bounds")
+        endif()
     endif()
 
 # Vulkan
