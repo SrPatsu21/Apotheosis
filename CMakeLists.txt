@@ -187,6 +187,20 @@ add_custom_target(Shaders ALL DEPENDS ${SHADER_OUTPUTS})
                 OUTPUT_NAME "ProjectD"
                 SUFFIX ".out"
         )
+
+        # embedded libs
+        set(LIBS_DIR "${CMAKE_SOURCE_DIR}/lib/linux")
+
+        file(GLOB EXTRA_LIBS "${LIBS_DIR}/*.so*")
+        file(COPY ${EXTRA_LIBS} DESTINATION ${CMAKE_BINARY_DIR}/lib/linux)
+
+        file(COPY ${LIBS_DIR}/libdecor DESTINATION ${CMAKE_BINARY_DIR}/lib/linux)
+
+        set_target_properties(ProjectD PROPERTIES
+            INSTALL_RPATH "$ORIGIN/lib/linux"
+            BUILD_WITH_INSTALL_RPATH TRUE
+        )
+
     endif()
 
 # Link libraries
