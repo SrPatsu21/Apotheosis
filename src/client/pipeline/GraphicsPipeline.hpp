@@ -2,6 +2,7 @@
 
 #include "../CoreVulkan.hpp"
 #include "../mash/Vertex.hpp"
+#include "ShaderLoader.hpp"
 #include <array>
 
 /**
@@ -146,12 +147,7 @@ public:
 
     @throws std::runtime_error if pipeline layout or graphics pipeline creation fails.
     */
-    GraphicsPipeline(
-        VkExtent2D swapchainExtent,
-        VkRenderPass renderPass,
-        VkShaderModule vertShaderModule,
-        VkShaderModule fragShaderModule,
-        VkDescriptorSetLayout descriptorSetLayout);
+    GraphicsPipeline(VkExtent2D swapchainExtent, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
 
     /**
     @brief Destructor.

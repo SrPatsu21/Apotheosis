@@ -4,7 +4,6 @@
 #include "pipeline/RenderPass.hpp"
 #include "pipeline/DescriptorManager.hpp"
 #include "camera/CameraBufferManager.hpp"
-#include "ShaderLoader.hpp"
 #include "pipeline/GraphicsPipeline.hpp"
 #include "swapchain/DepthBufferManager.hpp"
 #include "swapchain/FramebufferManager.hpp"
@@ -51,14 +50,11 @@ int Render::run(){
     // Create camera buff with uniformBuffer
     CameraBufferManager* cameraBufferManager = new CameraBufferManager();
 
-    // Load shaders
-    ShaderLoader* shaderLoader = new ShaderLoader("shaders/vertex.glsl.spv", "shaders/fragment.glsl.spv");
-
     // Create descript
     DescriptorManager* descriptorManager = new DescriptorManager(cameraBufferManager);
 
     // Create graphics pipeline
-    GraphicsPipeline* graphicsPipeline = new GraphicsPipeline(swapchainManager->getExtent(), renderPass->get(), shaderLoader->getVertModule(), shaderLoader->getFragModule(), descriptorManager->getLayout());
+    GraphicsPipeline* graphicsPipeline = new GraphicsPipeline(swapchainManager->getExtent(), renderPass->get(), descriptorManager->getLayout());
 
     //Create DepthResources
     DepthBufferManager* depthBufferManager = new DepthBufferManager(swapchainManager->getExtent());
@@ -166,7 +162,6 @@ int Render::run(){
     delete(framebufferManager);
     delete(depthBufferManager);
     delete(graphicsPipeline);
-    delete(shaderLoader);
     delete(descriptorManager);
     delete(cameraBufferManager);
     delete(renderPass);

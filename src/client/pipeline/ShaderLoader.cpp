@@ -3,7 +3,7 @@
 
 std::vector<char> ShaderLoader::readFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
-    if (!file) {
+    if (!file.is_open()) {
         throw std::runtime_error("failed to open shader file: " + filename);
     }
 

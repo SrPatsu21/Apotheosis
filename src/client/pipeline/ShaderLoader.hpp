@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CoreVulkan.hpp"
+#include "../CoreVulkan.hpp"
 
 /**
 @brief Manages Vulkan shader modules for a graphics pipeline.
