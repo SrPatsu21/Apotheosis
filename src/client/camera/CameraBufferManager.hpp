@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../CoreVulkan.hpp"
-#include "../swapchain/SwapchainManager.hpp"
+#include "../swapchain&framebuffer/SwapchainManager.hpp"
 #include <glm/glm.hpp>
 
 class CameraBufferManager

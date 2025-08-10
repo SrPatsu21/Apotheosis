@@ -10,7 +10,7 @@
 #include <cstring>
 #include <map>
 #include <optional>
-#include "./swapchain/SwapchainSupportDetails.hpp"
+#include "./swapchain&framebuffer/SwapchainSupportDetails.hpp"
 
 const static std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"

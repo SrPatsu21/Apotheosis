@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../CoreVulkan.hpp"
-#include "../pipeline/GraphicsPipeline.hpp"
+#include "../graphics_pipeline/GraphicsPipeline.hpp"
 
 /**
  * @class CommandManager
