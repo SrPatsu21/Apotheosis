@@ -26,6 +26,7 @@
 
 ## 2. Create an UML class diagram, using any toll. (Probably StarUML, but it can change) ❎
 
+<!-- TODO -->
 [UML](./uml/)
 
 ## 3. Define the libs and set how to use them ❎
@@ -58,7 +59,14 @@
 
 ## 6. Define a name
 
-## 7. What next?
+<!-- TODO -->
+
+## 7. Make a Prototype
+
+## 8. Input assembly
+
+<!-- TODO -->
+implement VK_PRIMITIVE_TOPOLOGY_POINT_LIST and VK_PRIMITIVE_TOPOLOGY_LINE_LIST too.
 
 ## Sources used
 
