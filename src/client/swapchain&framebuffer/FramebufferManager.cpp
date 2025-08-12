@@ -4,7 +4,7 @@
 FramebufferManager::FramebufferManager(VkRenderPass renderPass, const SwapchainManager* swapchainManager, const DepthBufferManager* depthBufferManager) {
     const auto& swapchainImageViews = swapchainManager->getImageViews();
     VkImageView depthImageView = depthBufferManager->getDepthImageView();
-    VkExtent2D extent = swapchainManager->getExtent();
+    VkExtent2D swapChainExtent = swapchainManager->getExtent();
 
     this->swapchainFramebuffers.resize(swapchainImageViews.size());
 
@@ -19,8 +19,8 @@ FramebufferManager::FramebufferManager(VkRenderPass renderPass, const SwapchainM
         framebufferInfo.renderPass = renderPass;
         framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
         framebufferInfo.pAttachments = attachments.data();
-        framebufferInfo.width = extent.width;
-        framebufferInfo.height = extent.height;
+        framebufferInfo.width = swapChainExtent.width;
+        framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
 
         if (vkCreateFramebuffer(CoreVulkan::getDevice(), &framebufferInfo, nullptr, &this->swapchainFramebuffers[i]) != VK_SUCCESS) {

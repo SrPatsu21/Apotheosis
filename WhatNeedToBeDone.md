@@ -48,9 +48,13 @@
 - stb_image
   Help load PNG/JPG/TGA, etc. image files.
 
-## 4. Set the makefile
+## 4. Set the cmake
+
+[CMAKE](./CMakeLists.txt)
 
 ## 5. config gitignore
+
+[gitignore](./.gitignore)
 
 ## 6. Define a name
 
