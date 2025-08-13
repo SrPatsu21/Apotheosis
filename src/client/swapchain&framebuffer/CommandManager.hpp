@@ -36,6 +36,12 @@ private:
     */
     std::vector<VkCommandBuffer> commandBuffers;
 
+    void createCommandPool(uint32_t graphicsQueueFamily);
+    void allocateCommandbuffers(const std::vector<VkFramebuffer>& framebuffers);
+    void recordCommandBuffer(VkRenderPass renderPass, GraphicsPipeline* graphicsPipeline,
+    const std::vector<VkFramebuffer>& framebuffers, VkExtent2D extent, VkBuffer vertexBuffer, VkBuffer indexBuffer,
+    const std::vector<uint16_t>& indices, VkDescriptorSet descriptorSet);
+
 public:
     /**
      * @brief Constructs the CommandManager, creating a command pool and recording command buffers.

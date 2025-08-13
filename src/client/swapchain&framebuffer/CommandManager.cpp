@@ -20,18 +20,32 @@ void createCommandPool(uint32_t graphicsQueueFamily) {
 CommandManager::CommandManager(
     uint32_t graphicsQueueFamily, VkRenderPass renderPass, GraphicsPipeline* graphicsPipeline,
     const std::vector<VkFramebuffer>& framebuffers, VkExtent2D extent, VkBuffer vertexBuffer, VkBuffer indexBuffer,
-    const std::vector<uint16_t>& indices, VkDescriptorSet descriptorSet) {
+    const std::vector<uint16_t>& indices, VkDescriptorSet descriptorSet)
+    {
+
+    // Create command pool
+    createCommandPool(graphicsQueueFamily);
+
+    // Allocate command buffers
+    allocateCommandbuffers(framebuffers);
+
+    // Record command buffers
+    recordCommandBuffer(renderPass, graphicsPipeline, framebuffers, extent, vertexBuffer, indexBuffer, indices, descriptorSet);
+}
+
+void CommandManager::createCommandPool(uint32_t graphicsQueueFamily) {
     // Create command pool
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     poolInfo.queueFamilyIndex = graphicsQueueFamily;
-    poolInfo.flags = 0;
 
     if (vkCreateCommandPool(CoreVulkan::getDevice(), &poolInfo, nullptr, &this->commandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create command pool!");
     }
+}
 
-    // Allocate command buffers
+void CommandManager::allocateCommandbuffers(const std::vector<VkFramebuffer>& framebuffers){
     this->commandBuffers.resize(framebuffers.size());
 
     VkCommandBufferAllocateInfo allocInfo{};
@@ -43,9 +57,14 @@ CommandManager::CommandManager(
     if (vkAllocateCommandBuffers(CoreVulkan::getDevice(), &allocInfo, this->commandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
+}
 
-    // Record command buffers
+void CommandManager::recordCommandBuffer(VkRenderPass renderPass, GraphicsPipeline* graphicsPipeline,
+    const std::vector<VkFramebuffer>& framebuffers, VkExtent2D extent, VkBuffer vertexBuffer, VkBuffer indexBuffer,
+    const std::vector<uint16_t>& indices, VkDescriptorSet descriptorSet)
+    {
     for (size_t i = 0; i < this->commandBuffers.size(); ++i) {
+        //* Command Buffer Begin
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = 0;
@@ -55,6 +74,7 @@ CommandManager::CommandManager(
             throw std::runtime_error("failed to begin recording command buffer!");
         }
 
+        //* Starting a render pass
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
@@ -62,18 +82,19 @@ CommandManager::CommandManager(
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = extent;
 
+        // Clear screem color
         VkClearValue clearValues[2];
         clearValues[0].color = {{0.4f, 1.0f, 1.0f, 1.0f}};
         clearValues[1].depthStencil = {1.0f, 0};
-
         renderPassInfo.clearValueCount = 2;
         renderPassInfo.pClearValues = clearValues;
 
         vkCmdBeginRenderPass(this->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+        //* drawing commands
         vkCmdBindPipeline(this->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->getPipeline());
 
-        // Bind dos vertex/index buffers
+        // Bind vertex/index buffers
         VkBuffer vertexBuffers[] = {vertexBuffer};
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(this->commandBuffers[i], 0, 1, vertexBuffers, offsets);
@@ -83,22 +104,12 @@ CommandManager::CommandManager(
         // Bind descriptor sets
         vkCmdBindDescriptorSets(this->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->getLayout(), 0, 1, &descriptorSet, 0, nullptr);
 
-        // Push da modelMatrix
-        glm::mat4 model = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 view = glm::lookAt(glm::vec3(2, 2, 2), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-        glm::mat4 proj = glm::perspective(glm::radians(45.0f), extent.width / (float)extent.height, 0.1f, 10.0f);
-        proj[1][1] *= -1; // Vulkan
-
-        glm::mat4 mvp = proj * view * model;
-
-        // vkCmdPushConstants(this->commandBuffers[i], graphicsPipeline->getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mvp);
-
+        // viewport and scissor dynamic
         VkViewport viewport = graphicsPipeline->getViewport();
         VkRect2D scissor = graphicsPipeline->getScissor();
 
         vkCmdSetViewport(commandBuffers[i], 0, 1, &viewport);
         vkCmdSetScissor(commandBuffers[i], 0, 1, &scissor);
-
 
         // Draw
         vkCmdDrawIndexed(this->commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);

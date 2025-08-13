@@ -55,7 +55,7 @@ void CameraBufferManager::updateUniformBuffer(SwapchainManager* swapchainManager
 
     // Model: identity
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, time, glm::vec3(1.0f, 0.0f, 0.0f));
+        model = glm::rotate(model, time, glm::vec3(1.0f, 0.2f, 0.5f));
         model = glm::rotate(model, time, glm::vec3(0.0f, 0.2f, 0.0f));
         model = glm::rotate(model, time, glm::vec3(0.0f, 0.0f, 0.5f));
     ubo.model = model;
