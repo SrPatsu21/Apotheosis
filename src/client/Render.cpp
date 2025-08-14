@@ -178,19 +178,7 @@ int Render::run(){
     return 0;
 };
 
-void Render::initWindow() {
-
-};
-
-void Render::initVulkan(){
-
-};
-
-void Render::mainLoop(){
-
-};
-
-void Render::cleanup(){
+void Render::drawFrame() {
 
 };
 

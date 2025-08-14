@@ -3,20 +3,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-//TODO refactore into 2 function
-/*
-void createCommandPool(uint32_t graphicsQueueFamily) {
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.queueFamilyIndex = graphicsQueueFamily;
-    poolInfo.flags = 0;
-
-    if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create command pool!");
-    }
-}
-*/
-
 CommandManager::CommandManager(
     uint32_t graphicsQueueFamily, VkRenderPass renderPass, GraphicsPipeline* graphicsPipeline,
     const std::vector<VkFramebuffer>& framebuffers, VkExtent2D extent, VkBuffer vertexBuffer, VkBuffer indexBuffer,
