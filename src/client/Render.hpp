@@ -49,10 +49,7 @@ private:
      */
     VkFence inFlightFence;
 
-    void initWindow();
-    void initVulkan();
-    void mainLoop();
-    void cleanup();
+    void drawFrame();
 
     /**
      * @brief Creates the Vulkan synchronization objects used per-frame.
