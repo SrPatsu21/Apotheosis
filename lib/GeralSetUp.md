@@ -12,6 +12,8 @@
     <https://marketplace.visualstudio.com/items?itemName=aaron-bond.better-comments>
 - Trailing Spaces \
     <https://marketplace.visualstudio.com/items?itemName=shardulm94.trailing-spaces>
+- Doxygen
+    <https://marketplace.visualstudio.com/items?itemName=bbenoist.Doxygen>
 
 ## Highly Recommend
 
