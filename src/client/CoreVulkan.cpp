@@ -331,9 +331,27 @@ SwapchainSupportDetails CoreVulkan::querySwapchainSupport(VkSurfaceKHR surface) 
     return details;
 }
 
-void CoreVulkan::destroy()
-{
-    vkDestroyDevice(CoreVulkan::device, nullptr);
-    vkDestroySurfaceKHR(CoreVulkan::instance, CoreVulkan::surface, nullptr);
-    vkDestroyInstance(CoreVulkan::instance, nullptr);
-};
+void CoreVulkan::destroy() {
+    // 1) Stop GPU before destroying anything.
+    if (CoreVulkan::device != VK_NULL_HANDLE) {
+        vkDeviceWaitIdle(CoreVulkan::device);
+    }
+
+    // 2) Destroy logical device (if valid).
+    if (CoreVulkan::device != VK_NULL_HANDLE) {
+        vkDestroyDevice(CoreVulkan::device, nullptr);
+        CoreVulkan::device = VK_NULL_HANDLE;
+    }
+
+    // 3) Destroy surface (must happen before instance destruction).
+    if (CoreVulkan::surface != VK_NULL_HANDLE && CoreVulkan::instance != VK_NULL_HANDLE) {
+        vkDestroySurfaceKHR(CoreVulkan::instance, CoreVulkan::surface, nullptr);
+        CoreVulkan::surface = VK_NULL_HANDLE;
+    }
+
+    // 4) Destroy instance last.
+    if (CoreVulkan::instance != VK_NULL_HANDLE) {
+        vkDestroyInstance(CoreVulkan::instance, nullptr);
+        CoreVulkan::instance = VK_NULL_HANDLE;
+    }
+}

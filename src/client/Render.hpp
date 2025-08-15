@@ -1,7 +1,18 @@
 #pragma once
 
 #include "CoreVulkan.hpp"
+#include "CoreVulkan.hpp"
+#include "swapchain&framebuffer/SwapchainManager.hpp"
+#include "graphics_pipeline/RenderPass.hpp"
+#include "graphics_pipeline/DescriptorManager.hpp"
+#include "camera/CameraBufferManager.hpp"
+#include "graphics_pipeline/GraphicsPipeline.hpp"
+#include "swapchain&framebuffer/DepthBufferManager.hpp"
+#include "swapchain&framebuffer/FramebufferManager.hpp"
 #include "mash/VertexManager.hpp"
+#include "mash/IndexManager.hpp"
+#include "swapchain&framebuffer/CommandManager.hpp"
+#include "camera/UniformBufferObject.hpp"
 
 // #include <stdexcept>
 // #include <glm/glm.hpp>
@@ -23,6 +34,17 @@ private:
     // screen height in px
     uint32_t height = 600;
 
+    GLFWwindow* window;
+    SwapchainManager* swapchainManager;
+    RenderPass* renderPass;
+    CameraBufferManager* cameraBufferManager;
+    DescriptorManager* descriptorManager;
+    GraphicsPipeline* graphicsPipeline;
+    DepthBufferManager* depthBufferManager;
+    FramebufferManager* framebufferManager;
+    VertexManager* vertexManager;
+    IndexManager* indexManager;
+    CommandManager* commandManager;
     /**
      * @brief Semaphore that signals when an image from the swapchain is ready for rendering.
      *
@@ -49,7 +71,10 @@ private:
      */
     VkFence inFlightFence;
 
+    void initWindow();
+    void initVulkan();
     void drawFrame();
+    void cleanup();
 
     /**
      * @brief Creates the Vulkan synchronization objects used per-frame.
