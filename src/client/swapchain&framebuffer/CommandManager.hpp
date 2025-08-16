@@ -38,9 +38,6 @@ private:
 
     void createCommandPool(uint32_t graphicsQueueFamily);
     void allocateCommandbuffers(const std::vector<VkFramebuffer>& framebuffers);
-    void recordCommandBuffer(VkRenderPass renderPass, GraphicsPipeline* graphicsPipeline,
-    const std::vector<VkFramebuffer>& framebuffers, VkExtent2D extent, VkBuffer vertexBuffer, VkBuffer indexBuffer,
-    const std::vector<uint16_t>& indices, VkDescriptorSet descriptorSet);
 
 public:
     /**
@@ -58,22 +55,16 @@ public:
      *
      * This constructor allocates and records one command buffer per framebuffer.
      */
-    CommandManager(
-        uint32_t graphicsQueueFamily,
-        VkRenderPass renderPass,
-        GraphicsPipeline* graphicsPipeline,
-        const std::vector<VkFramebuffer>& framebuffers,
-        VkExtent2D extent,
-        VkBuffer vertexBuffer,
-        VkBuffer indexBuffer,
-        const std::vector<uint16_t>& indices,
-        VkDescriptorSet descriptorSet);
+    CommandManager(uint32_t graphicsQueueFamily, const std::vector<VkFramebuffer>& framebuffers);
 
     /**
      * @brief Destructor. Cleans up the Vulkan command pool and command buffers.
      */
     ~CommandManager();
 
+    void recordCommandBuffer(VkRenderPass renderPass, GraphicsPipeline* graphicsPipeline,
+        const std::vector<VkFramebuffer>& framebuffers, VkExtent2D extent, VkBuffer vertexBuffer, VkBuffer indexBuffer,
+        const std::vector<uint16_t>& indices, VkDescriptorSet descriptorSet);
     VkCommandPool getCommandPool() const { return commandPool; }
     const std::vector<VkCommandBuffer>& getCommandBuffers() const { return commandBuffers; }
 };

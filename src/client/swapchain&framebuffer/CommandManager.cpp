@@ -3,20 +3,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-CommandManager::CommandManager(
-    uint32_t graphicsQueueFamily, VkRenderPass renderPass, GraphicsPipeline* graphicsPipeline,
-    const std::vector<VkFramebuffer>& framebuffers, VkExtent2D extent, VkBuffer vertexBuffer, VkBuffer indexBuffer,
-    const std::vector<uint16_t>& indices, VkDescriptorSet descriptorSet)
-    {
-
+CommandManager::CommandManager(uint32_t graphicsQueueFamily, const std::vector<VkFramebuffer>& framebuffers){
     // Create command pool
     createCommandPool(graphicsQueueFamily);
 
     // Allocate command buffers
     allocateCommandbuffers(framebuffers);
-
-    // Record command buffers
-    recordCommandBuffer(renderPass, graphicsPipeline, framebuffers, extent, vertexBuffer, indexBuffer, indices, descriptorSet);
 }
 
 void CommandManager::createCommandPool(uint32_t graphicsQueueFamily) {

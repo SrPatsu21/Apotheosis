@@ -1,5 +1,22 @@
 #include "Render.hpp"
 
+const std::vector<Vertex> VERTICES = {
+    Vertex({-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}), // 0
+    Vertex({ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}), // 1
+    Vertex({ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f}), // 2
+    Vertex({-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 0.0f}), // 3
+
+    Vertex({ 0.0f, 0.8f,  0.0f}, {1.0f, 0.0f, 1.0f})  // 4
+};
+const std::vector<uint16_t> INDICES = {
+    0, 1, 2,
+    0, 2, 3,
+
+    0, 4, 1,
+    1, 4, 2,
+    2, 4, 3,
+    3, 4, 0
+};
 
 Render::Render(){};
 
@@ -76,79 +93,68 @@ void Render::initVulkan(){
     // create semaphore and fence
     createSyncObjects();
 
-    // Create vertex buffer
-    const std::vector<Vertex> vertices = {
-        Vertex({-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}), // 0
-        Vertex({ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}), // 1
-        Vertex({ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f}), // 2
-        Vertex({-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 0.0f}), // 3
-
-        Vertex({ 0.0f, 0.8f,  0.0f}, {1.0f, 0.0f, 1.0f})  // 4
-    };
-    const std::vector<uint16_t> indices = {
-        0, 1, 2,
-        0, 2, 3,
-
-        0, 4, 1,
-        1, 4, 2,
-        2, 4, 3,
-        3, 4, 0
-    };
-
-    this->vertexManager = new VertexManager(vertices);
-    this->indexManager = new IndexManager(indices);
-
     // Create command
-    this->commandManager = new CommandManager(CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value(),
-        this->renderPass->get(), this->graphicsPipeline, this->framebufferManager->getFramebuffers(),
-        this->swapchainManager->getExtent(), vertexManager->getVertexBuffer(), indexManager->getIndexBuffer(),
-        indices, this->descriptorManager->getSet());
+    this->commandManager = new CommandManager(CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value(), this->framebufferManager->getFramebuffers());
 
     // VkPhysicalDeviceProperties deviceProperties;
     // vkGetPhysicalDeviceProperties(CoreVulkan::getPhysicalDevice(), &deviceProperties);
 
     // std::cout << "Push Constant Max Size: " << deviceProperties.limits.maxPushConstantsSize << " bytes\n";
 
+
+    // Create vertex buffer
+    this->vertexManager = new VertexManager(VERTICES);
+    this->indexManager = new IndexManager(INDICES);
 };
 
 void Render::drawFrame(){
     float time = glfwGetTime();
 
-    cameraBufferManager->updateUniformBuffer(swapchainManager, time);
+    vkWaitForFences(CoreVulkan::getDevice(), 1, &this->inFlightFence, VK_TRUE, UINT64_MAX);
+    vkResetFences(CoreVulkan::getDevice(), 1, &this->inFlightFence);
 
-    vkWaitForFences(CoreVulkan::getDevice(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
-    vkResetFences(CoreVulkan::getDevice(), 1, &inFlightFence);
+    //reset and record Command buffer
+    for (VkCommandBuffer cmd : this->commandManager->getCommandBuffers()) {
+        vkResetCommandBuffer(cmd, 0);
+    }
+    commandManager->recordCommandBuffer(this->renderPass->get(), this->graphicsPipeline, this->framebufferManager->getFramebuffers(), this->swapchainManager->getExtent(), this->vertexManager->getVertexBuffer(), this->indexManager->getIndexBuffer(), INDICES, this->descriptorManager->getSet());
 
+    //camera
+    cameraBufferManager->updateUniformBuffer(this->swapchainManager, time);
+
+    //up
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(CoreVulkan::getDevice(), swapchainManager->getSwapchain(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+    vkAcquireNextImageKHR(CoreVulkan::getDevice(), this->swapchainManager->getSwapchain(), UINT64_MAX, this->imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
+    //* Submitting the command buffer
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
+    VkSemaphore waitSemaphores[] = {this->imageAvailableSemaphore};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
 
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandManager->getCommandBuffers()[imageIndex];
+    submitInfo.pCommandBuffers = &this->commandManager->getCommandBuffers()[imageIndex];
 
-    VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
+    VkSemaphore signalSemaphores[] = {this->renderFinishedSemaphore};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(CoreVulkan::getPresentQueue(), 1, &submitInfo, inFlightFence) != VK_SUCCESS) {
+    if (vkQueueSubmit(CoreVulkan::getPresentQueue(), 1, &submitInfo, this->inFlightFence) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 
+    //* Presentation
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
 
-    VkSwapchainKHR swapChains[] = {swapchainManager->getSwapchain()};
+    VkSwapchainKHR swapChains[] = {this->swapchainManager->getSwapchain()};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &imageIndex;
@@ -158,9 +164,6 @@ void Render::drawFrame(){
     if (presentResult != VK_SUCCESS) {
         throw std::runtime_error("failed to present swap chain image!");
     }
-    // std::cout << "Recording command buffer #" << imageIndex << "\n";
-    // std::cout << "Binding pipeline, vertex/index buffers...\n";
-    // std::cout << "Issuing draw command with " << indices.size() << " indices.\n";
 };
 
 void Render::cleanup(){
