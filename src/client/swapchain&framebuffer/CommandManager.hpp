@@ -62,7 +62,7 @@ public:
      */
     ~CommandManager();
 
-    void recordCommandBuffer(VkRenderPass renderPass, GraphicsPipeline* graphicsPipeline,
+    void recordCommandBuffer(size_t imageIndex, VkRenderPass renderPass, GraphicsPipeline* graphicsPipeline,
         const std::vector<VkFramebuffer>& framebuffers, VkExtent2D extent, VkBuffer vertexBuffer, VkBuffer indexBuffer,
         const std::vector<uint16_t>& indices, VkDescriptorSet descriptorSet);
     VkCommandPool getCommandPool() const { return commandPool; }
