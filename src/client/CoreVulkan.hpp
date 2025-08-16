@@ -45,6 +45,8 @@ private:
 
     static VkQueue presentQueue;
 
+    static VkQueue graphicsQueue;
+
     static const std::vector<const char*> DEVICE_EXTENSIONS;
 
     static QueueFamilyIndices graphicsQueueFamilyIndices;
@@ -85,6 +87,7 @@ public:
     static VkPhysicalDevice getPhysicalDevice() { return physicalDevice; }
     static VkDevice getDevice() { return device; }
     static VkFormat getDepthFormat() { return depthFormat; }
+    static VkQueue getGraphicsQueue() { return graphicsQueue; }
     static VkQueue getPresentQueue() { return presentQueue; }
     static QueueFamilyIndices getGraphicsQueueFamilyIndices() { return graphicsQueueFamilyIndices; }
     static VkSurfaceKHR getSurface() { return surface; }

@@ -1,23 +1,5 @@
 #include "Render.hpp"
 
-const std::vector<Vertex> VERTICES = {
-    Vertex({-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}), // 0
-    Vertex({ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}), // 1
-    Vertex({ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f}), // 2
-    Vertex({-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 0.0f}), // 3
-
-    Vertex({ 0.0f, 0.8f,  0.0f}, {1.0f, 0.0f, 1.0f})  // 4
-};
-const std::vector<uint16_t> INDICES = {
-    0, 1, 2,
-    0, 2, 3,
-
-    0, 4, 1,
-    1, 4, 2,
-    2, 4, 3,
-    3, 4, 0
-};
-
 Render::Render(){};
 
 int Render::run(){
@@ -91,7 +73,8 @@ void Render::initVulkan(){
     this->framebufferManager = new FramebufferManager(this->renderPass->get(), this->swapchainManager, this->depthBufferManager);
 
     // create semaphore and fence
-    createSyncObjects(this->framebufferManager->getFramebuffers());
+    createSyncObjects();
+    initImagesInFlight(this->swapchainManager->getImages().size());
 
     // Create command
     this->commandManager = new CommandManager(CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value(), this->framebufferManager->getFramebuffers());
@@ -103,14 +86,14 @@ void Render::initVulkan(){
 
 
     // Create vertex buffer
-    this->vertexManager = new VertexManager(VERTICES);
-    this->indexManager = new IndexManager(INDICES);
+    this->vertexManager = new VertexManager(Render::VERTICES);
+    this->indexManager = new IndexManager(Render::INDICES);
 };
 
 void Render::drawFrame(){
     float time = glfwGetTime();
 
-    //fances for next image
+    // Wait for this frame to be free
     vkWaitForFences(CoreVulkan::getDevice(), 1, &this->inFlightFences[this->currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
@@ -118,66 +101,73 @@ void Render::drawFrame(){
             UINT64_MAX, this->imageAvailableSemaphores[this->currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     if (next_img_result == VK_ERROR_OUT_OF_DATE_KHR) {
-        // recreateSwapchain();
+        // TODO: this->recreateSwapchain();
         return;
     } else if (next_img_result != VK_SUCCESS && next_img_result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
 
+    // If this swapchain image is already in flight, wait for the fence that owns it
+    if (this->imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
+        vkWaitForFences(CoreVulkan::getDevice(), 1, &this->imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+    }
+    // Mark this image as now owned by the current frame's fence
+    this->imagesInFlight[imageIndex] = this->inFlightFences[this->currentFrame];
+
+    // Reset the fence for the current frame
     vkResetFences(CoreVulkan::getDevice(), 1, &this->inFlightFences[this->currentFrame]);
 
-    // Reset + record only the needed command buffer
-    vkResetCommandBuffer(this->commandManager->getCommandBuffers()[imageIndex], 0);
+    // Reset + record only the command buffer for this swapchain image
+    VkCommandBuffer cmd = this->commandManager->getCommandBuffers()[imageIndex];
+    vkResetCommandBuffer(cmd, 0);
     this->commandManager->recordCommandBuffer(imageIndex, this->renderPass->get(), this->graphicsPipeline,
             this->framebufferManager->getFramebuffers(), this->swapchainManager->getExtent(),
-            this->vertexManager->getVertexBuffer(), this->indexManager->getIndexBuffer(), INDICES,
+            this->vertexManager->getVertexBuffer(), this->indexManager->getIndexBuffer(), Render::INDICES,
             this->descriptorManager->getSet());
 
-    cameraBufferManager->updateUniformBuffer(this->swapchainManager, time);
+    // Update UBOs for this frame
+    this->cameraBufferManager->updateUniformBuffer(this->swapchainManager, time);
 
+    // --- Submit work ---
+    VkSemaphore waitSemaphores[] = { this->imageAvailableSemaphores[this->currentFrame] };
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    VkSemaphore signalSemaphores[] = { this->renderFinishedSemaphores[this->currentFrame] };
 
-    // Submitting the command buffer
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    VkSemaphore waitSemaphores[] = {this->imageAvailableSemaphores[this->currentFrame]};
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
-
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &this->commandManager->getCommandBuffers()[imageIndex];
-
-    VkSemaphore signalSemaphores[] = {this->renderFinishedSemaphores[this->currentFrame]};
+    submitInfo.pCommandBuffers = &cmd;
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(CoreVulkan::getPresentQueue(), 1, &submitInfo, this->inFlightFences[this->currentFrame]) != VK_SUCCESS) {
+    if (vkQueueSubmit(CoreVulkan::getGraphicsQueue(), 1, &submitInfo, this->inFlightFences[this->currentFrame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 
-    // Presentation
+    // --- Present image ---
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
-
-    VkSwapchainKHR swapChains[] = {this->swapchainManager->getSwapchain()};
+    VkSwapchainKHR swapChains[] = { this->swapchainManager->getSwapchain() };
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr;
 
     VkResult presentResult = vkQueuePresentKHR(CoreVulkan::getPresentQueue(), &presentInfo);
-    if (presentResult != VK_SUCCESS) {
+    if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR) {
+        // TODO: this->recreateSwapchain();
+    } else if (presentResult != VK_SUCCESS) {
         throw std::runtime_error("failed to present swap chain image!");
     }
 
-    // next frame
-    this->currentFrame = (this->currentFrame + 1) % this->imageAvailableSemaphores.size();
-};
+    // Advance to next frame slot
+    this->currentFrame = (this->currentFrame + 1) % Render::MAX_FRAMES_IN_FLIGHT;
+}
 
 void Render::cleanup(){
     // 1) Stop the GPU first so nothing is in flight.
@@ -235,26 +225,29 @@ void Render::cleanup(){
     glfwTerminate();
 }
 
-void Render::createSyncObjects(std::vector<VkFramebuffer> swapchainFramebuffers) {
-    this->imageAvailableSemaphores.resize(swapchainFramebuffers.size());
-    this->renderFinishedSemaphores.resize(swapchainFramebuffers.size());
-    this->inFlightFences.resize(swapchainFramebuffers.size());
+void Render::createSyncObjects() {
+    this->imageAvailableSemaphores.resize(Render::MAX_FRAMES_IN_FLIGHT);
+    this->renderFinishedSemaphores.resize(Render::MAX_FRAMES_IN_FLIGHT);
+    this->inFlightFences.resize(Render::MAX_FRAMES_IN_FLIGHT);
 
-    VkSemaphoreCreateInfo semaphoreInfo{};
+    VkSemaphoreCreateInfo semaphoreInfo{ };
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    VkFenceCreateInfo fenceInfo{};
+    VkFenceCreateInfo fenceInfo{ };
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // start signaled so first frame doesn't block
 
-    for (size_t i = 0; i < swapchainFramebuffers.size(); i++) {
-        if (vkCreateSemaphore(CoreVulkan::getDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(CoreVulkan::getDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(CoreVulkan::getDevice(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
-
-            throw std::runtime_error("failed to create synchronization objects for a frame!");
+    for (uint32_t i = 0; i < Render::MAX_FRAMES_IN_FLIGHT; ++i) {
+        if (vkCreateSemaphore(CoreVulkan::getDevice(), &semaphoreInfo, nullptr, &this->imageAvailableSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(CoreVulkan::getDevice(), &semaphoreInfo, nullptr, &this->renderFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateFence(CoreVulkan::getDevice(), &fenceInfo, nullptr, &this->inFlightFences[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create per-frame sync objects!");
         }
     }
+}
+
+void Render::initImagesInFlight(uint32_t swapchainImageCount) {
+    this->imagesInFlight.assign(swapchainImageCount, VK_NULL_HANDLE);
 }
 
 Render::~Render() {

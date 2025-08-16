@@ -9,6 +9,7 @@ VkPhysicalDevice CoreVulkan::physicalDevice = VK_NULL_HANDLE;
 VkFormat CoreVulkan::depthFormat = VK_FORMAT_UNDEFINED;
 QueueFamilyIndices CoreVulkan::graphicsQueueFamilyIndices{};
 VkQueue CoreVulkan::presentQueue = VK_NULL_HANDLE;
+VkQueue CoreVulkan::graphicsQueue = VK_NULL_HANDLE;
 VkSurfaceKHR CoreVulkan::surface = VK_NULL_HANDLE;
 const std::vector<const char*> CoreVulkan::DEVICE_EXTENSIONS = { //* Enable swapchain extension
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -219,7 +220,8 @@ void CoreVulkan::createLogicalDevice() {
         throw std::runtime_error("failed to create logical device!");
     }
 
-    vkGetDeviceQueue(CoreVulkan::device, CoreVulkan::graphicsQueueFamilyIndices.graphicsFamily.value(), 0, &CoreVulkan::presentQueue);
+    vkGetDeviceQueue(CoreVulkan::device, CoreVulkan::graphicsQueueFamilyIndices.graphicsFamily.value(), 0, &CoreVulkan::graphicsQueue);
+    vkGetDeviceQueue(CoreVulkan::device, CoreVulkan::graphicsQueueFamilyIndices.presentFamily.value(), 0, &CoreVulkan::presentQueue);
 }
 
 void CoreVulkan::findDepthFormat() {

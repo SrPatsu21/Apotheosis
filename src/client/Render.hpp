@@ -16,6 +16,26 @@
 
 class Render {
 public:
+    const int MAX_FRAMES_IN_FLIGHT = 2;
+
+    const std::vector<Vertex> VERTICES = {
+        Vertex({-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}), // 0
+        Vertex({ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}), // 1
+        Vertex({ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f}), // 2
+        Vertex({-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 0.0f}), // 3
+
+        Vertex({ 0.0f, 0.8f,  0.0f}, {1.0f, 0.0f, 1.0f})  // 4
+    };
+    const std::vector<uint16_t> INDICES = {
+        0, 1, 2,
+        0, 2, 3,
+
+        0, 4, 1,
+        1, 4, 2,
+        2, 4, 3,
+        3, 4, 0
+    };
+
     Render();
     int run();
 
@@ -48,10 +68,13 @@ private:
 
     std::vector<VkFence> inFlightFences;
 
+    std::vector<VkFence> imagesInFlight;
+
     void initWindow();
     void initVulkan();
     void drawFrame();
     void cleanup();
 
-    void createSyncObjects(std::vector<VkFramebuffer> swapchainFramebuffers);
+    void createSyncObjects();
+    void initImagesInFlight(uint32_t swapchainImageCount);
 };
