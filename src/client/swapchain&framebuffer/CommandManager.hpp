@@ -37,7 +37,6 @@ private:
     std::vector<VkCommandBuffer> commandBuffers;
 
     void createCommandPool(uint32_t graphicsQueueFamily);
-    void allocateCommandbuffers(const std::vector<VkFramebuffer>& framebuffers);
 
 public:
     /**
@@ -67,4 +66,5 @@ public:
         const std::vector<uint16_t>& indices, VkDescriptorSet descriptorSet);
     VkCommandPool getCommandPool() const { return commandPool; }
     const std::vector<VkCommandBuffer>& getCommandBuffers() const { return commandBuffers; }
+    void allocateCommandbuffers(const std::vector<VkFramebuffer>& framebuffers);
 };

@@ -144,3 +144,30 @@ void SwapchainManager::createImageViews() {
         }
     }
 }
+
+void SwapchainManager::recreate(VkSurfaceKHR surface, GLFWwindow* window, uint32_t graphicsQueueFamily)
+{
+    // destroy older
+    for (auto imageView : this->swapchainImageViews) {
+        vkDestroyImageView(CoreVulkan::getDevice(), imageView, nullptr);
+    }
+    this->swapchainImageViews.clear();
+
+    if (this->swapchain != VK_NULL_HANDLE) {
+        vkDestroySwapchainKHR(CoreVulkan::getDevice(), this->swapchain, nullptr);
+        this->swapchain = VK_NULL_HANDLE;
+    }
+
+    // details
+    SwapchainSupportDetails swapChainSupport = CoreVulkan::querySwapchainSupport(surface);
+
+    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+    VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities, window);
+
+    // create a new one
+    createSwapchainInternal(surface, surfaceFormat, presentMode, extent, swapChainSupport, graphicsQueueFamily);
+
+    // recreate imageViews
+    createImageViews();
+}

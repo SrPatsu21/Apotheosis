@@ -26,6 +26,8 @@ public:
     SwapchainManager(VkSurfaceKHR surface, uint32_t graphicsQueueFamily, GLFWwindow* window);
     ~SwapchainManager();
 
+    void recreate(VkSurfaceKHR surface, GLFWwindow* window, uint32_t graphicsQueueFamily);
+
     VkSwapchainKHR getSwapchain() const { return this->swapchain; }
     VkFormat getImageFormat() const { return this->swapchainImageFormat; }
     VkExtent2D getExtent() const { return this->swapchainExtent; }

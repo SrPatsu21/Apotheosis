@@ -77,4 +77,7 @@ private:
 
     void createSyncObjects();
     void initImagesInFlight(uint32_t swapchainImageCount);
+
+    void cleanupSwapChain();
+    void recreateSwapChain();
 };

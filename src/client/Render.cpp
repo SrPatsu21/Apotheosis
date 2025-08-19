@@ -101,7 +101,7 @@ void Render::drawFrame(){
             UINT64_MAX, this->imageAvailableSemaphores[this->currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     if (next_img_result == VK_ERROR_OUT_OF_DATE_KHR) {
-        // TODO: this->recreateSwapchain();
+        recreateSwapChain();
         return;
     } else if (next_img_result != VK_SUCCESS && next_img_result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to acquire swap chain image!");
@@ -160,7 +160,7 @@ void Render::drawFrame(){
 
     VkResult presentResult = vkQueuePresentKHR(CoreVulkan::getPresentQueue(), &presentInfo);
     if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR) {
-        // TODO: this->recreateSwapchain();
+        recreateSwapChain();
     } else if (presentResult != VK_SUCCESS) {
         throw std::runtime_error("failed to present swap chain image!");
     }
@@ -248,6 +248,77 @@ void Render::createSyncObjects() {
 
 void Render::initImagesInFlight(uint32_t swapchainImageCount) {
     this->imagesInFlight.assign(swapchainImageCount, VK_NULL_HANDLE);
+}
+
+void Render::cleanupSwapChain() {
+    // Framebuffers
+    const auto& framebuffers = framebufferManager->getFramebuffers(); // const ref is fine
+    for (auto framebuffer : framebuffers) {
+        vkDestroyFramebuffer(CoreVulkan::getDevice(), framebuffer, nullptr);
+    }
+
+    // Image Views
+    const auto& imageViews = swapchainManager->getImageViews();
+    for (auto imageView : imageViews) {
+        vkDestroyImageView(CoreVulkan::getDevice(), imageView, nullptr);
+    }
+
+    // Depth Resources
+    vkDestroyImageView(CoreVulkan::getDevice(), this->depthBufferManager->getDepthImageView(), nullptr);
+    vkDestroyImage(CoreVulkan::getDevice(), this->depthBufferManager->getDepthImage() , nullptr);
+    vkFreeMemory(CoreVulkan::getDevice(), this->depthBufferManager->getDepthImageMemory(), nullptr);
+
+    // Command Buffers
+    vkFreeCommandBuffers(
+        CoreVulkan::getDevice(),
+        commandManager->getCommandPool(),
+        static_cast<uint32_t>(commandManager->getCommandBuffers().size()),
+        commandManager->getCommandBuffers().data()
+    );
+
+    // Swapchain itself
+    vkDestroySwapchainKHR(CoreVulkan::getDevice(), swapchainManager->getSwapchain(), nullptr);
+}
+
+void Render::recreateSwapChain() {
+    vkDeviceWaitIdle(CoreVulkan::getDevice());
+
+    // 1. Destroy old swapchain + dependents
+    cleanupSwapChain();
+
+    // 2. Recreate swapchain
+    this->swapchainManager->recreate(CoreVulkan::getSurface(), this->window, CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value());
+
+    // 3. Recreate render pass (might depend on swapchain format)
+    delete this->renderPass;
+    this->renderPass = new RenderPass(this->swapchainManager->getImageFormat());
+
+    // 4. Recreate pipeline (depends on render pass + extent)
+    delete this->graphicsPipeline;
+    this->graphicsPipeline = new GraphicsPipeline(
+        this->swapchainManager->getExtent(),
+        this->renderPass->get(),
+        this->descriptorManager->getLayout()
+    );
+
+    // 5. Recreate depth buffer
+    delete this->depthBufferManager;
+    this->depthBufferManager = nullptr;
+    this->depthBufferManager = new DepthBufferManager(this->swapchainManager->getExtent());
+
+    // 6. Recreate framebuffers
+    delete this->framebufferManager;
+    this->framebufferManager = new FramebufferManager(
+        this->renderPass->get(),
+        this->swapchainManager,
+        this->depthBufferManager
+    );
+
+    // 7. Recreate command buffers
+    this->commandManager->allocateCommandbuffers(this->framebufferManager->getFramebuffers());
+
+    // 8. Resize imagesInFlight vector to match new swapchain image count
+    initImagesInFlight(this->swapchainManager->getImages().size());
 }
 
 Render::~Render() {
