@@ -31,6 +31,8 @@ void Render::initWindow(){
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     // screen config
     this->window = glfwCreateWindow(this->width, this->height, "ProjectD", nullptr, nullptr);
+    glfwSetWindowUserPointer(this->window, this);
+    glfwSetFramebufferSizeCallback(this->window, framebufferResizeCallback);
 };
 
 void Render::initVulkan(){
@@ -147,7 +149,7 @@ void Render::drawFrame(){
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 
-    // --- Present image ---
+    // Present image
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
@@ -159,7 +161,8 @@ void Render::drawFrame(){
     presentInfo.pResults = nullptr;
 
     VkResult presentResult = vkQueuePresentKHR(CoreVulkan::getPresentQueue(), &presentInfo);
-    if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR) {
+    if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR  || framebufferResized) {
+        framebufferResized = false;
         recreateSwapChain();
     } else if (presentResult != VK_SUCCESS) {
         throw std::runtime_error("failed to present swap chain image!");
@@ -251,23 +254,6 @@ void Render::initImagesInFlight(uint32_t swapchainImageCount) {
 }
 
 void Render::cleanupSwapChain() {
-    // Framebuffers
-    const auto& framebuffers = framebufferManager->getFramebuffers(); // const ref is fine
-    for (auto framebuffer : framebuffers) {
-        vkDestroyFramebuffer(CoreVulkan::getDevice(), framebuffer, nullptr);
-    }
-
-    // Image Views
-    const auto& imageViews = swapchainManager->getImageViews();
-    for (auto imageView : imageViews) {
-        vkDestroyImageView(CoreVulkan::getDevice(), imageView, nullptr);
-    }
-
-    // Depth Resources
-    vkDestroyImageView(CoreVulkan::getDevice(), this->depthBufferManager->getDepthImageView(), nullptr);
-    vkDestroyImage(CoreVulkan::getDevice(), this->depthBufferManager->getDepthImage() , nullptr);
-    vkFreeMemory(CoreVulkan::getDevice(), this->depthBufferManager->getDepthImageMemory(), nullptr);
-
     // Command Buffers
     vkFreeCommandBuffers(
         CoreVulkan::getDevice(),
@@ -276,12 +262,24 @@ void Render::cleanupSwapChain() {
         commandManager->getCommandBuffers().data()
     );
 
+    if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
+    if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
+    if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
+    if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
+
     // Swapchain itself
-    vkDestroySwapchainKHR(CoreVulkan::getDevice(), swapchainManager->getSwapchain(), nullptr);
+    this->swapchainManager->safeDestroySwapchain();
 }
 
 void Render::recreateSwapChain() {
     vkDeviceWaitIdle(CoreVulkan::getDevice());
+
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(this->window, &width, &height);
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(this->window, &width, &height);
+        glfwWaitEvents();
+    }
 
     // 1. Destroy old swapchain + dependents
     cleanupSwapChain();
@@ -290,35 +288,27 @@ void Render::recreateSwapChain() {
     this->swapchainManager->recreate(CoreVulkan::getSurface(), this->window, CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value());
 
     // 3. Recreate render pass (might depend on swapchain format)
-    delete this->renderPass;
     this->renderPass = new RenderPass(this->swapchainManager->getImageFormat());
 
     // 4. Recreate pipeline (depends on render pass + extent)
-    delete this->graphicsPipeline;
-    this->graphicsPipeline = new GraphicsPipeline(
-        this->swapchainManager->getExtent(),
-        this->renderPass->get(),
-        this->descriptorManager->getLayout()
-    );
+    this->graphicsPipeline = new GraphicsPipeline(this->swapchainManager->getExtent(), this->renderPass->get(), this->descriptorManager->getLayout());
 
     // 5. Recreate depth buffer
-    delete this->depthBufferManager;
-    this->depthBufferManager = nullptr;
     this->depthBufferManager = new DepthBufferManager(this->swapchainManager->getExtent());
 
     // 6. Recreate framebuffers
-    delete this->framebufferManager;
-    this->framebufferManager = new FramebufferManager(
-        this->renderPass->get(),
-        this->swapchainManager,
-        this->depthBufferManager
-    );
+    this->framebufferManager = new FramebufferManager(this->renderPass->get(), this->swapchainManager, this->depthBufferManager);
 
     // 7. Recreate command buffers
     this->commandManager->allocateCommandbuffers(this->framebufferManager->getFramebuffers());
 
     // 8. Resize imagesInFlight vector to match new swapchain image count
     initImagesInFlight(this->swapchainManager->getImages().size());
+}
+
+void Render::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+    auto app = reinterpret_cast<Render*>(glfwGetWindowUserPointer(window));
+    app->framebufferResized = true;
 }
 
 Render::~Render() {

@@ -26,6 +26,7 @@ public:
     SwapchainManager(VkSurfaceKHR surface, uint32_t graphicsQueueFamily, GLFWwindow* window);
     ~SwapchainManager();
 
+    void safeDestroySwapchain();
     void recreate(VkSurfaceKHR surface, GLFWwindow* window, uint32_t graphicsQueueFamily);
 
     VkSwapchainKHR getSwapchain() const { return this->swapchain; }

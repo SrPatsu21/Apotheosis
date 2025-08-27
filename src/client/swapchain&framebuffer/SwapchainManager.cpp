@@ -145,19 +145,15 @@ void SwapchainManager::createImageViews() {
     }
 }
 
-void SwapchainManager::recreate(VkSurfaceKHR surface, GLFWwindow* window, uint32_t graphicsQueueFamily)
-{
-    // destroy older
-    for (auto imageView : this->swapchainImageViews) {
-        vkDestroyImageView(CoreVulkan::getDevice(), imageView, nullptr);
-    }
-    this->swapchainImageViews.clear();
-
+void SwapchainManager::safeDestroySwapchain(){
     if (this->swapchain != VK_NULL_HANDLE) {
         vkDestroySwapchainKHR(CoreVulkan::getDevice(), this->swapchain, nullptr);
-        this->swapchain = VK_NULL_HANDLE;
+        this->swapchain = VK_NULL_HANDLE; // reset
     }
+}
 
+void SwapchainManager::recreate(VkSurfaceKHR surface, GLFWwindow* window, uint32_t graphicsQueueFamily)
+{
     // details
     SwapchainSupportDetails swapChainSupport = CoreVulkan::querySwapchainSupport(surface);
 

@@ -18,6 +18,8 @@ class Render {
 public:
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
+    bool framebufferResized = false;
+
     const std::vector<Vertex> VERTICES = {
         Vertex({-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}), // 0
         Vertex({ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}), // 1
@@ -69,6 +71,8 @@ private:
     std::vector<VkFence> inFlightFences;
 
     std::vector<VkFence> imagesInFlight;
+
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
     void initWindow();
     void initVulkan();
