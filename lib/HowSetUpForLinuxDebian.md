@@ -5,15 +5,15 @@
 ### Dear ImGui
 
 - All in one \
-    `wget -P lib/ "https://github.com/ocornut/imgui/archive/refs/tags/v1.92.0.zip" && unzip lib/v1.92.0.zip -d lib/ && mv lib/imgui-1.92.0 lib/Dear-ImGui && rm lib/v1.92.0.zip`
+    `wget -P lib/ "https://github.com/ocornut/imgui/archive/refs/tags/v1.92.2b.zip" && unzip lib/v1.92.2b.zip -d lib/ && mv lib/imgui-1.92.0 lib/Dear-ImGui && rm lib/v1.92.2b.zip`
 - Download \
-    `wget -P lib/ "https://github.com/ocornut/imgui/archive/refs/tags/v1.92.0.zip"`
+    `wget -P lib/ "https://github.com/ocornut/imgui/archive/refs/tags/v1.92.2b.zip"`
 - Unzip file \
-    `unzip lib/v1.92.0.zip -d lib/`
+    `unzip lib/v1.92.2b.zip -d lib/`
 - Rename \
-    `mv lib/imgui-1.92.0 lib/Dear-ImGui`
+    `mv lib/imgui-1.92.2b lib/Dear-ImGui`
 - Remove zip file \
-    `rm lib/v1.92.0.zip`
+    `rm lib/v1.92.2b.zip`
 
 ### GLFW
 

@@ -9,6 +9,9 @@ int Render::run(){
     // Basic all vulkan setup
     initVulkan();
 
+    // The UI
+    initImGui();
+
     //main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -34,6 +37,11 @@ void Render::initWindow(){
     glfwSetWindowUserPointer(this->window, this);
     glfwSetFramebufferSizeCallback(this->window, framebufferResizeCallback);
 };
+
+void Render::initImGui(){
+    this->ui = new UI;
+    this->ui->init(this->window, this->renderPass->get(), this->swapchainManager->getImages().size());
+}
 
 void Render::initVulkan(){
     //TODO better description
@@ -108,6 +116,9 @@ void Render::drawFrame(){
     } else if (next_img_result != VK_SUCCESS && next_img_result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
+    // ui new frame
+    this->ui->newFrame();
+    this->ui->build();
 
     // If this swapchain image is already in flight, wait for the fence that owns it
     if (this->imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
@@ -125,7 +136,7 @@ void Render::drawFrame(){
     this->commandManager->recordCommandBuffer(imageIndex, this->renderPass->get(), this->graphicsPipeline,
             this->framebufferManager->getFramebuffers(), this->swapchainManager->getExtent(),
             this->vertexManager->getVertexBuffer(), this->indexManager->getIndexBuffer(), Render::INDICES,
-            this->descriptorManager->getSet());
+            this->descriptorManager->getSet(), [this](VkCommandBuffer cmd) { this->ui->render(cmd); });
 
     // Update UBOs for this frame
     this->cameraBufferManager->updateUniformBuffer(this->swapchainManager, time);
@@ -203,6 +214,7 @@ void Render::cleanup(){
     if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
     if (this->descriptorManager){ delete this->descriptorManager; this->descriptorManager = nullptr; }
     if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
+    if (this->ui) { this->ui->shutdown(); delete this->ui; this->ui = nullptr; }
     if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
 
     // Swapchain and resources that own VkSwapchainKHR should be last among managers.

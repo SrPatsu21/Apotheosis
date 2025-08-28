@@ -1,28 +1,93 @@
-// #include "imgui.h"
-// #include "backends/imgui_impl_glfw.h"
-// #include "backends/imgui_impl_vulkan.h"
+// UI.cpp
+#include "UI.hpp"
+#include "../CoreVulkan.hpp"
 
-// void initUI(GLFWwindow* window, VkInstance instance, VkDevice device, VkPhysicalDevice gpu, VkQueue queue, uint32_t queueFamily, VkRenderPass renderPass) {
-//     IMGUI_CHECKVERSION();
-//     ImGui::CreateContext();
+UI::UI() : device(VK_NULL_HANDLE), descriptorPool(VK_NULL_HANDLE) {};
 
-//     ImGuiIO& io = ImGui::GetIO(); (void)io;
+UI::~UI() {};
 
-//     ImGui_ImplGlfw_InitForVulkan(window, true);
+void UI::init(GLFWwindow* window, VkRenderPass renderPass, uint32_t imageCount) 
+{
+    this->device = CoreVulkan::getDevice();
 
-//     ImGui_ImplVulkan_InitInfo init_info = {};
-//     init_info.Instance = instance;
-//     init_info.PhysicalDevice = gpu;
-//     init_info.Device = device;
-//     init_info.Queue = queue;
-//     init_info.QueueFamily = queueFamily;
-//     init_info.PipelineCache = VK_NULL_HANDLE;
-//     init_info.DescriptorPool = /* your Vulkan descriptor pool */;
-//     ImGui_ImplVulkan_Init(&init_info, renderPass);
+    // 1. Create ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ImGui::StyleColorsDark();
 
-//     // Upload fonts
-//     VkCommandBuffer cmd = /* begin single-time command buffer */;
-//     ImGui_ImplVulkan_CreateFontsTexture(cmd);
-//     /* submit and wait */;
-//     ImGui_ImplVulkan_DestroyFontUploadObjects();
-// }
+    // 2. Init GLFW
+    ImGui_ImplGlfw_InitForVulkan(window, true);
+
+    // 3. Descriptor pool for ImGui
+    VkDescriptorPoolSize pool_sizes[] = {
+        { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+    };
+    VkDescriptorPoolCreateInfo pool_info{};
+    pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    pool_info.maxSets = 1000 * IM_ARRAYSIZE(pool_sizes);
+    pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
+    pool_info.pPoolSizes = pool_sizes;
+    vkCreateDescriptorPool(this->device, &pool_info, nullptr, &this->descriptorPool);
+
+    // 4. Init Vulkan backend
+    ImGui_ImplVulkan_InitInfo init_info{};
+    init_info.Instance = CoreVulkan::getInstance();
+    init_info.PhysicalDevice = CoreVulkan::getPhysicalDevice();
+    init_info.Device = this->device;
+    init_info.QueueFamily = CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value();
+    init_info.Queue = CoreVulkan::getGraphicsQueue();
+    init_info.PipelineCache = VK_NULL_HANDLE;
+    init_info.DescriptorPool = this->descriptorPool;
+    init_info.RenderPass = renderPass;
+    init_info.Subpass = 0;
+    init_info.MinImageCount = imageCount;
+    init_info.ImageCount = imageCount;
+    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    init_info.Allocator = nullptr;
+    ImGui_ImplVulkan_Init(&init_info);
+
+    // fonts
+    // style.FontSizeBase = 20.0f;
+    io.Fonts->AddFontDefault();
+}
+
+void UI::newFrame() {
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+}
+
+void UI::build() {
+    // Example window
+    ImGui::Begin("Demo Window");
+    ImGui::Text("Hello from ImGui inside Vulkan!");
+    ImGui::End();
+}
+
+void UI::render(VkCommandBuffer cmd) {
+    ImGui::Render();
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+}
+
+void UI::shutdown() {
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    if (descriptorPool != VK_NULL_HANDLE) {
+        vkDestroyDescriptorPool(CoreVulkan::getDevice(), this->descriptorPool, nullptr);
+        this->descriptorPool = VK_NULL_HANDLE;
+    }
+}

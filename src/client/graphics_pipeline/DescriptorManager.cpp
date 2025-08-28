@@ -68,8 +68,12 @@ void DescriptorManager::createDescriptorPoolAndSet(CameraBufferManager* cameraBu
     vkUpdateDescriptorSets(CoreVulkan::getDevice(), 1, &descriptorWrite, 0, nullptr);
 }
 
-DescriptorManager::~DescriptorManager()
-{
-    vkDestroyDescriptorPool(CoreVulkan::getDevice(), this->descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(CoreVulkan::getDevice(), this->descriptorSetLayout, nullptr);
+DescriptorManager::~DescriptorManager() {
+    if (this->descriptorPool != VK_NULL_HANDLE) {
+        // No need to vkFreeDescriptorSets unless you are reusing the pool
+        vkDestroyDescriptorPool(CoreVulkan::getDevice(), this->descriptorPool, nullptr);
+    }
+    if (this->descriptorSetLayout != VK_NULL_HANDLE) {
+        vkDestroyDescriptorSetLayout(CoreVulkan::getDevice(), this->descriptorSetLayout, nullptr);
+    }
 }

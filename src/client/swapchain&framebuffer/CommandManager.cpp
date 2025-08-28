@@ -39,7 +39,7 @@ void CommandManager::allocateCommandbuffers(const std::vector<VkFramebuffer>& fr
 
 void CommandManager::recordCommandBuffer(size_t imageIndex, VkRenderPass renderPass, GraphicsPipeline* graphicsPipeline,
     const std::vector<VkFramebuffer>& framebuffers, VkExtent2D extent, VkBuffer vertexBuffer, VkBuffer indexBuffer,
-    const std::vector<uint16_t>& indices, VkDescriptorSet descriptorSet)
+    const std::vector<uint16_t>& indices, VkDescriptorSet descriptorSet, std::function<void(VkCommandBuffer)> extraRecording)
     {
     //* Command Buffer Begin
     VkCommandBufferBeginInfo beginInfo{};
@@ -59,7 +59,6 @@ void CommandManager::recordCommandBuffer(size_t imageIndex, VkRenderPass renderP
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = extent;
 
-    // Clear screem color
     VkClearValue clearValues[2];
     clearValues[0].color = {{0.4f, 1.0f, 1.0f, 1.0f}};
     clearValues[1].depthStencil = {1.0f, 0};
@@ -68,28 +67,26 @@ void CommandManager::recordCommandBuffer(size_t imageIndex, VkRenderPass renderP
 
     vkCmdBeginRenderPass(this->commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    //* drawing commands
+    //* Scene drawing commands
     vkCmdBindPipeline(this->commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->getPipeline());
 
-    // Bind vertex/index buffers
     VkBuffer vertexBuffers[] = {vertexBuffer};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(this->commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
-
     vkCmdBindIndexBuffer(this->commandBuffers[imageIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-
-    // Bind descriptor sets
     vkCmdBindDescriptorSets(this->commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->getLayout(), 0, 1, &descriptorSet, 0, nullptr);
 
-    // viewport and scissor dynamic
     VkViewport viewport = graphicsPipeline->getViewport();
     VkRect2D scissor = graphicsPipeline->getScissor();
+    vkCmdSetViewport(this->commandBuffers[imageIndex], 0, 1, &viewport);
+    vkCmdSetScissor(this->commandBuffers[imageIndex], 0, 1, &scissor);
 
-    vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
-    vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
-
-    // Draw
     vkCmdDrawIndexed(this->commandBuffers[imageIndex], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+
+    //* Extra recording (e.g. ImGui)
+    if (extraRecording) {
+        extraRecording(this->commandBuffers[imageIndex]);
+    }
 
     vkCmdEndRenderPass(this->commandBuffers[imageIndex]);
 

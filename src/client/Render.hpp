@@ -2,6 +2,7 @@
 
 #include "CoreVulkan.hpp"
 #include "CoreVulkan.hpp"
+#include "ui/UI.hpp"
 #include "swapchain&framebuffer/SwapchainManager.hpp"
 #include "graphics_pipeline/RenderPass.hpp"
 #include "graphics_pipeline/DescriptorManager.hpp"
@@ -54,6 +55,8 @@ private:
 
     GLFWwindow* window;
     SwapchainManager* swapchainManager;
+    UI* ui;
+
     RenderPass* renderPass;
     CameraBufferManager* cameraBufferManager;
     DescriptorManager* descriptorManager;
@@ -76,6 +79,7 @@ private:
 
     void initWindow();
     void initVulkan();
+    void initImGui();
     void drawFrame();
     void cleanup();
 
