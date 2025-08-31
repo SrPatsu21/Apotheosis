@@ -146,6 +146,12 @@ void SwapchainManager::createImageViews() {
 }
 
 void SwapchainManager::safeDestroySwapchain(){
+    if (!this->swapchainImageViews.empty()) {
+        for (auto view : swapchainImageViews) {
+            vkDestroyImageView(CoreVulkan::getDevice(), view, nullptr);
+        }
+        swapchainImageViews.clear();
+    }
     if (this->swapchain != VK_NULL_HANDLE) {
         vkDestroySwapchainKHR(CoreVulkan::getDevice(), this->swapchain, nullptr);
         this->swapchain = VK_NULL_HANDLE; // reset

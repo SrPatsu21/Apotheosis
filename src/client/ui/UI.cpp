@@ -2,14 +2,11 @@
 #include "UI.hpp"
 #include "../CoreVulkan.hpp"
 
-UI::UI() : device(VK_NULL_HANDLE), descriptorPool(VK_NULL_HANDLE) {};
+UI::UI() : descriptorPool(VK_NULL_HANDLE) {};
 
 UI::~UI() {};
 
-void UI::init(GLFWwindow* window, VkRenderPass renderPass, uint32_t imageCount) 
-{
-    this->device = CoreVulkan::getDevice();
-
+void UI::initContext(GLFWwindow* window) {
     // 1. Create ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -40,13 +37,15 @@ void UI::init(GLFWwindow* window, VkRenderPass renderPass, uint32_t imageCount)
     pool_info.maxSets = 1000 * IM_ARRAYSIZE(pool_sizes);
     pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
     pool_info.pPoolSizes = pool_sizes;
-    vkCreateDescriptorPool(this->device, &pool_info, nullptr, &this->descriptorPool);
+    vkCreateDescriptorPool(CoreVulkan::getDevice(), &pool_info, nullptr, &this->descriptorPool);
+}
 
+void UI::initSwapchainResources(VkRenderPass renderPass, uint32_t imageCount) {
     // 4. Init Vulkan backend
-    ImGui_ImplVulkan_InitInfo init_info{};
+    ImGui_ImplVulkan_InitInfo init_info = {};
     init_info.Instance = CoreVulkan::getInstance();
     init_info.PhysicalDevice = CoreVulkan::getPhysicalDevice();
-    init_info.Device = this->device;
+    init_info.Device = CoreVulkan::getDevice();
     init_info.QueueFamily = CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value();
     init_info.Queue = CoreVulkan::getGraphicsQueue();
     init_info.PipelineCache = VK_NULL_HANDLE;
@@ -60,8 +59,13 @@ void UI::init(GLFWwindow* window, VkRenderPass renderPass, uint32_t imageCount)
     ImGui_ImplVulkan_Init(&init_info);
 
     // fonts
-    // style.FontSizeBase = 20.0f;
-    io.Fonts->AddFontDefault();
+    ImGui::GetIO().Fonts->AddFontDefault();
+}
+
+void UI::init(GLFWwindow* window, VkRenderPass renderPass, uint32_t imageCount)
+{
+    initContext(window);
+    initSwapchainResources(renderPass, imageCount);
 }
 
 void UI::newFrame() {
@@ -82,7 +86,7 @@ void UI::render(VkCommandBuffer cmd) {
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
 }
 
-void UI::shutdown() {
+void UI::cleanup() {
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();

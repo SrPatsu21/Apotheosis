@@ -31,7 +31,7 @@ void Render::initWindow(){
     // no OpenGL
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     // block resize
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     // screen config
     this->window = glfwCreateWindow(this->width, this->height, "ProjectD", nullptr, nullptr);
     glfwSetWindowUserPointer(this->window, this);
@@ -214,7 +214,7 @@ void Render::cleanup(){
     if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
     if (this->descriptorManager){ delete this->descriptorManager; this->descriptorManager = nullptr; }
     if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
-    if (this->ui) { this->ui->shutdown(); delete this->ui; this->ui = nullptr; }
+    if (this->ui) { this->ui->cleanup(); delete this->ui; this->ui = nullptr; }
     if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
 
     // Swapchain and resources that own VkSwapchainKHR should be last among managers.
@@ -266,6 +266,7 @@ void Render::initImagesInFlight(uint32_t swapchainImageCount) {
 }
 
 void Render::cleanupSwapChain() {
+
     // Command Buffers
     vkFreeCommandBuffers(
         CoreVulkan::getDevice(),
@@ -277,6 +278,7 @@ void Render::cleanupSwapChain() {
     if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
     if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
     if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
+    if (this->ui) { vkDeviceWaitIdle(CoreVulkan::getDevice()); ImGui_ImplVulkan_Shutdown(); }
     if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
 
     // Swapchain itself
@@ -316,6 +318,9 @@ void Render::recreateSwapChain() {
 
     // 8. Resize imagesInFlight vector to match new swapchain image count
     initImagesInFlight(this->swapchainManager->getImages().size());
+
+    // 9. Recreate ImGui resources
+    this->ui->initSwapchainResources(this->renderPass->get(), this->swapchainManager->getImages().size());
 }
 
 void Render::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
