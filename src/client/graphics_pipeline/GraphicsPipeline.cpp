@@ -92,11 +92,13 @@ GraphicsPipeline::~GraphicsPipeline() {
 }
 
 VkPipelineVertexInputStateCreateInfo GraphicsPipeline::createVertexInputState() {
-    this->bindingDescription = { 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
+    this->bindingDescription.binding = 0;
+    this->bindingDescription.stride = sizeof(Vertex);
+    this->bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     this->attributeDescriptions = {{
         { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos) },
-        { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color) }
+        { 1, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, color) }
     }};
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};

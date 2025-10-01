@@ -22,12 +22,12 @@ public:
     bool framebufferResized = false;
 
     const std::vector<Vertex> VERTICES = {
-        Vertex({-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}), // 0
-        Vertex({ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}), // 1
-        Vertex({ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f}), // 2
-        Vertex({-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 0.0f}), // 3
+        Vertex({-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}), // 0
+        Vertex({ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}), // 1
+        Vertex({ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f, 0.0f}), // 2
+        Vertex({-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 0.0f, 1.0f}), // 3
 
-        Vertex({ 0.0f, 0.8f,  0.0f}, {1.0f, 0.0f, 1.0f})  // 4
+        Vertex({ 0.0f, 0.8f,  0.0f}, {1.0f, 0.0f, 1.0f, 1.0f})  // 4
     };
     const std::vector<uint16_t> INDICES = {
         0, 1, 2,

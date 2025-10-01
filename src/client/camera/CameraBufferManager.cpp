@@ -55,9 +55,7 @@ void CameraBufferManager::updateUniformBuffer(SwapchainManager* swapchainManager
 
     // Model: identity
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, time, glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::rotate(model, time, glm::vec3(0.0f, 0.2f, 0.0f));
-        model = glm::rotate(model, time, glm::vec3(0.0f, 0.0f, 0.5f));
+        model = glm::rotate(model, time, glm::vec3(-0.2f, 0.25f, 0.0f));
     ubo.model = model;
 
     // View: camera looking at -Z (as if it were at (2,2,2) looking at (0,0,0))

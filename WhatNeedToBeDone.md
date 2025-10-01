@@ -67,6 +67,7 @@
 
 <!-- TODO -->
 implement VK_PRIMITIVE_TOPOLOGY_POINT_LIST and VK_PRIMITIVE_TOPOLOGY_LINE_LIST too.
+fix transparenc with Two-pass (back faces first, then front faces)
 
 ## Sources used
 
@@ -74,3 +75,4 @@ implement VK_PRIMITIVE_TOPOLOGY_POINT_LIST and VK_PRIMITIVE_TOPOLOGY_LINE_LIST t
 [Emojipedia ❎](https://emojipedia.org/cross-mark-button) \
 [Emojipedia 👍](https://emojipedia.org/thumbs-up) \
 [Emojipedia 👎](https://emojipedia.org/thumbs-down)
+[understanding the concepts, Swapchain, Render Pass, Pipeline, Shader, and Buffers](https://itch.io/t/5019971/engine-dev-log-9-swapchain-render-pass-pipeline-shader-and-buffers)
