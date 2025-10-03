@@ -33,6 +33,7 @@ void VertexManager::createVertexBuffer(VkDeviceSize bufferSize){
         throw std::runtime_error("failed to create vertex buffer!");
     }
 };
+
 void VertexManager::allocateVertexBufferMemory(VkDeviceSize bufferSize){
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(CoreVulkan::getDevice(), this->vertexBuffer, &memRequirements);
