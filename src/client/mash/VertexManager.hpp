@@ -21,6 +21,8 @@ private:
     */
     VkDeviceMemory vertexBufferMemory;
 
+    void createVertexBuffer(VkDeviceSize bufferSize);
+    void allocateVertexBufferMemory(VkDeviceSize bufferSize);
 public:
     /*
     @brief Constructs a VertexManager and creates a vertex buffer on the GPU.
