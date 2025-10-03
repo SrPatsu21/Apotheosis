@@ -39,7 +39,11 @@ VkPresentModeKHR SwapchainManager::chooseSwapPresentMode(const std::vector<VkPre
             return availablePresentMode;
         }
     }
-
+    for (const auto& availablePresentMode : availablePresentModes) {
+        if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+            return availablePresentMode;
+        }
+    }
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
@@ -65,7 +69,7 @@ VkExtent2D SwapchainManager::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& ca
 void SwapchainManager::createSwapchainInternal(VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat, VkPresentModeKHR presentMode, VkExtent2D extent, const SwapchainSupportDetails& swapChainSupport, uint32_t graphicsQueueFamily) {
     // how many images we would like to have in the swap chain
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-    
+
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }

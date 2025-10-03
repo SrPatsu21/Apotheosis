@@ -15,6 +15,11 @@ int Render::run(){
     //main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+
+        // ui new frame
+        this->ui->newFrame();
+        this->ui->build();
+
         drawFrame();
     }
 
@@ -31,7 +36,7 @@ void Render::initWindow(){
     // no OpenGL
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     // block resize
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     // screen config
     this->window = glfwCreateWindow(this->width, this->height, "ProjectD", nullptr, nullptr);
     glfwSetWindowUserPointer(this->window, this);
@@ -116,9 +121,6 @@ void Render::drawFrame(){
     } else if (next_img_result != VK_SUCCESS && next_img_result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
-    // ui new frame
-    this->ui->newFrame();
-    this->ui->build();
 
     // If this swapchain image is already in flight, wait for the fence that owns it
     if (this->imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
