@@ -21,8 +21,9 @@ private:
     */
     VkDeviceMemory vertexBufferMemory;
 
-    void createVertexBuffer(VkDeviceSize bufferSize);
-    void allocateVertexBufferMemory(VkDeviceSize bufferSize);
+    void createVertexBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags usage, VkBuffer& buffer);
+    void allocateVertexBufferMemory(VkBuffer buffer, VkDeviceSize bufferSize, VkMemoryPropertyFlags properties, VkDeviceMemory& bufferMemory);
+    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool commandPool);
 public:
     /*
     @brief Constructs a VertexManager and creates a vertex buffer on the GPU.
@@ -43,7 +44,7 @@ public:
             - suitable memory type is not found,
             - memory mapping fails.
     */
-    VertexManager(const std::vector<Vertex> vertices);
+    VertexManager(const std::vector<Vertex> vertices, VkCommandPool commandPool);
     /*
     @brief Destructor. Cleans up the vertex buffer and its allocated memory.
 
