@@ -53,7 +53,9 @@
 ### Vulkan
 
 - All in one \
-    `curl -fsSL https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.gpg > /dev/null && sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.296-noble.list "https://packages.lunarg.com/vulkan/1.3.296/lunarg-vulkan-1.3.296-noble.list" && sudo apt install vulkan-utility-libraries-dev libvulkan-dev vulkan-tools vulkan-validationlayers && wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe" && sudo apt install 7zip && 7z x ./lib/VulkanSDK-1.3.296.0-Installer.exe -o./lib/vulkan-sdk-win && rm ./lib/VulkanSDK-1.3.296.0-Installer.exe`
+    `sudo apt install gnupg ca-certificates && curl -fsSL https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.gpg > /dev/null && sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.296-noble.list "https://packages.lunarg.com/vulkan/1.3.296/lunarg-vulkan-1.3.296-noble.list" && sudo apt install vulkan-utility-libraries-dev libvulkan-dev vulkan-tools vulkan-validationlayers && wget -P lib/ "https://sdk.lunarg.com/sdk/download/1.3.296.0/windows/VulkanSDK-1.3.296.0-Installer.exe" && sudo apt install 7zip && 7z x ./lib/VulkanSDK-1.3.296.0-Installer.exe -o./lib/vulkan-sdk-win && rm ./lib/VulkanSDK-1.3.296.0-Installer.exe`
+- apt certificates
+    `sudo apt install gnupg ca-certificates`
 - apt key \
     `curl -fsSL https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.gpg > /dev/null`
 - apt sources \
@@ -146,6 +148,15 @@ cp -r /usr/share/glib-2.0/schemas/* "$DEST/share/glib-2.0/schemas/"
 
 ## Build
 
+- build
+
+```shell
+mkdir build
+cd build
+cmake ..
+make
+```
+
 - fix wayland
 
 ```shell
@@ -162,15 +173,6 @@ EOF
 chmod +x run.sh
 ```
 
-- build
-
-```shell
-mkdir build
-cd build
-cmake ..
-make
-```
-
 ## Build for Windows
 
 ```bash
@@ -184,6 +186,8 @@ make
 -->
 
 ## Build Release
+
+- build
 
 ```shell
 mkdir build-release
