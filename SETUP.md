@@ -1,6 +1,8 @@
-# VScode Extensions
+# SETUP
 
-## Excential
+## VScode Extensions
+
+### Excential
 
 - C/C++ Extension Pack \
     <https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools-extension-pack>
@@ -15,7 +17,7 @@
 - Doxygen
     <https://marketplace.visualstudio.com/items?itemName=bbenoist.Doxygen>
 
-## Highly Recommend
+### Highly Recommend
 
 - Change Case \
     <https://marketplace.visualstudio.com/items?itemName=FinnTenzor.change-case>
@@ -28,7 +30,7 @@
 - file-icons \
     <https://marketplace.visualstudio.com/items?itemName=file-icons.file-icons>
 
-## Theme (recommendation)
+### Theme (recommendation)
 
 - C/C++ Theme
     <https://marketplace.visualstudio.com/items?itemName=Xen.ccpp-theme>
@@ -36,3 +38,51 @@
     <https://marketplace.visualstudio.com/items?itemName=bceskavich.theme-dracula-at-night>
 - GitHub Theme(any dark) \
     <https://marketplace.visualstudio.com/items?itemName=GitHub.github-vscode-theme>
+
+## Docker
+
+### Copy lib
+
+- Linux
+
+    ```shell
+    set -e
+
+    IMAGE="srpatsu21/dear-glfw-vulkan-compiler:1.0.0"
+    DEST="."
+
+    mkdir -p "$DEST"
+
+    docker run --rm \
+        -v "$(pwd)/$DEST":/copy-dest \
+        "$IMAGE" \
+        bash -c "
+            cp -r /workspace/lib /copy-dest/lib || true
+        "
+
+    echo "files from container copied to $DEST"
+    ```
+
+- Windows
+
+    ```shell
+    $ErrorActionPreference = "Stop"
+
+    $image = "srpatsu21/dear-glfw-vulkan-compiler:1.0.0"
+    $dest = "."
+
+    if (-not (Test-Path $dest)) {
+        New-Item -ItemType Directory -Path $dest | Out-Null
+    }
+
+    docker run --rm -v "${PWD}\$dest:/copy-dest" $image `
+        bash -c "
+            cp -r /workspace/lib /copy-dest/lib || true
+        "
+
+    Write-Host "Files from container copied to $dest"
+    ```
+
+### connect to the container
+
+<https://youtu.be/8gUtN5j4QnY>

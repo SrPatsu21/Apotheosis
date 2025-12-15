@@ -1,9 +1,5 @@
 #* libs
-lib/**/
-lib/*.zip
-lib/*.exe
-lib/*.xz
-lib/*.tar
+lib/
 build
 build-windows
 build-release

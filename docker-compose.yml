@@ -1,0 +1,10 @@
+services:
+    vulkan-compiler:
+        image: srpatsu21/dear-glfw-vulkan-compiler:1.0.0
+        container_name: ProjectDCompiler
+        stdin_open: true
+        tty: true
+        working_dir: /workspace
+        volumes:
+            - .:/workspace
+        command: ["/bin/bash"]
