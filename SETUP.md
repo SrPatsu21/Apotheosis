@@ -66,6 +66,7 @@
         "
 
     echo "files from container copied to $DEST"
+    sudo chmod 755 -R .
     ```
 
 - Windows
