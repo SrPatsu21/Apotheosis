@@ -6,5 +6,26 @@ services:
         tty: true
         working_dir: /workspace
         volumes:
+            # create build files
+            - ./build:/workspace/build
+            - ./build-release:/workspace/build-release
+            - ./build-windows:/workspace/build-windows
+            - ./build-windows-release:/workspace/build-windows-release
+
+            # map your libs and config
+            - ./CMakeLists.txt:/workspace/CMakeLists.txt
+            - ./toolchain-mingw.cmake:/workspace/toolchain-mingw.cmake
+            - ./lib:/workspace/lib
+
+            # make src interactive
+            - ./src:/workspace/src
+
+            # if you want to replace the scripts
+            - ./scripts:/workspace/scripts
+
+            # git
+            - ./.git:/workspace/.git
+
+            # uml
             - .:/workspace
         command: ["/bin/bash"]

@@ -2,6 +2,11 @@
 
 ## VScode Extensions
 
+### Needed
+
+- Dev Containers \
+    <https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers>
+
 ### Excential
 
 - C/C++ Extension Pack \
@@ -83,6 +88,26 @@
     Write-Host "Files from container copied to $dest"
     ```
 
-### connect to the container
+### Init container
+
+```shell
+docker compose up -d
+```
+
+### Connect to the container
 
 <https://youtu.be/8gUtN5j4QnY>
+
+### Compile
+
+Use the scripts container terminal
+
+```shell
+./scripts/build_windows.sh
+```
+
+### To stop container
+
+```shell
+docker compose stop
+```
