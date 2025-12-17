@@ -6,6 +6,8 @@
 
 - Dev Containers \
     <https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers>
+- Draw.io Integration
+    <https://marketplace.visualstudio.com/items?itemName=hediet.vscode-drawio>
 
 ### Excential
 
