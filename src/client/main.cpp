@@ -1,4 +1,4 @@
-#include "client/Render.hpp"
+#include "./Render.hpp"
 
 int main() {
     Render* render = new Render();

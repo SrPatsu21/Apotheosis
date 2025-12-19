@@ -114,3 +114,21 @@ Use the scripts container terminal
 ```shell
 docker compose stop
 ```
+
+
+### Run with wine (Linux)
+
+- Script to install
+
+```shell
+sudo apt install winbind wine
+./scripts/install_vulkansdk_wine.sh
+```
+
+- Run
+
+```shell
+cd build-windows
+source ./wine-vulkan-env.sh
+wine ProjectD_client.exe
+```
