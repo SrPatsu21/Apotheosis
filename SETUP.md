@@ -118,10 +118,11 @@ docker compose stop
 
 ### Run with wine (Linux)
 
-- Script to install
+- Script to install (not working)
 
 ```shell
 sudo apt install winbind wine
+chmod +x scripts/install_vulkansdk_wine.sh
 ./scripts/install_vulkansdk_wine.sh
 ```
 

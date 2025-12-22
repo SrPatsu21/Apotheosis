@@ -56,9 +56,27 @@ if [ ! -d "$SDK_PATH" ]; then
 fi
 
 # ================================
-# Generate env script
+# Generate env script (THIS WAS BROKEN BEFORE)
 # ================================
 cat > "$ENV_SCRIPT" <<EOF
 #!/usr/bin/env bash
 export WINEPREFIX="$WINEPREFIX"
-export VK_LAYER_PATH="\
+export VK_LAYER_PATH="\$WINEPREFIX/drive_c/VulkanSDK/${SDK_VERSION}/Bin"
+export PATH="\$WINEPREFIX/drive_c/VulkanSDK/${SDK_VERSION}/Bin:\$PATH"
+echo "Wine Vulkan SDK environment loaded"
+EOF
+
+chmod +x "$ENV_SCRIPT"
+
+# ================================
+# Done
+# ================================
+echo
+echo "===================================="
+echo "Vulkan SDK installed for Wine"
+echo
+echo "Run:"
+echo "  cd build-windows"
+echo "  source ./wine-vulkan-env.sh"
+echo "  wine ProjectD_client.exe"
+echo "===================================="
