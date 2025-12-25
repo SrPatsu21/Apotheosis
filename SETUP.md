@@ -64,7 +64,7 @@
         -v "$(pwd)/$DEST":/copy-dest \
         "$IMAGE" \
         bash -c "
-            cp -r /workspace/lib /copy-dest/lib || true
+            cp -r /workspace/lib /copy-dest || true
         "
 
     echo "files from container copied to $DEST"
@@ -85,7 +85,7 @@
 
     docker run --rm -v "${PWD}\$dest:/copy-dest" $image `
         bash -c "
-            cp -r /workspace/lib /copy-dest/lib || true
+            cp -r /workspace/lib /copy-dest || true
         "
 
     Write-Host "Files from container copied to $dest"
