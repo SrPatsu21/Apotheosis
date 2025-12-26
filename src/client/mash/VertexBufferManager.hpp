@@ -5,7 +5,7 @@
 
 #include <cstring>
 
-class VertexManager
+class VertexBufferManager
 {
 private:
     /*
@@ -26,7 +26,7 @@ private:
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool commandPool);
 public:
     /*
-    @brief Constructs a VertexManager and creates a vertex buffer on the GPU.
+    @brief Constructs a VertexBufferManager and creates a vertex buffer on the GPU.
 
     This constructor:
     - creates a Vulkan vertex buffer of appropriate size,
@@ -44,14 +44,14 @@ public:
             - suitable memory type is not found,
             - memory mapping fails.
     */
-    VertexManager(const std::vector<Vertex> vertices, VkCommandPool commandPool);
+    VertexBufferManager(const std::vector<Vertex> vertices, VkCommandPool commandPool);
     /*
     @brief Destructor. Cleans up the vertex buffer and its allocated memory.
 
     This releases the GPU resources allocated for the vertex buffer
     by destroying the buffer and freeing its memory.
     */
-    ~VertexManager();
+    ~VertexBufferManager();
 
     VkBuffer getVertexBuffer() const {return vertexBuffer;}
     VkDeviceMemory getVertexBufferMemory() const {return vertexBufferMemory;}

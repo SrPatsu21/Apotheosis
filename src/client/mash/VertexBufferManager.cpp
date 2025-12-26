@@ -1,6 +1,6 @@
-#include "VertexManager.hpp"
+#include "VertexBufferManager.hpp"
 
-VertexManager::VertexManager(const std::vector<Vertex> vertices, VkCommandPool commandPool)
+VertexBufferManager::VertexBufferManager(const std::vector<Vertex> vertices, VkCommandPool commandPool)
 {
     VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
     VkBuffer stagingBuffer;
@@ -25,13 +25,13 @@ VertexManager::VertexManager(const std::vector<Vertex> vertices, VkCommandPool c
     vkFreeMemory(CoreVulkan::getDevice(), stagingBufferMemory, nullptr);
 };
 
-VertexManager::~VertexManager()
+VertexBufferManager::~VertexBufferManager()
 {
     vkDestroyBuffer(CoreVulkan::getDevice(), this->vertexBuffer, nullptr);
     vkFreeMemory(CoreVulkan::getDevice(), this->vertexBufferMemory, nullptr);
 }
 
-void VertexManager::createVertexBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags usage, VkBuffer& buffer){
+void VertexBufferManager::createVertexBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags usage, VkBuffer& buffer){
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = bufferSize;
@@ -43,7 +43,7 @@ void VertexManager::createVertexBuffer(VkDeviceSize bufferSize, VkBufferUsageFla
     }
 };
 
-void VertexManager::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool commandPool) {
+void VertexBufferManager::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool commandPool) {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -77,7 +77,7 @@ void VertexManager::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceS
     vkFreeCommandBuffers(CoreVulkan::getDevice(), commandPool, 1, &commandBuffer);
 }
 
-void VertexManager::allocateVertexBufferMemory(VkBuffer buffer, VkMemoryPropertyFlags properties, VkDeviceMemory& bufferMemory){
+void VertexBufferManager::allocateVertexBufferMemory(VkBuffer buffer, VkMemoryPropertyFlags properties, VkDeviceMemory& bufferMemory){
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(CoreVulkan::getDevice(), buffer, &memRequirements);
 

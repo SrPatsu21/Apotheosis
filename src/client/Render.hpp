@@ -10,7 +10,7 @@
 #include "graphics_pipeline/GraphicsPipeline.hpp"
 #include "swapchain&framebuffer/DepthBufferManager.hpp"
 #include "swapchain&framebuffer/FramebufferManager.hpp"
-#include "mash/VertexManager.hpp"
+#include "mash/VertexBufferManager.hpp"
 #include "mash/IndexBufferManager.hpp"
 #include "swapchain&framebuffer/CommandManager.hpp"
 #include "camera/UniformBufferObject.hpp"
@@ -63,7 +63,7 @@ private:
     GraphicsPipeline* graphicsPipeline;
     DepthBufferManager* depthBufferManager;
     FramebufferManager* framebufferManager;
-    VertexManager* vertexManager;
+    VertexBufferManager* vertexBufferManager;
     IndexBufferManager* indexBufferManager;
     CommandManager* commandManager;
 
