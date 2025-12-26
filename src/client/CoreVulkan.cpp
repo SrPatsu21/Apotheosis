@@ -244,17 +244,27 @@ void CoreVulkan::findDepthFormat() {
     throw std::runtime_error("failed to find supported depth format!");
 }
 
-uint32_t CoreVulkan::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+uint32_t CoreVulkan::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred) {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(CoreVulkan::physicalDevice, &memProperties);
 
+    uint32_t fallback = UINT32_MAX;
+
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
+        if (!(typeFilter & (1 << i))) continue;
+
+        VkMemoryPropertyFlags flags = memProperties.memoryTypes[i].propertyFlags;
+
+        if ((flags & required) == required) {
+            if ((flags & preferred) == preferred) {
+                return i;
+            }
+            fallback = i;
         }
     }
 
-    throw std::runtime_error("failed to find suitable memory type!");
+    if (fallback != UINT32_MAX) return fallback;
+    throw std::runtime_error("no suitable memory type found");
 }
 
 bool CoreVulkan::checkValidationLayerSupport() {

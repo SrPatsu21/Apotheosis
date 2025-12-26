@@ -7,7 +7,7 @@ VertexManager::VertexManager(const std::vector<Vertex> vertices, VkCommandPool c
     VkDeviceMemory stagingBufferMemory;
 
     createVertexBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBuffer);
-    allocateVertexBufferMemory(stagingBuffer, bufferSize, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBufferMemory);
+    allocateVertexBufferMemory(stagingBuffer, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBufferMemory);
     vkBindBufferMemory(CoreVulkan::getDevice(), stagingBuffer, stagingBufferMemory, 0);
 
     void* data;
@@ -16,7 +16,7 @@ VertexManager::VertexManager(const std::vector<Vertex> vertices, VkCommandPool c
     vkUnmapMemory(CoreVulkan::getDevice(), stagingBufferMemory);
 
     createVertexBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, this->vertexBuffer);
-    allocateVertexBufferMemory(stagingBuffer, bufferSize, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, this->vertexBufferMemory);
+    allocateVertexBufferMemory(this->vertexBuffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, this->vertexBufferMemory);
     vkBindBufferMemory(CoreVulkan::getDevice(), this->vertexBuffer, this->vertexBufferMemory, 0);
 
     copyBuffer(stagingBuffer, this->vertexBuffer, bufferSize, commandPool);
@@ -77,33 +77,14 @@ void VertexManager::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceS
     vkFreeCommandBuffers(CoreVulkan::getDevice(), commandPool, 1, &commandBuffer);
 }
 
-void VertexManager::allocateVertexBufferMemory(VkBuffer buffer, VkDeviceSize bufferSize, VkMemoryPropertyFlags properties, VkDeviceMemory& bufferMemory){
+void VertexManager::allocateVertexBufferMemory(VkBuffer buffer, VkMemoryPropertyFlags properties, VkDeviceMemory& bufferMemory){
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(CoreVulkan::getDevice(), buffer, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = CoreVulkan::findMemoryType(memRequirements.memoryTypeBits, properties);
-
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(CoreVulkan::getPhysicalDevice(), &memProperties);
-
-    bool memTypeFound = false;
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((memRequirements.memoryTypeBits & (1 << i)) &&
-            (memProperties.memoryTypes[i].propertyFlags &
-            (properties)) ==
-                (properties)) {
-            allocInfo.memoryTypeIndex = i;
-            memTypeFound = true;
-            break;
-        }
-    }
-
-    if (!memTypeFound) {
-        throw std::runtime_error("failed to find suitable memory type for vertex buffer!");
-    }
+    allocInfo.memoryTypeIndex = CoreVulkan::findMemoryType(memRequirements.memoryTypeBits, properties, 0);
 
     if (vkAllocateMemory(CoreVulkan::getDevice(), &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate vertex buffer memory!");

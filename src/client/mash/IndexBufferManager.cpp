@@ -1,7 +1,7 @@
-#include "IndexManager.hpp"
+#include "IndexBufferManager.hpp"
 
-IndexManager::IndexManager(const std::vector<uint16_t> indices) {
-    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();;
+IndexBufferManager::IndexBufferManager(const std::vector<uint16_t> indices) {
+    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -51,7 +51,7 @@ IndexManager::IndexManager(const std::vector<uint16_t> indices) {
     vkUnmapMemory(CoreVulkan::getDevice(), this->indexBufferMemory);
 }
 
-IndexManager::~IndexManager(){
+IndexBufferManager::~IndexBufferManager(){
     vkDestroyBuffer(CoreVulkan::getDevice(), this->indexBuffer, nullptr);
     vkFreeMemory(CoreVulkan::getDevice(), this->indexBufferMemory, nullptr);
 }

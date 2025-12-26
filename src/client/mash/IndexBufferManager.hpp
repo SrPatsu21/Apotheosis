@@ -4,7 +4,7 @@
 
 #include <cstring>
 
-class IndexManager
+class IndexBufferManager
 {
 private:
     /*
@@ -17,7 +17,7 @@ private:
     VkDeviceMemory indexBufferMemory;
 public:
     /*
-    @brief Constructs an IndexManager and creates an index buffer on the GPU.
+    @brief Constructs an IndexBufferManager and creates an index buffer on the GPU.
 
     This constructor:
     - creates a Vulkan index buffer of appropriate size,
@@ -35,14 +35,14 @@ public:
             - suitable memory type is not found,
             - memory mapping fails.
     */
-    IndexManager(const std::vector<uint16_t> indices);
+    IndexBufferManager(const std::vector<uint16_t> indices);
     /*
     @brief Destructor. Cleans up the index buffer and its allocated memory.
 
     This releases the GPU resources allocated for the index buffer
     by destroying the buffer and freeing its memory.
     */
-    ~IndexManager();
+    ~IndexBufferManager();
 
     VkBuffer getIndexBuffer() const {return indexBuffer;}
     VkDeviceMemory getIndexBufferMemory() const {return indexBufferMemory;}

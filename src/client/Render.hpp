@@ -11,7 +11,7 @@
 #include "swapchain&framebuffer/DepthBufferManager.hpp"
 #include "swapchain&framebuffer/FramebufferManager.hpp"
 #include "mash/VertexManager.hpp"
-#include "mash/IndexManager.hpp"
+#include "mash/IndexBufferManager.hpp"
 #include "swapchain&framebuffer/CommandManager.hpp"
 #include "camera/UniformBufferObject.hpp"
 
@@ -64,7 +64,7 @@ private:
     DepthBufferManager* depthBufferManager;
     FramebufferManager* framebufferManager;
     VertexManager* vertexManager;
-    IndexManager* indexManager;
+    IndexBufferManager* indexBufferManager;
     CommandManager* commandManager;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;

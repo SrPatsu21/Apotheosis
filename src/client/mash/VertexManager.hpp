@@ -22,7 +22,7 @@ private:
     VkDeviceMemory vertexBufferMemory;
 
     void createVertexBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags usage, VkBuffer& buffer);
-    void allocateVertexBufferMemory(VkBuffer buffer, VkDeviceSize bufferSize, VkMemoryPropertyFlags properties, VkDeviceMemory& bufferMemory);
+    void allocateVertexBufferMemory(VkBuffer buffer, VkMemoryPropertyFlags properties, VkDeviceMemory& bufferMemory);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool commandPool);
 public:
     /*

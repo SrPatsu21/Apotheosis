@@ -81,7 +81,7 @@ public:
 
     static SwapchainSupportDetails querySwapchainSupport(VkSurfaceKHR surface);
 
-    static uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    static uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred);
 
     static VkInstance getInstance() { return instance; }
     static VkPhysicalDevice getPhysicalDevice() { return physicalDevice; }

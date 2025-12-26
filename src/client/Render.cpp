@@ -102,7 +102,7 @@ void Render::initVulkan(){
 
     // Create vertex buffer
     this->vertexManager = new VertexManager(Render::VERTICES, this->commandManager->getCommandPool());
-    this->indexManager = new IndexManager(Render::INDICES);
+    this->indexBufferManager = new IndexBufferManager(Render::INDICES);
 };
 
 void Render::drawFrame(){
@@ -137,7 +137,7 @@ void Render::drawFrame(){
     vkResetCommandBuffer(cmd, 0);
     this->commandManager->recordCommandBuffer(imageIndex, this->renderPass->get(), this->graphicsPipeline,
             this->framebufferManager->getFramebuffers(), this->swapchainManager->getExtent(),
-            this->vertexManager->getVertexBuffer(), this->indexManager->getIndexBuffer(), Render::INDICES,
+            this->vertexManager->getVertexBuffer(), this->indexBufferManager->getIndexBuffer(), Render::INDICES,
             this->descriptorManager->getSet(), [this](VkCommandBuffer cmd) { this->ui->render(cmd); });
 
     // Update UBOs for this frame
@@ -210,7 +210,7 @@ void Render::cleanup(){
     //    Delete pointers and null them to avoid accidental double free later.
     if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
     if (this->vertexManager){ delete this->vertexManager; this->vertexManager = nullptr; }
-    if (this->indexManager){ delete this->indexManager; this->indexManager = nullptr; }
+    if (this->indexBufferManager){ delete this->indexBufferManager; this->indexBufferManager = nullptr; }
     if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
     if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
     if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
