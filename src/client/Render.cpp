@@ -102,7 +102,7 @@ void Render::initVulkan(){
 
     // Create vertex buffer
     this->vertexBufferManager = new VertexBufferManager(Render::VERTICES, this->commandManager->getCommandPool());
-    this->indexBufferManager = new IndexBufferManager(Render::INDICES);
+    this->indexBufferManager = new IndexBufferManager(Render::INDICES, this->commandManager->getCommandPool());
 };
 
 void Render::drawFrame(){

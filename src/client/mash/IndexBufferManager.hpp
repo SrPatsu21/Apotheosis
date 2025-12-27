@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../CoreVulkan.hpp"
+#include "BufferManager.hpp"
 
 #include <cstring>
 
@@ -35,7 +36,8 @@ public:
             - suitable memory type is not found,
             - memory mapping fails.
     */
-    IndexBufferManager(const std::vector<uint16_t> indices);
+    IndexBufferManager(const std::vector<uint16_t> indices, VkCommandPool commandPool);
+
     /*
     @brief Destructor. Cleans up the index buffer and its allocated memory.
 

@@ -2,6 +2,7 @@
 
 #include "../CoreVulkan.hpp"
 #include "Vertex.hpp"
+#include "BufferManager.hpp"
 
 #include <cstring>
 
@@ -20,10 +21,6 @@ private:
     (Vulkan separates buffer objects and memory allocations explicitly.)
     */
     VkDeviceMemory vertexBufferMemory;
-
-    void createVertexBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags usage, VkBuffer& buffer);
-    void allocateVertexBufferMemory(VkBuffer buffer, VkMemoryPropertyFlags properties, VkDeviceMemory& bufferMemory);
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool commandPool);
 public:
     /*
     @brief Constructs a VertexBufferManager and creates a vertex buffer on the GPU.
