@@ -78,8 +78,8 @@ void CommandManager::recordCommandBuffer(size_t imageIndex, VkRenderPass renderP
 
     VkViewport viewport = graphicsPipeline->getViewport();
     VkRect2D scissor = graphicsPipeline->getScissor();
-    // vkCmdSetViewport(this->commandBuffers[imageIndex], 0, 1, &viewport);
-    // vkCmdSetScissor(this->commandBuffers[imageIndex], 0, 1, &scissor);
+    vkCmdSetViewport(this->commandBuffers[imageIndex], 0, 1, &viewport);
+    vkCmdSetScissor(this->commandBuffers[imageIndex], 0, 1, &scissor);
 
     vkCmdDrawIndexed(this->commandBuffers[imageIndex], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
