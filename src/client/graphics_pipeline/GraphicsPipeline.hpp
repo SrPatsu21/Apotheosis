@@ -158,7 +158,7 @@ public:
 
     VkPipeline getPipeline() const { return this->graphicsPipeline; }
     VkPipelineLayout getLayout() const { return this->pipelineLayout; }
-    VkViewport getViewport() const { return this->viewport; }
-    VkRect2D getScissor() const { return this->scissor; }
+    VkViewport& getViewport() { return this->viewport; }
+    VkRect2D& getScissor() { return this->scissor; }
     VkPipelineColorBlendAttachmentState getColorBlendAttachment() const { return this->colorBlendAttachment; }
 };
