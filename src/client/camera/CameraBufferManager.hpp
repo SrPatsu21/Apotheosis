@@ -1,8 +1,11 @@
 #pragma once
-
 #include "../CoreVulkan.hpp"
 #include "../swapchain&framebuffer/SwapchainManager.hpp"
+#include "UniformBufferObject.hpp"
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <cstring>
+#include "../mash/BufferManager.hpp"
 
 class CameraBufferManager
 {
@@ -10,11 +13,14 @@ private:
     /*
     A buffer that holds uniform data, such as camera matrices or scene parameters, that are the same for all vertices/fragments in a draw call.
     */
-    VkBuffer uniformBuffer;
+    std::vector<VkBuffer> uniformBuffers;
     /*
     The memory backing the uniformBuffer.
     */
-    VkDeviceMemory uniformBufferMemory;
+    std::vector<VkDeviceMemory> uniformBuffersMemory;
+
+
+    std::vector<void*> uniformBuffersMapped;
     /*
     @brief Creates a Vulkan uniform buffer and allocates memory for it.
 
@@ -23,7 +29,7 @@ private:
 
     @throws std::runtime_error if creation, allocation, or memory binding fails.
     */
-    void createUniformBuffer();
+    void createUniformBuffer(BufferManager* bufferManager, int max_frames_in_flight);
 
 public:
     /*
@@ -35,7 +41,7 @@ public:
 
     @throws std::runtime_error if buffer creation or memory allocation fails.
     */
-    CameraBufferManager();
+    CameraBufferManager(BufferManager* bufferManager, int max_frames_in_flight);
 
     /*
     @brief Destructor for CameraBufferManager.
@@ -43,8 +49,9 @@ public:
     */
     ~CameraBufferManager();
 
-    void updateUniformBuffer(SwapchainManager* swapchainManager, float time);
+    void updateUniformBuffer(SwapchainManager* swapchainManager, uint32_t imageIndex, float time);
 
-    VkBuffer getUniformBuffer() const { return uniformBuffer; }
-    VkDeviceMemory getUniformBufferMemory() const { return uniformBufferMemory; }
+    std::vector<VkBuffer> getUniformBuffers() const { return uniformBuffers; }
+    std::vector<VkDeviceMemory> getUniformBufferMemorys() const { return uniformBuffersMemory; }
+    std::vector<void*> getUniformBuffersMapped() const {return uniformBuffersMapped; }
 };

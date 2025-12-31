@@ -52,7 +52,7 @@ void DescriptorManager::createDescriptorPoolAndSet(CameraBufferManager* cameraBu
     }
 
     VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = cameraBufferManager->getUniformBuffer();
+    bufferInfo.buffer = cameraBufferManager->getUniformBuffers()[imageIndex]; //file:///mnt/HD/Vulkan-Tutorial/vulkan-tutorial.com/Uniform_buffers/Descriptor_pool_and_sets.html
     bufferInfo.offset = 0;
     bufferInfo.range = sizeof(UniformBufferObject);
 

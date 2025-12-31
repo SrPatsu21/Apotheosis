@@ -49,6 +49,7 @@ void Render::initImGui(){
 }
 
 void Render::initVulkan(){
+    BufferManager bufferManager = BufferManager();
     //TODO better description
     //* Core Vulkan
     //Create Vulkan instance
@@ -73,7 +74,7 @@ void Render::initVulkan(){
     this->renderPass = new RenderPass(this->swapchainManager->getImageFormat());
 
     // Create camera buff with uniformBuffer
-    this->cameraBufferManager = new CameraBufferManager();
+    this->cameraBufferManager = new CameraBufferManager(&bufferManager, Render::MAX_FRAMES_IN_FLIGHT);
 
     // Create descript
     this->descriptorManager = new DescriptorManager(this->cameraBufferManager);
@@ -141,7 +142,7 @@ void Render::drawFrame(){
             this->descriptorManager->getSet(), [this](VkCommandBuffer cmd) { this->ui->render(cmd); });
 
     // Update UBOs for this frame
-    this->cameraBufferManager->updateUniformBuffer(this->swapchainManager, time);
+    this->cameraBufferManager->updateUniformBuffer(this->swapchainManager, imageIndex, time);
 
     // --- Submit work ---
     VkSemaphore waitSemaphores[] = { this->imageAvailableSemaphores[this->currentFrame] };

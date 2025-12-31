@@ -12,6 +12,7 @@
 #include "swapchain&framebuffer/FramebufferManager.hpp"
 #include "mash/VertexBufferManager.hpp"
 #include "mash/IndexBufferManager.hpp"
+#include "mash/BufferManager.hpp"
 #include "swapchain&framebuffer/CommandManager.hpp"
 #include "camera/UniformBufferObject.hpp"
 
