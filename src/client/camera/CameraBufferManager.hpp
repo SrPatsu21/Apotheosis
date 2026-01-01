@@ -49,9 +49,9 @@ public:
     */
     ~CameraBufferManager();
 
-    void updateUniformBuffer(SwapchainManager* swapchainManager, uint32_t imageIndex, float time);
+    void updateUniformBuffer(SwapchainManager* swapchainManager, uint32_t currentFrame, float time);
 
-    std::vector<VkBuffer> getUniformBuffers() const { return uniformBuffers; }
+    const std::vector<VkBuffer>& getUniformBuffers() const { return uniformBuffers; }
     std::vector<VkDeviceMemory> getUniformBufferMemorys() const { return uniformBuffersMemory; }
     std::vector<void*> getUniformBuffersMapped() const {return uniformBuffersMapped; }
 };

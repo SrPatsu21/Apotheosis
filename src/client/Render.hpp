@@ -18,7 +18,7 @@
 
 class Render {
 public:
-    const int MAX_FRAMES_IN_FLIGHT = 2;
+    const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
     bool framebufferResized = false;
 

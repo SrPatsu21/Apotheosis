@@ -1,10 +1,13 @@
 #include "DescriptorManager.hpp"
 #include "../camera/UniformBufferObject.hpp"
 
-DescriptorManager::DescriptorManager(CameraBufferManager* cameraBufferManager)
+DescriptorManager::DescriptorManager(CameraBufferManager* cameraBufferManager, uint32_t max_frames_in_flight)
 {
     createDescriptorSetLayout();
-    createDescriptorPoolAndSet(cameraBufferManager);
+
+    createDescriptorPool(max_frames_in_flight);
+    createDescriptorSets(max_frames_in_flight);
+    populateDescriptorSets(cameraBufferManager, max_frames_in_flight);
 };
 
 void DescriptorManager::createDescriptorSetLayout() {
@@ -25,47 +28,60 @@ void DescriptorManager::createDescriptorSetLayout() {
     }
 }
 
-void DescriptorManager::createDescriptorPoolAndSet(CameraBufferManager* cameraBufferManager)
-{
+void DescriptorManager::createDescriptorPool(uint32_t max_frames_in_flight){
     VkDescriptorPoolSize poolSize{};
     poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSize.descriptorCount = 1;
+    poolSize.descriptorCount = max_frames_in_flight;
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = 1;
     poolInfo.pPoolSizes = &poolSize;
-    poolInfo.maxSets = 1;
+    poolInfo.maxSets = max_frames_in_flight;
 
-    if (vkCreateDescriptorPool(CoreVulkan::getDevice(), &poolInfo, nullptr, &this->descriptorPool) != VK_SUCCESS) {
+    if (vkCreateDescriptorPool(CoreVulkan::getDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor pool!");
     }
+}
+
+void DescriptorManager::createDescriptorSets(uint32_t max_frames_in_flight) {
+    std::vector<VkDescriptorSetLayout> layouts(max_frames_in_flight, descriptorSetLayout);
 
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = this->descriptorPool;
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &this->descriptorSetLayout;
+    allocInfo.descriptorPool = descriptorPool;
+    allocInfo.descriptorSetCount = max_frames_in_flight;
+    allocInfo.pSetLayouts = layouts.data();
 
-    if (vkAllocateDescriptorSets(CoreVulkan::getDevice(), &allocInfo, &this->descriptorSet) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate descriptor set!");
+    descriptorSets.resize(max_frames_in_flight);
+    if (vkAllocateDescriptorSets(CoreVulkan::getDevice(), &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate descriptor sets!");
     }
+}
 
-    VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = cameraBufferManager->getUniformBuffers()[imageIndex]; //file:///mnt/HD/Vulkan-Tutorial/vulkan-tutorial.com/Uniform_buffers/Descriptor_pool_and_sets.html
-    bufferInfo.offset = 0;
-    bufferInfo.range = sizeof(UniformBufferObject);
+void DescriptorManager::populateDescriptorSets(CameraBufferManager* cameraBufferManager, uint32_t max_frames_in_flight)
+{
+    for (size_t i = 0; i < max_frames_in_flight; i++) {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer = cameraBufferManager->getUniformBuffers()[i];
+        bufferInfo.offset = 0;
+        bufferInfo.range = sizeof(UniformBufferObject);
 
-    VkWriteDescriptorSet descriptorWrite{};
-    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = this->descriptorSet;
-    descriptorWrite.dstBinding = 0;
-    descriptorWrite.dstArrayElement = 0;
-    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrite.descriptorCount = 1;
-    descriptorWrite.pBufferInfo = &bufferInfo;
+        VkWriteDescriptorSet descriptorWrite{};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = descriptorSets[i];
+        descriptorWrite.dstBinding = 0;
+        descriptorWrite.dstArrayElement = 0;
 
-    vkUpdateDescriptorSets(CoreVulkan::getDevice(), 1, &descriptorWrite, 0, nullptr);
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrite.descriptorCount = 1;
+
+        descriptorWrite.pBufferInfo = &bufferInfo;
+        descriptorWrite.pImageInfo = nullptr; // Optional
+        descriptorWrite.pTexelBufferView = nullptr; // Optional
+
+        vkUpdateDescriptorSets(CoreVulkan::getDevice(), 1, &descriptorWrite, 0, nullptr);
+    }
 }
 
 DescriptorManager::~DescriptorManager() {

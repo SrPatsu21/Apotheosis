@@ -77,7 +77,7 @@ void Render::initVulkan(){
     this->cameraBufferManager = new CameraBufferManager(&bufferManager, Render::MAX_FRAMES_IN_FLIGHT);
 
     // Create descript
-    this->descriptorManager = new DescriptorManager(this->cameraBufferManager);
+    this->descriptorManager = new DescriptorManager(this->cameraBufferManager, Render::MAX_FRAMES_IN_FLIGHT);
 
     // Create graphics pipeline
     this->graphicsPipeline = new GraphicsPipeline(this->swapchainManager->getExtent(), this->renderPass->get(), this->descriptorManager->getLayout());
@@ -139,10 +139,10 @@ void Render::drawFrame(){
     this->commandManager->recordCommandBuffer(imageIndex, this->renderPass->get(), this->graphicsPipeline,
             this->framebufferManager->getFramebuffers(), this->swapchainManager->getExtent(),
             this->vertexBufferManager->getVertexBuffer(), this->indexBufferManager->getIndexBuffer(), Render::INDICES,
-            this->descriptorManager->getSet(), [this](VkCommandBuffer cmd) { this->ui->render(cmd); });
+            this->descriptorManager->getSets()[currentFrame], [this](VkCommandBuffer cmd) { this->ui->render(cmd); });
 
     // Update UBOs for this frame
-    this->cameraBufferManager->updateUniformBuffer(this->swapchainManager, imageIndex, time);
+    this->cameraBufferManager->updateUniformBuffer(this->swapchainManager, currentFrame, time);
 
     // --- Submit work ---
     VkSemaphore waitSemaphores[] = { this->imageAvailableSemaphores[this->currentFrame] };

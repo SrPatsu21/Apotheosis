@@ -1,7 +1,6 @@
 #include "CameraBufferManager.hpp"
 #define GLM_FORCE_RADIANS
 
-
 void CameraBufferManager::createUniformBuffer(BufferManager* bufferManager, int max_frames_in_flight){
     //constexpr force definition on compile time
     constexpr VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -23,13 +22,20 @@ void CameraBufferManager::createUniformBuffer(BufferManager* bufferManager, int 
             uniformBuffersMemory[i]
         );
 
+        vkBindBufferMemory(
+            CoreVulkan::getDevice(),
+            uniformBuffers[i],
+            uniformBuffersMemory[i],
+            0
+        );
+
         vkMapMemory(CoreVulkan::getDevice(), uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
     }
 }
 
 void CameraBufferManager::updateUniformBuffer(
     SwapchainManager* swapchainManager,
-    uint32_t imageIndex,
+    uint32_t currentFrame,
     float time)
 {
     UniformBufferObject ubo{};
@@ -59,7 +65,7 @@ void CameraBufferManager::updateUniformBuffer(
 
     ubo.proj[1][1] *= -1;
 
-    memcpy(uniformBuffersMapped[imageIndex], &ubo, sizeof(ubo));
+    memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 }
 
 

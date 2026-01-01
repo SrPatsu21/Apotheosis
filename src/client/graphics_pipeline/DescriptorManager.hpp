@@ -37,7 +37,7 @@ private:
     /*
     A descriptor set, allocated from descriptorPool, which binds your actual resources to shader binding points as defined by descriptorSetLayout.
     */
-    VkDescriptorSet descriptorSet;
+    std::vector<VkDescriptorSet> descriptorSets;
 public:
     /**
     Constructor.
@@ -52,27 +52,20 @@ public:
 
     @throws std::runtime_error if descriptor set layout creation, pool creation, or descriptor set allocation fails.
     */
-    DescriptorManager(CameraBufferManager* cameraBufferManager);
+    DescriptorManager(CameraBufferManager* cameraBufferManager,uint32_t max_frames_in_flight);
     /*
     defines what kind of resources your shaders expect to be bound, and where
     @return VkDescriptorSetLayout* descriptorSetLayout
     @throws "failed to create descriptor pool!"
     */
     void createDescriptorSetLayout();
-
-    /*
-    creates a descriptor pool, allocates a descriptor set, and writes the uniform buffer into the descriptor set.
-    So, it essentially sets up everything needed to bind your uniform buffer to your shaders at runtime.
-    @param VkBuffer* uniformBuffer
-    @param CameraBufferManager* cameraBufferManager
-    @return VkDescriptorPool* descriptorPool, VkDescriptorSet* descriptorSet
-    @throws "failed to allocate descriptor set!"
-    */
-    void createDescriptorPoolAndSet(CameraBufferManager* cameraBufferManager);
+    void createDescriptorPool(uint32_t max_frames_in_flight);
+    void createDescriptorSets(uint32_t max_frames_in_flight);
+    void populateDescriptorSets(CameraBufferManager* cameraBufferManager, uint32_t max_frames_in_flight);
 
     VkDescriptorSetLayout getLayout() const { return descriptorSetLayout; }
     VkDescriptorPool getPool() const { return descriptorPool; }
-    VkDescriptorSet getSet() const { return descriptorSet; }
+    std::vector<VkDescriptorSet> getSets() const { return descriptorSets; }
 
     /*
     */
