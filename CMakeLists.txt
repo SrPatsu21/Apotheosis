@@ -164,6 +164,19 @@ endforeach()
 add_custom_target(Shaders ALL DEPENDS ${SHADER_OUTPUTS})
 
 # ============================================================
+# Copy textures (CLIENT ONLY)
+# ============================================================
+set(TEXTURE_SRC_DIR ${CMAKE_SOURCE_DIR}/src/client/assets/textures)
+set(TEXTURE_DST_DIR ${CMAKE_BINARY_DIR}/textures)
+
+add_custom_target(Textures ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${TEXTURE_DST_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${TEXTURE_SRC_DIR}
+            ${TEXTURE_DST_DIR}
+)
+
+# ============================================================
 # Client sources & executable
 # ============================================================
 file(GLOB_RECURSE CLIENT_SOURCES
@@ -177,6 +190,7 @@ add_executable(${PROJECT_NAME}_client
 )
 
 add_dependencies(${PROJECT_NAME}_client Shaders)
+add_dependencies(${PROJECT_NAME}_client Textures)
 
 # ============================================================
 # Client libraries
