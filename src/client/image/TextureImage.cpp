@@ -1,6 +1,7 @@
 #include "stb_image.h"
 #include "../CoreVulkan.hpp"
 #include "TextureImage.hpp"
+#include "VulkanImageUtils.hpp"
 
 TextureImage::LoadedImage TextureImage::loadImageFromFile(const char* path) {
     LoadedImage img;
@@ -182,6 +183,41 @@ void TextureImage::transitionImageLayout(BufferManager* bufferManager,
     bufferManager->endSingleTimeCommands(commandPool, commandBuffer);
 }
 
+void TextureImage::createTextureImageView(){
+    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+}
+
+void TextureImage::createTextureSampler() {
+    VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+    samplerInfo.anisotropyEnable = VK_TRUE;
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(CoreVulkan::getPhysicalDevice(), &properties);
+    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy; //TODO it`s on max quality sould change this
+
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.mipLodBias = 0.0f;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = 0.0f;
+
+    if (vkCreateSampler(CoreVulkan::getDevice(), &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture sampler!");
+    }
+}
+
 void TextureImage::createTextureImage(
     const char* path,
     BufferManager& bufferManager,
@@ -213,6 +249,16 @@ void TextureImage::createTextureImage(
     vkFreeMemory(CoreVulkan::getDevice(), staging.memory, nullptr);
 }
 
+TextureImage::TextureImage(
+    const char* path,
+    BufferManager& bufferManager,
+    VkCommandPool commandPool
+) {
+    createTextureImage(path, bufferManager, commandPool);
+    createTextureImageView();
+    createTextureSampler();
+}
+
 TextureImage::~TextureImage()
 {
     VkDevice device = CoreVulkan::getDevice();
@@ -221,4 +267,10 @@ TextureImage::~TextureImage()
 
     if (textureImageMemory != VK_NULL_HANDLE)
         vkFreeMemory(device, textureImageMemory, nullptr);
+
+    if (textureSampler != VK_NULL_HANDLE)
+        vkDestroySampler(device, textureSampler, nullptr);
+
+    if (textureImageView != VK_NULL_HANDLE)
+        vkDestroyImageView(device, textureImageView, nullptr);
 }

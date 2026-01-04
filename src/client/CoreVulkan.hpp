@@ -30,6 +30,8 @@ struct QueueFamilyIndices {
     }
 };
 
+//TODO VkPhysicalDeviceProperties
+
 class CoreVulkan
 {
 private:

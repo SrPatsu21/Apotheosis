@@ -121,7 +121,6 @@ void SwapchainManager::createImageViews() {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = this->swapchainImages[i];
-        //TODO 3D?
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         viewInfo.format = this->swapchainImageFormat;
 

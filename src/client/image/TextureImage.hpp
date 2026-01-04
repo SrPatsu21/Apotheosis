@@ -8,6 +8,8 @@ class TextureImage
 private:
     VkImage textureImage;
     VkDeviceMemory textureImageMemory;
+    VkImageView textureImageView;
+    VkSampler textureSampler;
 
     struct LoadedImage {
         int width = 0;
@@ -65,7 +67,8 @@ private:
 public:
 
     TextureImage(
-        BufferManager* bufferManager,
+        const char* path,
+        BufferManager& bufferManager,
         VkCommandPool commandPool
     );
     LoadedImage loadImageFromFile(const char* path);
@@ -102,6 +105,7 @@ public:
         BufferManager& bufferManager,
         VkCommandPool commandPool
     );
-
+    void createTextureImageView();
+    void createTextureSampler();
     ~TextureImage();
 };

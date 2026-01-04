@@ -153,6 +153,8 @@ bool CoreVulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::ve
     bool extensionsSupported = false;
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
+    VkPhysicalDeviceFeatures supportedFeatures;
+    vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
 
     std::vector<VkExtensionProperties> availableExtensions(extensionCount);
     vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
@@ -170,7 +172,7 @@ bool CoreVulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::ve
         swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
     }
 
-    return indices.isComplete() && extensionsSupported && swapChainAdequate;
+    return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 }
 
 void CoreVulkan::createLogicalDevice() {
@@ -198,6 +200,7 @@ void CoreVulkan::createLogicalDevice() {
 
     // Device info
     VkPhysicalDeviceFeatures deviceFeatures{}; //* enable features if needed
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
