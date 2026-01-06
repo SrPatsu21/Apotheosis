@@ -76,12 +76,6 @@ void Render::initVulkan(){
     // Create camera buff with uniformBuffer
     this->cameraBufferManager = new CameraBufferManager(&bufferManager, Render::MAX_FRAMES_IN_FLIGHT);
 
-    // Create descript
-    this->descriptorManager = new DescriptorManager(this->cameraBufferManager, Render::MAX_FRAMES_IN_FLIGHT);
-
-    // Create graphics pipeline
-    this->graphicsPipeline = new GraphicsPipeline(this->swapchainManager->getExtent(), this->renderPass->get(), this->descriptorManager->getLayout());
-
     //Create DepthResources
     this->depthBufferManager = new DepthBufferManager(this->swapchainManager->getExtent());
 
@@ -94,6 +88,14 @@ void Render::initVulkan(){
 
     // Create command
     this->commandManager = new CommandManager(CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value(), this->framebufferManager->getFramebuffers());
+
+    textureImage = new TextureImage("./textures/bf.png", &bufferManager, commandManager->getCommandPool());
+
+    // Create descript
+    this->descriptorManager = new DescriptorManager(this->cameraBufferManager, textureImage, Render::MAX_FRAMES_IN_FLIGHT);
+
+    // Create graphics pipeline
+    this->graphicsPipeline = new GraphicsPipeline(this->swapchainManager->getExtent(), this->renderPass->get(), this->descriptorManager->getLayout());
 
     // VkPhysicalDeviceProperties deviceProperties;
     // vkGetPhysicalDeviceProperties(CoreVulkan::getPhysicalDevice(), &deviceProperties);
@@ -217,6 +219,7 @@ void Render::cleanup(){
     if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
     if (this->descriptorManager){ delete this->descriptorManager; this->descriptorManager = nullptr; }
     if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
+    if (this->textureImage){ delete this->textureImage; this->textureImage = nullptr; }
     if (this->ui) { this->ui->cleanup(); delete this->ui; this->ui = nullptr; }
     if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
 

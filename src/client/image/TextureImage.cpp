@@ -1,4 +1,3 @@
-#include "stb_image.h"
 #include "../CoreVulkan.hpp"
 #include "TextureImage.hpp"
 #include "VulkanImageUtils.hpp"
@@ -18,18 +17,18 @@ TextureImage::LoadedImage TextureImage::loadImageFromFile(const char* path) {
 }
 
 void TextureImage::createStagingBuffer(
-    BufferManager& bufferManager,
+    BufferManager* bufferManager,
     const LoadedImage& img,
     VkBuffer& buffer,
     VkDeviceMemory& memory
 ) {
-    bufferManager.createBuffer(
+    bufferManager->createBuffer(
         img.size,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         buffer
     );
 
-    bufferManager.allocateBufferMemory(
+    bufferManager->allocateBufferMemory(
         buffer,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         memory
@@ -91,14 +90,14 @@ void TextureImage::createGpuImage(
 }
 
 void TextureImage::uploadToGpu(
-    BufferManager& bufferManager,
+    BufferManager* bufferManager,
     VkCommandPool commandPool,
     VkBuffer stagingBuffer,
     uint32_t width,
     uint32_t height
 ) {
     transitionImageLayout(
-        &bufferManager,
+        bufferManager,
         commandPool,
         textureImage,
         VK_FORMAT_R8G8B8A8_SRGB,
@@ -106,7 +105,7 @@ void TextureImage::uploadToGpu(
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
     );
 
-    bufferManager.copyBufferToImage(
+    bufferManager->copyBufferToImage(
         commandPool,
         stagingBuffer,
         textureImage,
@@ -115,7 +114,7 @@ void TextureImage::uploadToGpu(
     );
 
     transitionImageLayout(
-        &bufferManager,
+        bufferManager,
         commandPool,
         textureImage,
         VK_FORMAT_R8G8B8A8_SRGB,
@@ -220,7 +219,7 @@ void TextureImage::createTextureSampler() {
 
 void TextureImage::createTextureImage(
     const char* path,
-    BufferManager& bufferManager,
+    BufferManager* bufferManager,
     VkCommandPool commandPool
 ) {
     LoadedImage img = loadImageFromFile(path);
@@ -244,14 +243,11 @@ void TextureImage::createTextureImage(
         img.width,
         img.height
     );
-
-    vkDestroyBuffer(CoreVulkan::getDevice(), staging.buffer, nullptr);
-    vkFreeMemory(CoreVulkan::getDevice(), staging.memory, nullptr);
 }
 
 TextureImage::TextureImage(
     const char* path,
-    BufferManager& bufferManager,
+    BufferManager* bufferManager,
     VkCommandPool commandPool
 ) {
     createTextureImage(path, bufferManager, commandPool);

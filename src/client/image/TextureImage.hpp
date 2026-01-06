@@ -1,5 +1,6 @@
 #pragma once
 
+#include "stb_image.h"
 #include "../CoreVulkan.hpp"
 #include "../mash/BufferManager.hpp"
 
@@ -68,12 +69,12 @@ public:
 
     TextureImage(
         const char* path,
-        BufferManager& bufferManager,
+        BufferManager* bufferManager,
         VkCommandPool commandPool
     );
     LoadedImage loadImageFromFile(const char* path);
     void createStagingBuffer(
-        BufferManager& bufferManager,
+        BufferManager* bufferManager,
         const LoadedImage& img,
         VkBuffer& buffer,
         VkDeviceMemory& memory
@@ -94,7 +95,7 @@ public:
         VkMemoryPropertyFlags properties
     );
     void uploadToGpu(
-        BufferManager& bufferManager,
+        BufferManager* bufferManager,
         VkCommandPool commandPool,
         VkBuffer stagingBuffer,
         uint32_t width,
@@ -102,10 +103,15 @@ public:
     );
     void createTextureImage(
         const char* path,
-        BufferManager& bufferManager,
+        BufferManager* bufferManager,
         VkCommandPool commandPool
     );
     void createTextureImageView();
     void createTextureSampler();
     ~TextureImage();
+
+const VkImage& getTextureImage() const { return textureImage; }
+const VkDeviceMemory& getTextureImageMemory() const { return textureImageMemory; }
+const VkImageView& getTextureImageView() const { return textureImageView; }
+const VkSampler& getTextureSampler() const { return textureSampler; }
 };

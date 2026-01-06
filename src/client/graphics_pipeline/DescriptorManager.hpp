@@ -2,6 +2,7 @@
 
 #include "../CoreVulkan.hpp"
 #include "../camera/CameraBufferManager.hpp"
+#include "../image/TextureImage.hpp"
 #include <glm/glm.hpp>
 
 /*
@@ -52,7 +53,7 @@ public:
 
     @throws std::runtime_error if descriptor set layout creation, pool creation, or descriptor set allocation fails.
     */
-    DescriptorManager(CameraBufferManager* cameraBufferManager,uint32_t max_frames_in_flight);
+    DescriptorManager(CameraBufferManager* cameraBufferManager, TextureImage* textureImage, uint32_t max_frames_in_flight);
     /*
     defines what kind of resources your shaders expect to be bound, and where
     @return VkDescriptorSetLayout* descriptorSetLayout
@@ -61,7 +62,7 @@ public:
     void createDescriptorSetLayout();
     void createDescriptorPool(uint32_t max_frames_in_flight);
     void createDescriptorSets(uint32_t max_frames_in_flight);
-    void populateDescriptorSets(CameraBufferManager* cameraBufferManager, uint32_t max_frames_in_flight);
+    void populateDescriptorSets(CameraBufferManager* cameraBufferManager, TextureImage* textureImage, uint32_t max_frames_in_flight);
 
     VkDescriptorSetLayout getLayout() const { return descriptorSetLayout; }
     VkDescriptorPool getPool() const { return descriptorPool; }

@@ -40,7 +40,7 @@ private:
     Defines the format and location of each vertex attribute (e.g. position, color).
     Used by VkPipelineVertexInputStateCreateInfo.
     */
-    std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+    std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 
     /**
     @brief Viewport configuration.
