@@ -1,7 +1,6 @@
 #include "DescriptorManager.hpp"
 #include "../camera/UniformBufferObject.hpp"
 #include <array>
-#include "../../common/debug_helper.hpp"
 
 DescriptorManager::DescriptorManager(CameraBufferManager* cameraBufferManager, TextureImage* textureImage, uint32_t max_frames_in_flight)
 {
@@ -128,5 +127,4 @@ DescriptorManager::~DescriptorManager() {
     if (this->descriptorSetLayout != VK_NULL_HANDLE) {
         vkDestroyDescriptorSetLayout(CoreVulkan::getDevice(), this->descriptorSetLayout, nullptr);
     }
-    debug_helper::report();
 }

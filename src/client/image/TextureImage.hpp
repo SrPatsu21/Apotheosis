@@ -38,13 +38,18 @@ private:
 
         // Move Assignment Operator
         LoadedImage& operator=(LoadedImage&& other) noexcept {
-            width = other.width;
-            height = other.height;
-            size = other.size;
-            pixels = other.pixels;
+            if (this != &other) {
+                if (pixels) {
+                    stbi_image_free(pixels);
+                }
 
-            // avoid double free
-            other.pixels = nullptr;
+                width  = other.width;
+                height = other.height;
+                size   = other.size;
+                pixels = other.pixels;
+
+                other.pixels = nullptr;
+            }
             return *this;
         }
     };
@@ -72,14 +77,18 @@ public:
         BufferManager* bufferManager,
         VkCommandPool commandPool
     );
-    LoadedImage loadImageFromFile(const char* path);
+    void loadImageFromFile(
+        const char* path,
+        LoadedImage& img
+    );
     void createStagingBuffer(
         BufferManager* bufferManager,
         const LoadedImage& img,
         VkBuffer& buffer,
         VkDeviceMemory& memory
     );
-    void transitionImageLayout(BufferManager* bufferManager,
+    void transitionImageLayout(
+        BufferManager* bufferManager,
         VkCommandPool commandPool,
         VkImage image,
         VkFormat format,

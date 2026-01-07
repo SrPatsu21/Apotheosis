@@ -2,18 +2,17 @@
 #include "TextureImage.hpp"
 #include "VulkanImageUtils.hpp"
 
-TextureImage::LoadedImage TextureImage::loadImageFromFile(const char* path) {
-    LoadedImage img;
-
+void TextureImage::loadImageFromFile(
+    const char* path,
+    LoadedImage& img
+) {
     int channels;
     img.pixels = stbi_load(path, &img.width, &img.height, &channels, STBI_rgb_alpha);
 
     if (!img.pixels || img.width <= 0 || img.height <= 0) {
         throw std::runtime_error("failed to load texture image");
     }
-
     img.size = static_cast<VkDeviceSize>(img.width) * img.height * 4;
-    return img;
 }
 
 void TextureImage::createStagingBuffer(
@@ -222,7 +221,11 @@ void TextureImage::createTextureImage(
     BufferManager* bufferManager,
     VkCommandPool commandPool
 ) {
-    LoadedImage img = loadImageFromFile(path);
+    LoadedImage img{};
+    loadImageFromFile(
+        path,
+        img
+    );
 
     StagingBufferRAII staging = {};
     createStagingBuffer(bufferManager, img, staging.buffer, staging.memory);
