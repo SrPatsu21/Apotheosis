@@ -23,22 +23,44 @@ public:
 
     bool framebufferResized = false;
 
+    const glm::vec4 color = {1.0f, 1.0f, 0.0f, 1.0f};
     const std::vector<Vertex> VERTICES = {
-        Vertex({-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}), // 0
-        Vertex({ 0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 1.0f}), // 1
-        Vertex({ 0.5f, 0.0f,  0.5f}, {0.0f, 0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}), // 2
-        Vertex({-0.5f, 0.0f,  0.5f}, {1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}), // 3
+        // BASE
+        Vertex({-0.5f, 0.0f, -0.5f}, color, {0.0f, 0.0f}),
+        Vertex({ 0.5f, 0.0f, -0.5f}, color, {1.0f, 0.0f}),
+        Vertex({ 0.5f, 0.0f,  0.5f}, color, {1.0f, 1.0f}),
+        Vertex({-0.5f, 0.0f,  0.5f}, color, {0.0f, 1.0f}),
 
-        Vertex({ 0.0f, 0.8f,  0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 0.0f})  // 4
+        // Frontal Face
+        Vertex({-0.5f, 0.0f, -0.5f}, color, {0.0f, 0.0f}),
+        Vertex({ 0.5f, 0.0f, -0.5f}, color, {1.0f, 0.0f}),
+        Vertex({ 0.0f, 0.8f,  0.0f}, color, {0.5f, 1.0f}),
+
+        // Right
+        Vertex({ 0.5f, 0.0f, -0.5f}, color, {0.0f, 0.0f}),
+        Vertex({ 0.5f, 0.0f,  0.5f}, color, {1.0f, 0.0f}),
+        Vertex({ 0.0f, 0.8f,  0.0f}, color, {0.5f, 1.0f}),
+
+        // Back
+        Vertex({ 0.5f, 0.0f,  0.5f}, color, {0.0f, 0.0f}),
+        Vertex({-0.5f, 0.0f,  0.5f}, color, {1.0f, 0.0f}),
+        Vertex({ 0.0f, 0.8f,  0.0f}, color, {0.5f, 1.0f}),
+
+        // Left
+        Vertex({-0.5f, 0.0f,  0.5f}, color, {0.0f, 0.0f}),
+        Vertex({-0.5f, 0.0f, -0.5f}, color, {1.0f, 0.0f}),
+        Vertex({ 0.0f, 0.8f,  0.0f}, color, {0.5f, 1.0f}),
     };
     const std::vector<uint16_t> INDICES = {
+        // BASE
         0, 1, 2,
-        0, 2, 3,
+        2, 3, 0,
 
-        0, 4, 1,
-        1, 4, 2,
-        2, 4, 3,
-        3, 4, 0
+        // FACES
+        4, 5, 6,     // frente
+        7, 8, 9,     // direita
+        10, 11, 12,  // trás
+        13, 14, 15   // esquerda
     };
 
     Render();
