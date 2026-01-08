@@ -68,6 +68,10 @@ public:
 
     static void findDepthFormat();
 
+    static VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+
+    static bool hasStencilComponent(VkFormat format);
+
     static bool checkValidationLayerSupport();
 
     static int rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);

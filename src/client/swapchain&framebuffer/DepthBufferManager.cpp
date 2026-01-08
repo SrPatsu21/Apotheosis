@@ -2,7 +2,10 @@
 #include "../image/VulkanImageUtils.hpp"
 
 DepthBufferManager::DepthBufferManager(VkExtent2D swapchainExtent) :
-        depthImage(VK_NULL_HANDLE), depthImageMemory(VK_NULL_HANDLE), depthImageView(VK_NULL_HANDLE){
+        depthImage(VK_NULL_HANDLE),
+        depthImageMemory(VK_NULL_HANDLE),
+        depthImageView(VK_NULL_HANDLE)
+{
 
     createImage(
         swapchainExtent.width,
