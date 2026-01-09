@@ -174,6 +174,19 @@ add_custom_target(Textures ALL
 )
 
 # ============================================================
+# Copy models (CLIENT ONLY)
+# ============================================================
+set(MODELS_SRC_DIR ${CMAKE_SOURCE_DIR}/src/client/assets/models)
+set(MODELS_DST_DIR ${CMAKE_BINARY_DIR}/models)
+
+add_custom_target(Models ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${MODELS_DST_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${MODELS_SRC_DIR}
+            ${MODELS_DST_DIR}
+)
+
+# ============================================================
 # Client sources & executable
 # ============================================================
 file(GLOB_RECURSE CLIENT_SOURCES

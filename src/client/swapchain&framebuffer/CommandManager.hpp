@@ -64,7 +64,7 @@ public:
 
     void recordCommandBuffer(size_t imageIndex, VkRenderPass renderPass, GraphicsPipeline* graphicsPipeline,
         const std::vector<VkFramebuffer>& framebuffers, VkExtent2D extent, VkBuffer vertexBuffer, VkBuffer indexBuffer,
-        const std::vector<uint16_t>& indices, VkDescriptorSet descriptorSet, std::function<void(VkCommandBuffer)> extraRecording);
+        uint32_t indicesSize, VkDescriptorSet descriptorSet, std::function<void(VkCommandBuffer)> extraRecording);
     VkCommandPool getCommandPool() const { return commandPool; }
     const std::vector<VkCommandBuffer>& getCommandBuffers() const { return commandBuffers; }
     void allocateCommandbuffers(const std::vector<VkFramebuffer>& framebuffers);

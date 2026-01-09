@@ -1,7 +1,8 @@
 #include "IndexBufferManager.hpp"
 
-IndexBufferManager::IndexBufferManager(const std::vector<uint16_t> indices, VkCommandPool commandPool) {
+IndexBufferManager::IndexBufferManager(const std::vector<uint32_t> indices, VkCommandPool commandPool) {
     VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
 

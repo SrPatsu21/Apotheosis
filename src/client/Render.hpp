@@ -13,6 +13,7 @@
 #include "mash/VertexBufferManager.hpp"
 #include "mash/IndexBufferManager.hpp"
 #include "mash/BufferManager.hpp"
+#include "mash/MeshLoader.hpp"
 #include "swapchain&framebuffer/CommandManager.hpp"
 #include "camera/UniformBufferObject.hpp"
 #include "image/TextureImage.hpp"
@@ -51,7 +52,7 @@ public:
         Vertex({-0.5f, 0.0f, -0.5f}, color, {1.0f, 0.0f}),
         Vertex({ 0.0f, 0.8f,  0.0f}, color, {0.5f, 1.0f}),
     };
-    const std::vector<uint16_t> INDICES = {
+    const std::vector<uint32_t> INDICES = {
         // BASE
         0, 1, 2,
         2, 3, 0,
@@ -91,6 +92,7 @@ private:
     IndexBufferManager* indexBufferManager;
     CommandManager* commandManager;
     TextureImage* textureImage;
+    MeshLoader* meshLoader;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
 

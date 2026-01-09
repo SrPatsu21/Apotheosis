@@ -8,3 +8,4 @@ build-windows-release
 src/client/assets/textures/*.jpg
 src/client/assets/textures/*.png
 src/client/assets/textures/*.gif
+src/client/assets/models/*.obj

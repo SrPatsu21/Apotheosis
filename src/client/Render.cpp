@@ -89,7 +89,7 @@ void Render::initVulkan(){
     // Create command
     this->commandManager = new CommandManager(CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value(), this->framebufferManager->getFramebuffers());
 
-    textureImage = new TextureImage("./textures/bf.png", &bufferManager, commandManager->getCommandPool());
+    textureImage = new TextureImage("./textures/viking_room.png", &bufferManager, commandManager->getCommandPool());
 
     // Create descript
     this->descriptorManager = new DescriptorManager(this->cameraBufferManager, textureImage, Render::MAX_FRAMES_IN_FLIGHT);
@@ -102,10 +102,11 @@ void Render::initVulkan(){
 
     // std::cout << "Push Constant Max Size: " << deviceProperties.limits.maxPushConstantsSize << " bytes\n";
 
+    this->meshLoader = new MeshLoader("./models/viking_room.obj");
 
     // Create vertex buffer
-    this->vertexBufferManager = new VertexBufferManager(Render::VERTICES, this->commandManager->getCommandPool());
-    this->indexBufferManager = new IndexBufferManager(Render::INDICES, this->commandManager->getCommandPool());
+    this->vertexBufferManager = new VertexBufferManager(meshLoader->getVertices(), this->commandManager->getCommandPool());
+    this->indexBufferManager = new IndexBufferManager(meshLoader->getIndices(), this->commandManager->getCommandPool());
 };
 
 void Render::drawFrame(){
@@ -140,7 +141,7 @@ void Render::drawFrame(){
     vkResetCommandBuffer(cmd, 0);
     this->commandManager->recordCommandBuffer(imageIndex, this->renderPass->get(), this->graphicsPipeline,
             this->framebufferManager->getFramebuffers(), this->swapchainManager->getExtent(),
-            this->vertexBufferManager->getVertexBuffer(), this->indexBufferManager->getIndexBuffer(), Render::INDICES,
+            this->vertexBufferManager->getVertexBuffer(), this->indexBufferManager->getIndexBuffer(), static_cast<uint32_t>(meshLoader->getIndices().size()),
             this->descriptorManager->getSets()[currentFrame], [this](VkCommandBuffer cmd) { this->ui->render(cmd); });
 
     // Update UBOs for this frame
@@ -212,6 +213,7 @@ void Render::cleanup(){
     //    (Everything that depends on the swapchain must go BEFORE swapchain.)
     //    Delete pointers and null them to avoid accidental double free later.
     if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
+    if (this->meshLoader){delete this->meshLoader; this->meshLoader = nullptr; }
     if (this->vertexBufferManager){ delete this->vertexBufferManager; this->vertexBufferManager = nullptr; }
     if (this->indexBufferManager){ delete this->indexBufferManager; this->indexBufferManager = nullptr; }
     if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
