@@ -36,7 +36,7 @@ void Render::initWindow(){
     // no OpenGL
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     // block resize
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     // screen config
     this->window = glfwCreateWindow(this->width, this->height, "ProjectD", nullptr, nullptr);
     glfwSetWindowUserPointer(this->window, this);

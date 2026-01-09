@@ -164,12 +164,19 @@ void SwapchainManager::safeDestroySwapchain(){
 
 void SwapchainManager::recreate(VkSurfaceKHR surface, GLFWwindow* window, uint32_t graphicsQueueFamily)
 {
+
+    //TODO optimise
+
+    safeDestroySwapchain();
     // details
     SwapchainSupportDetails swapChainSupport = CoreVulkan::querySwapchainSupport(surface);
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
     VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities, window);
+
+    this->swapchainExtent = extent;
+    this->swapchainImageFormat = surfaceFormat.format;
 
     // create a new one
     createSwapchainInternal(surface, surfaceFormat, presentMode, extent, swapChainSupport, graphicsQueueFamily);

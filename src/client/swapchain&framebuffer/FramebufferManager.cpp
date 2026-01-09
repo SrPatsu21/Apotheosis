@@ -1,7 +1,11 @@
 #include "FramebufferManager.hpp"
 #include <array>
 
-FramebufferManager::FramebufferManager(VkRenderPass renderPass, const SwapchainManager* swapchainManager, const DepthBufferManager* depthBufferManager) {
+FramebufferManager::FramebufferManager(
+    VkRenderPass renderPass,
+    const SwapchainManager* swapchainManager,
+    const DepthBufferManager* depthBufferManager
+) {
     const auto& swapchainImageViews = swapchainManager->getImageViews();
     VkImageView depthImageView = depthBufferManager->getDepthImageView();
     VkExtent2D swapChainExtent = swapchainManager->getExtent();
