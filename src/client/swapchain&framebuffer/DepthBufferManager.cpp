@@ -6,11 +6,12 @@ DepthBufferManager::DepthBufferManager(VkExtent2D swapchainExtent) :
         depthImageMemory(VK_NULL_HANDLE),
         depthImageView(VK_NULL_HANDLE)
 {
+    VkFormat depthFormat = CoreVulkan::getDepthFormat();
 
     createImage(
         swapchainExtent.width,
         swapchainExtent.height,
-        CoreVulkan::getDepthFormat(),
+        depthFormat,
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -18,7 +19,7 @@ DepthBufferManager::DepthBufferManager(VkExtent2D swapchainExtent) :
         this->depthImageMemory
     );
 
-    depthImageView = createImageView(CoreVulkan::getDevice(), this->depthImage, CoreVulkan::getDepthFormat(), VK_IMAGE_ASPECT_DEPTH_BIT);
+    depthImageView = createImageView(CoreVulkan::getDevice(), depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 VkImageView DepthBufferManager::createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {

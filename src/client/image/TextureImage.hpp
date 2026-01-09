@@ -87,7 +87,7 @@ public:
         VkBuffer& buffer,
         VkDeviceMemory& memory
     );
-    void transitionImageLayout(
+    static void transitionImageLayout(
         BufferManager* bufferManager,
         VkCommandPool commandPool,
         VkImage image,
