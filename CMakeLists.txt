@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.10)
 # Project
 # ============================================================
 set(PROJECT_NAME "ProjectD")
-project(${PROJECT_NAME})
+project(${PROJECT_NAME} LANGUAGES CXX)
 
 # ============================================================
 # C++ Standard
@@ -20,29 +20,11 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # ============================================================
-# Global compiler definitions
-# ============================================================
-add_compile_definitions(VK_PROTOTYPES)
-
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_compile_definitions(NDEBUG DISABLE_VALIDATION_LAYERS)
-endif()
-
-# ============================================================
 # Output directories
 # ============================================================
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-
-# ============================================================
-# Platform-specific Vulkan definitions
-# ============================================================
-if(WIN32)
-    add_compile_definitions(VK_USE_PLATFORM_WIN32_KHR)
-elseif(UNIX)
-    add_compile_definitions(VK_USE_PLATFORM_XCB_KHR)
-endif()
 
 # ============================================================
 # ---------------- COMMON LIBRARY ------------------------------
@@ -65,6 +47,10 @@ file(GLOB_RECURSE SERVER_SOURCES
 
 add_executable(${PROJECT_NAME}_server ${SERVER_SOURCES})
 
+target_link_libraries(${PROJECT_NAME}_server
+    game_common
+)
+
 if(UNIX)
     target_link_libraries(${PROJECT_NAME}_server
         pthread
@@ -77,27 +63,29 @@ endif()
 # Graphics, input, UI, shaders
 # ============================================================
 
-# ---------------- Vulkan ----------------
+# ============================================================
+# Vulkan (CLIENT ONLY)
+# ============================================================
 if(UNIX)
     find_package(Vulkan REQUIRED)
 elseif(WIN32)
     set(VULKAN_SDK_PATH "./lib/vulkan-sdk-win")
-    include_directories(${VULKAN_SDK_PATH}/Include)
-    link_directories(${VULKAN_SDK_PATH}/Lib)
 endif()
 
-# ---------------- GLFW ----------------
+# ============================================================
+# GLFW
+# ============================================================
 option(GLFW_BUILD_EXAMPLES OFF)
 option(GLFW_BUILD_TESTS OFF)
 option(GLFW_BUILD_DOCS OFF)
 option(GLFW_INSTALL OFF)
 
 add_subdirectory(lib/glfw)
-include_directories(lib/glfw/include)
 
-# ---------------- Dear ImGui ----------------
+# ============================================================
+# Dear ImGui
+# ============================================================
 set(IMGUI_DIR lib/Dear-ImGui)
-include_directories(${IMGUI_DIR} ${IMGUI_DIR}/backends)
 
 set(IMGUI_SOURCES
     ${IMGUI_DIR}/imgui.cpp
@@ -108,21 +96,30 @@ set(IMGUI_SOURCES
     ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
 )
 
-# ---------------- GLM ----------------
+# ============================================================
+# GLM
+# ============================================================
 if(WIN32)
-    include_directories(lib/glm/glm-1.0.1)
+    add_library(glm INTERFACE)
+    target_include_directories(glm INTERFACE lib/glm/glm-1.0.1)
 else()
     find_package(glm REQUIRED)
 endif()
 
-# ---------------- stb_image ----------------
+# ============================================================
+# stb_image
+# ============================================================
 set(STB_DIR lib/stb)
-include_directories(${STB_DIR})
 set(STB_SOURCES src/client/image/stb_image_impl.cpp)
 
-# ---------------- Assimp ----------------
+# ============================================================
+# Assimp
+# ============================================================
+option(ASSIMP_BUILD_TESTS OFF)
+option(ASSIMP_BUILD_ASSIMP_TOOLS OFF)
+option(ASSIMP_BUILD_SAMPLES OFF)
+
 add_subdirectory(lib/assimp)
-include_directories(lib/assimp/include)
 
 # ============================================================
 # Shader compilation (CLIENT ONLY)
@@ -189,30 +186,74 @@ add_executable(${PROJECT_NAME}_client
     ${STB_SOURCES}
 )
 
-add_dependencies(${PROJECT_NAME}_client Shaders)
-add_dependencies(${PROJECT_NAME}_client Textures)
+add_dependencies(${PROJECT_NAME}_client Shaders Textures)
+
+# ============================================================
+# Client include directories
+# ============================================================
+target_include_directories(${PROJECT_NAME}_client PRIVATE
+    src/client
+    ${IMGUI_DIR}
+    ${IMGUI_DIR}/backends
+    ${STB_DIR}
+)
+
+if(WIN32)
+    target_include_directories(${PROJECT_NAME}_client PRIVATE
+        ${VULKAN_SDK_PATH}/Include
+    )
+endif()
+
+# ============================================================
+# Client compile definitions
+# ============================================================
+target_compile_definitions(${PROJECT_NAME}_client PRIVATE
+    VK_PROTOTYPES
+)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_definitions(${PROJECT_NAME}_client PRIVATE
+        NDEBUG
+        DISABLE_VALIDATION_LAYERS
+    )
+endif()
+
+if(WIN32)
+    target_compile_definitions(${PROJECT_NAME}_client PRIVATE
+        VK_USE_PLATFORM_WIN32_KHR
+    )
+elseif(UNIX)
+    target_compile_definitions(${PROJECT_NAME}_client PRIVATE
+        VK_USE_PLATFORM_XCB_KHR
+    )
+endif()
 
 # ============================================================
 # Client libraries
 # ============================================================
 if(WIN32)
-    set(CLIENT_LIBS glfw assimp vulkan-1)
+    target_link_directories(${PROJECT_NAME}_client PRIVATE
+        ${VULKAN_SDK_PATH}/Lib
+    )
+
+    target_link_libraries(${PROJECT_NAME}_client
+        game_common
+        glfw
+        assimp
+        vulkan-1
+        glm
+    )
 elseif(UNIX)
-    set(CLIENT_LIBS
+    target_link_libraries(${PROJECT_NAME}_client
+        game_common
         glfw
         Vulkan::Vulkan
-        X11 Xrandr Xi Xcursor
         glm::glm
         assimp
         pthread
         dl
     )
 endif()
-
-target_link_libraries(${PROJECT_NAME}_client
-    game_common
-    ${CLIENT_LIBS}
-)
 
 # ============================================================
 # Mods directory creation (no target dependency)
