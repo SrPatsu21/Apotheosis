@@ -7,6 +7,7 @@
 class TextureImage
 {
 private:
+    uint32_t mipLevels;
     VkImage textureImage;
     VkDeviceMemory textureImageMemory;
     VkImageView textureImageView;
@@ -93,22 +94,8 @@ public:
         VkImage image,
         VkFormat format,
         VkImageLayout oldLayout,
-        VkImageLayout newLayout
-    );
-    void createGpuImage(
-        uint32_t width,
-        uint32_t height,
-        VkFormat format,
-        VkImageTiling tiling,
-        VkImageUsageFlags usage,
-        VkMemoryPropertyFlags properties
-    );
-    void uploadToGpu(
-        BufferManager* bufferManager,
-        VkCommandPool commandPool,
-        VkBuffer stagingBuffer,
-        uint32_t width,
-        uint32_t height
+        VkImageLayout newLayout,
+        uint32_t mipLevels
     );
     void createTextureImage(
         const char* path,

@@ -19,8 +19,6 @@ private:
     */
     VkImageView depthImageView;
 
-    VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
-
 public:
     /**
     @brief Constructs a DepthBufferManager, creating the GPU resources for depth testing.

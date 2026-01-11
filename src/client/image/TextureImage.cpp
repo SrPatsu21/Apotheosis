@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "../CoreVulkan.hpp"
 #include "TextureImage.hpp"
 #include "VulkanImageUtils.hpp"
@@ -41,94 +43,14 @@ void TextureImage::createStagingBuffer(
     vkUnmapMemory(CoreVulkan::getDevice(), memory);
 }
 
-void TextureImage::createGpuImage(
-    uint32_t width,
-    uint32_t height,
-    VkFormat format,
-    VkImageTiling tiling,
-    VkImageUsageFlags usage,
-    VkMemoryPropertyFlags properties
-) {
-    //create image
-    VkImageCreateInfo imageInfo{};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = width;
-    imageInfo.extent.height = height;
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = 1;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = format;
-    imageInfo.tiling = tiling;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = usage;
-    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    imageInfo.flags = 0;
-
-    if (vkCreateImage(CoreVulkan::getDevice(), &imageInfo, nullptr, &textureImage) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create image!");
-    }
-
-    // alocate
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(CoreVulkan::getDevice(), textureImage, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-
-    allocInfo.memoryTypeIndex = CoreVulkan::findMemoryType(memRequirements.memoryTypeBits, properties, 0);
-
-    if (vkAllocateMemory(CoreVulkan::getDevice(), &allocInfo, nullptr, &textureImageMemory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate image memory!");
-    }
-
-    //bind
-    vkBindImageMemory(CoreVulkan::getDevice(), textureImage, textureImageMemory, 0);
-}
-
-void TextureImage::uploadToGpu(
-    BufferManager* bufferManager,
-    VkCommandPool commandPool,
-    VkBuffer stagingBuffer,
-    uint32_t width,
-    uint32_t height
-) {
-    transitionImageLayout(
-        bufferManager,
-        commandPool,
-        textureImage,
-        VK_FORMAT_R8G8B8A8_SRGB,
-        VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-    );
-
-    bufferManager->copyBufferToImage(
-        commandPool,
-        stagingBuffer,
-        textureImage,
-        width,
-        height
-    );
-
-    transitionImageLayout(
-        bufferManager,
-        commandPool,
-        textureImage,
-        VK_FORMAT_R8G8B8A8_SRGB,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-    );
-}
-
 void TextureImage::transitionImageLayout(
     BufferManager* bufferManager,
     VkCommandPool commandPool,
     VkImage image,
     VkFormat format,
     VkImageLayout oldLayout,
-    VkImageLayout newLayout
+    VkImageLayout newLayout,
+    uint32_t mipLevels
 ) {
     VkCommandBuffer commandBuffer = bufferManager->beginSingleTimeCommands(commandPool);
 
@@ -143,7 +65,7 @@ void TextureImage::transitionImageLayout(
     barrier.image = image;
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.levelCount = mipLevels;
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = 1;
 
@@ -189,7 +111,7 @@ void TextureImage::transitionImageLayout(
 }
 
 void TextureImage::createTextureImageView(){
-    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 }
 
 void TextureImage::createTextureSampler() {
@@ -234,24 +156,52 @@ void TextureImage::createTextureImage(
         img
     );
 
+    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(img.width, img.height)))) + 1;
+
     StagingBufferRAII staging = {};
     createStagingBuffer(bufferManager, img, staging.buffer, staging.memory);
 
-    createGpuImage(
+    // createGpuImage
+    createImage(
         img.width,
         img.height,
+        mipLevels,
         VK_FORMAT_R8G8B8A8_SRGB,
         VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        textureImage,
+        textureImageMemory
     );
 
-    uploadToGpu(
+    // uploadToGpu
+    transitionImageLayout(
         bufferManager,
         commandPool,
+        textureImage,
+        VK_FORMAT_R8G8B8A8_SRGB,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        mipLevels
+    );
+
+    bufferManager->copyBufferToImage(
+        commandPool,
         staging.buffer,
+        textureImage,
         img.width,
         img.height
+    );
+    //transitioned to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL while generating mipmaps
+
+
+    generateMipmaps(
+        bufferManager,
+        commandPool,
+        textureImage,
+        img.width,
+        img.height,
+        mipLevels
     );
 }
 

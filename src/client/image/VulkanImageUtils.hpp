@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../CoreVulkan.hpp"
+#include "../mash/BufferManager.hpp"
 
 /**
 @brief Creates a 2D Vulkan image and allocates & binds its memory.
@@ -13,8 +14,17 @@
 @param image (out) Created VkImage handle.
 @param imageMemory (out) Allocated VkDeviceMemory handle.
 */
-void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-    VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+void createImage(
+    uint32_t width,
+    uint32_t height,
+    uint32_t mipLevels,
+    VkFormat format,
+    VkImageTiling tiling,
+    VkImageUsageFlags usage,
+    VkMemoryPropertyFlags properties,
+    VkImage& image,
+    VkDeviceMemory& imageMemory
+);
 
 /**
 @brief Creates a 2D image view for a given image.
@@ -26,4 +36,18 @@ void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling
 
 @throws std::runtime_error if image view creation fails.
  */
-VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+VkImageView createImageView(
+    VkImage image,
+    VkFormat format,
+    VkImageAspectFlags aspectFlags,
+    uint32_t mipLevels
+);
+
+void generateMipmaps(
+    BufferManager* bufferManager,
+    VkCommandPool commandPool,
+    VkImage image,
+    int32_t texWidth,
+    int32_t texHeight,
+    uint32_t mipLevels
+);
