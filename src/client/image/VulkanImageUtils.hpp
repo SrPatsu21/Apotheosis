@@ -3,6 +3,8 @@
 #include "../CoreVulkan.hpp"
 #include "../mash/BufferManager.hpp"
 
+constexpr int MIP_DIVISION_AMOUNT = 4;
+
 /**
 @brief Creates a 2D Vulkan image and allocates & binds its memory.
 @param width Image width in pixels.

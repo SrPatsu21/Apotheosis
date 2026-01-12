@@ -156,7 +156,7 @@ void TextureImage::createTextureImage(
         img
     );
 
-    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(img.width, img.height)))) + 1;
+    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(img.width, img.height)) / (MIP_DIVISION_AMOUNT/2))) + 1;
 
     StagingBufferRAII staging = {};
     createStagingBuffer(bufferManager, img, staging.buffer, staging.memory);
