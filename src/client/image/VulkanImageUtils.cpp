@@ -78,10 +78,18 @@ void generateMipmaps(
     BufferManager* bufferManager,
     VkCommandPool commandPool,
     VkImage image,
+    VkFormat imageFormat,
     int32_t texWidth,
     int32_t texHeight,
     uint32_t mipLevels
 ) {
+    // Check if image format supports linear blitting
+    VkFormatProperties formatProperties;
+    vkGetPhysicalDeviceFormatProperties(CoreVulkan::getPhysicalDevice(), imageFormat, &formatProperties);
+    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
+        throw std::runtime_error("texture image format does not support linear blitting!");
+    }
+
     VkCommandBuffer commandBuffer = bufferManager->beginSingleTimeCommands(commandPool);
 
     VkImageMemoryBarrier barrier{};
@@ -126,8 +134,8 @@ void generateMipmaps(
         blit.srcSubresource.layerCount = 1;
         blit.dstOffsets[0] = { 0, 0, 0 };
         blit.dstOffsets[1] = {
-            mipWidth > 1 ? mipWidth / MIP_DIVISION_AMOUNT : 1,
-            mipHeight > 1 ? mipHeight / MIP_DIVISION_AMOUNT : 1, 1
+            mipWidth > 1 ? mipWidth / 2 : 1,
+            mipHeight > 1 ? mipHeight / 2 : 1, 1
         };
         blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         blit.dstSubresource.mipLevel = i;
@@ -163,8 +171,8 @@ void generateMipmaps(
             &barrier
         );
 
-        if (mipWidth > 1) mipWidth /= MIP_DIVISION_AMOUNT;
-        if (mipHeight > 1) mipHeight /= MIP_DIVISION_AMOUNT;
+        if (mipWidth > 1) mipWidth /= 2;
+        if (mipHeight > 1) mipHeight /= 2;
     }
 
     barrier.subresourceRange.baseMipLevel = mipLevels - 1;

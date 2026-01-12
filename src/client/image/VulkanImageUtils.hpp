@@ -3,8 +3,6 @@
 #include "../CoreVulkan.hpp"
 #include "../mash/BufferManager.hpp"
 
-constexpr int MIP_DIVISION_AMOUNT = 4;
-
 /**
 @brief Creates a 2D Vulkan image and allocates & binds its memory.
 @param width Image width in pixels.
@@ -49,6 +47,7 @@ void generateMipmaps(
     BufferManager* bufferManager,
     VkCommandPool commandPool,
     VkImage image,
+    VkFormat imageFormat,
     int32_t texWidth,
     int32_t texHeight,
     uint32_t mipLevels

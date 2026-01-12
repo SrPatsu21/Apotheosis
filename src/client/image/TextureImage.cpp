@@ -138,7 +138,7 @@ void TextureImage::createTextureSampler() {
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     samplerInfo.mipLodBias = 0.0f;
     samplerInfo.minLod = 0.0f;
-    samplerInfo.maxLod = 0.0f;
+    samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
 
     if (vkCreateSampler(CoreVulkan::getDevice(), &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
@@ -156,7 +156,7 @@ void TextureImage::createTextureImage(
         img
     );
 
-    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(img.width, img.height)) / (MIP_DIVISION_AMOUNT/2))) + 1;
+    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(img.width, img.height)))) + 1;
 
     StagingBufferRAII staging = {};
     createStagingBuffer(bufferManager, img, staging.buffer, staging.memory);
@@ -199,6 +199,7 @@ void TextureImage::createTextureImage(
         bufferManager,
         commandPool,
         textureImage,
+        VK_FORMAT_R8G8B8A8_SRGB,
         img.width,
         img.height,
         mipLevels
