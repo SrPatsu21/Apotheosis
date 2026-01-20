@@ -14,6 +14,7 @@ VkSurfaceKHR CoreVulkan::surface = VK_NULL_HANDLE;
 const std::vector<const char*> CoreVulkan::DEVICE_EXTENSIONS = { //* Enable swapchain extension
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
+VkSampleCountFlagBits CoreVulkan::msaaSamples = VK_SAMPLE_COUNT_1_BIT; // Multisampling
 
 //* functions
 
@@ -110,11 +111,14 @@ void CoreVulkan::pickPhysicalDevice() {
     // Check if the best candidate is suitable at all
     if (candidates.rbegin()->first > 0) {
         CoreVulkan::physicalDevice = candidates.rbegin()->second;
+        CoreVulkan::msaaSamples = getMaxUsableSampleCount(VK_SAMPLE_COUNT_8_BIT);
 
+        // debug
         #ifndef NDEBUG
             VkPhysicalDeviceProperties deviceProperties;
             vkGetPhysicalDeviceProperties(CoreVulkan::physicalDevice, &deviceProperties);
             std::cout << "GPU name: " << deviceProperties.deviceName << std::endl;
+            std::cout << "Sample Count: " << CoreVulkan::msaaSamples << std::endl;
         #endif
 
     } else {
@@ -248,6 +252,26 @@ VkFormat CoreVulkan::findSupportedFormat(const std::vector<VkFormat>& candidates
     }
 
     throw std::runtime_error("failed to find supported format!");
+}
+
+VkSampleCountFlagBits CoreVulkan::getMaxUsableSampleCount(
+    VkSampleCountFlagBits maxDesiredSamples
+) {
+    VkPhysicalDeviceProperties props{};
+    vkGetPhysicalDeviceProperties(CoreVulkan::physicalDevice, &props);
+
+    VkSampleCountFlags supported =
+        props.limits.framebufferColorSampleCounts &
+        props.limits.framebufferDepthSampleCounts &
+        maxDesiredSamples;
+
+    if (supported == 0) {
+        return VK_SAMPLE_COUNT_1_BIT;
+    }
+
+    return static_cast<VkSampleCountFlagBits>(
+        1u << (31 - __builtin_clz(supported)) // get the max desired
+    );
 }
 
 bool CoreVulkan::hasStencilComponent(VkFormat format) {

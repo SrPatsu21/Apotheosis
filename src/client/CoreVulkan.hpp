@@ -53,6 +53,8 @@ private:
 
     static QueueFamilyIndices graphicsQueueFamilyIndices;
 
+    static VkSampleCountFlagBits msaaSamples;
+
     CoreVulkan();
 
     static void createInstance();
@@ -69,6 +71,8 @@ public:
     static void findDepthFormat();
 
     static VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+
+    static VkSampleCountFlagBits getMaxUsableSampleCount(VkSampleCountFlagBits maxDesiredSamples);
 
     static bool hasStencilComponent(VkFormat format);
 
@@ -97,5 +101,6 @@ public:
     static VkQueue getPresentQueue() { return presentQueue; }
     static QueueFamilyIndices getGraphicsQueueFamilyIndices() { return graphicsQueueFamilyIndices; }
     static VkSurfaceKHR getSurface() { return surface; }
+    static VkSampleCountFlagBits getMsaaSamples() { return msaaSamples; }
 
 };
