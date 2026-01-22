@@ -38,7 +38,7 @@ public:
 
     @throws std::runtime_error if vkCreateRenderPass fails.
     */
-    RenderPass(VkFormat swapchainImageFormat);
+    RenderPass(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSamples);
 
     /**
     @brief Destroys the Vulkan render pass and cleans up resources.

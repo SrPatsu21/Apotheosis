@@ -54,7 +54,7 @@ void UI::initSwapchainResources(VkRenderPass renderPass, uint32_t imageCount) {
     init_info.Subpass = 0;
     init_info.MinImageCount = imageCount;
     init_info.ImageCount = imageCount;
-    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    init_info.MSAASamples = CoreVulkan::getMsaaSamples();
     init_info.Allocator = nullptr;
     ImGui_ImplVulkan_Init(&init_info);
 

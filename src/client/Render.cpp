@@ -71,16 +71,19 @@ void Render::initVulkan(){
     this->swapchainManager = new SwapchainManager(CoreVulkan::getSurface(), CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value(), this->window);
 
     // Create render pass
-    this->renderPass = new RenderPass(this->swapchainManager->getImageFormat());
+    this->renderPass = new RenderPass(this->swapchainManager->getImageFormat(), CoreVulkan::getMsaaSamples());
 
     // Create camera buff with uniformBuffer
     this->cameraBufferManager = new CameraBufferManager(&bufferManager, Render::MAX_FRAMES_IN_FLIGHT);
+
+    //Multisampling implementation
+    imageColor = new ImageColor(swapchainManager->getImageFormat(),swapchainManager->getExtent(), CoreVulkan::getMsaaSamples());
 
     //Create DepthResources
     this->depthBufferManager = new DepthBufferManager(this->swapchainManager->getExtent());
 
     //Create framebuffers
-    this->framebufferManager = new FramebufferManager(this->renderPass->get(), this->swapchainManager, this->depthBufferManager);
+    this->framebufferManager = new FramebufferManager(this->renderPass->get(), this->swapchainManager, imageColor->getColorImageView(), this->depthBufferManager);
 
     // create semaphore and fence
     createSyncObjects();
@@ -217,6 +220,7 @@ void Render::cleanup(){
     if (this->vertexBufferManager){ delete this->vertexBufferManager; this->vertexBufferManager = nullptr; }
     if (this->indexBufferManager){ delete this->indexBufferManager; this->indexBufferManager = nullptr; }
     if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
+    if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
     if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
     if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
     if (this->descriptorManager){ delete this->descriptorManager; this->descriptorManager = nullptr; }
@@ -284,6 +288,7 @@ void Render::cleanupSwapChain() {
     );
 
     if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
+    if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
     if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
     if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
     if (this->ui) { vkDeviceWaitIdle(CoreVulkan::getDevice()); ImGui_ImplVulkan_Shutdown(); }
@@ -310,24 +315,27 @@ void Render::recreateSwapChain() {
     this->swapchainManager->recreate(CoreVulkan::getSurface(), this->window, CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value());
 
     // 3. Recreate render pass (might depend on swapchain format)
-    this->renderPass = new RenderPass(this->swapchainManager->getImageFormat());
+    this->renderPass = new RenderPass(this->swapchainManager->getImageFormat(), CoreVulkan::getMsaaSamples());
 
     // 4. Recreate pipeline (depends on render pass + extent)
     this->graphicsPipeline = new GraphicsPipeline(this->swapchainManager->getExtent(), this->renderPass->get(), this->descriptorManager->getLayout());
 
-    // 5. Recreate depth buffer
+    // 5. Recreate Multisampling
+    imageColor = new ImageColor(swapchainManager->getImageFormat(),swapchainManager->getExtent(), CoreVulkan::getMsaaSamples());
+
+    // 6. Recreate depth buffer
     this->depthBufferManager = new DepthBufferManager(this->swapchainManager->getExtent());
 
-    // 6. Recreate framebuffers
-    this->framebufferManager = new FramebufferManager(this->renderPass->get(), this->swapchainManager, this->depthBufferManager);
+    // 7. Recreate framebuffers
+    this->framebufferManager = new FramebufferManager(this->renderPass->get(), this->swapchainManager, imageColor->getColorImageView(), this->depthBufferManager);
 
-    // 7. Recreate command buffers
+    // 8. Recreate command buffers
     this->commandManager->allocateCommandbuffers(this->framebufferManager->getFramebuffers());
 
-    // 8. Resize imagesInFlight vector to match new swapchain image count
+    // 9. Resize imagesInFlight vector to match new swapchain image count
     initImagesInFlight(this->swapchainManager->getImages().size());
 
-    // 9. Recreate ImGui resources
+    // 10. Recreate ImGui resources
     this->ui->initSwapchainResources(this->renderPass->get(), this->swapchainManager->getImages().size());
 }
 

@@ -12,6 +12,7 @@ DepthBufferManager::DepthBufferManager(VkExtent2D swapchainExtent) :
         swapchainExtent.width,
         swapchainExtent.height,
         1,
+        CoreVulkan::getMsaaSamples(),
         depthFormat,
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -20,7 +21,12 @@ DepthBufferManager::DepthBufferManager(VkExtent2D swapchainExtent) :
         this->depthImageMemory
     );
 
-    depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+    depthImageView = createImageView(
+        depthImage,
+        depthFormat,
+        VK_IMAGE_ASPECT_DEPTH_BIT,
+        1
+    );
 }
 
 DepthBufferManager::~DepthBufferManager()

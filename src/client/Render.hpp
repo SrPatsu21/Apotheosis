@@ -17,52 +17,13 @@
 #include "swapchain&framebuffer/CommandManager.hpp"
 #include "camera/UniformBufferObject.hpp"
 #include "image/TextureImage.hpp"
+#include "image/ImageColor.hpp"
 
 class Render {
 public:
     const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
     bool framebufferResized = false;
-
-    const glm::vec4 color = {1.0f, 1.0f, 0.0f, 1.0f};
-    const std::vector<Vertex> VERTICES = {
-        // BASE
-        Vertex({-0.5f, 0.0f, -0.5f}, color, {0.0f, 0.0f}),
-        Vertex({ 0.5f, 0.0f, -0.5f}, color, {1.0f, 0.0f}),
-        Vertex({ 0.5f, 0.0f,  0.5f}, color, {1.0f, 1.0f}),
-        Vertex({-0.5f, 0.0f,  0.5f}, color, {0.0f, 1.0f}),
-
-        // Frontal Face
-        Vertex({-0.5f, 0.0f, -0.5f}, color, {0.0f, 0.0f}),
-        Vertex({ 0.5f, 0.0f, -0.5f}, color, {1.0f, 0.0f}),
-        Vertex({ 0.0f, 0.8f,  0.0f}, color, {0.5f, 1.0f}),
-
-        // Right
-        Vertex({ 0.5f, 0.0f, -0.5f}, color, {0.0f, 0.0f}),
-        Vertex({ 0.5f, 0.0f,  0.5f}, color, {1.0f, 0.0f}),
-        Vertex({ 0.0f, 0.8f,  0.0f}, color, {0.5f, 1.0f}),
-
-        // Back
-        Vertex({ 0.5f, 0.0f,  0.5f}, color, {0.0f, 0.0f}),
-        Vertex({-0.5f, 0.0f,  0.5f}, color, {1.0f, 0.0f}),
-        Vertex({ 0.0f, 0.8f,  0.0f}, color, {0.5f, 1.0f}),
-
-        // Left
-        Vertex({-0.5f, 0.0f,  0.5f}, color, {0.0f, 0.0f}),
-        Vertex({-0.5f, 0.0f, -0.5f}, color, {1.0f, 0.0f}),
-        Vertex({ 0.0f, 0.8f,  0.0f}, color, {0.5f, 1.0f}),
-    };
-    const std::vector<uint32_t> INDICES = {
-        // BASE
-        0, 1, 2,
-        2, 3, 0,
-
-        // FACES
-        4, 5, 6,     // frente
-        7, 8, 9,     // direita
-        10, 11, 12,  // trás
-        13, 14, 15   // esquerda
-    };
 
     Render();
     int run();
@@ -86,6 +47,7 @@ private:
     CameraBufferManager* cameraBufferManager;
     DescriptorManager* descriptorManager;
     GraphicsPipeline* graphicsPipeline;
+    ImageColor* imageColor;
     DepthBufferManager* depthBufferManager;
     FramebufferManager* framebufferManager;
     VertexBufferManager* vertexBufferManager;
