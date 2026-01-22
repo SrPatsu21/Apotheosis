@@ -205,6 +205,7 @@ void CoreVulkan::createLogicalDevice() {
     // Device info
     VkPhysicalDeviceFeatures deviceFeatures{}; //* enable features if needed
     deviceFeatures.samplerAnisotropy = VK_TRUE;
+    deviceFeatures.sampleRateShading = VK_TRUE; // enable sample shading feature for the device
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

@@ -154,9 +154,9 @@ VkPipelineRasterizationStateCreateInfo GraphicsPipeline::createRasterizerState()
 VkPipelineMultisampleStateCreateInfo GraphicsPipeline::createMultisampleState() {
     VkPipelineMultisampleStateCreateInfo multisampling{};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.sampleShadingEnable = VK_TRUE; // enable sample shading in the pipeline
     multisampling.rasterizationSamples = CoreVulkan::getMsaaSamples();
-    multisampling.minSampleShading = 1.0f;
+    multisampling.minSampleShading = .2f; // min fraction for sample shading; closer to one is smoother
     multisampling.pSampleMask = nullptr;
     multisampling.alphaToCoverageEnable = VK_FALSE;
     multisampling.alphaToOneEnable = VK_FALSE;
