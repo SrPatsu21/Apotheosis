@@ -34,7 +34,7 @@ struct QueueFamilyIndices {
 
 class CoreVulkan
 {
-private:
+protected:
     static VkInstance instance;
 
     static VkPhysicalDevice physicalDevice;
@@ -55,43 +55,51 @@ private:
 
     static VkSampleCountFlagBits msaaSamples;
 
-    CoreVulkan();
+private:
+    //* functions
+    static bool checkValidationLayerSupport();
 
     static void createInstance();
 
-public:
-    static void init();
-
     static void createSurface(GLFWwindow* window);
+
+    static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice);
+
+public:
+    static SwapchainSupportDetails querySwapchainSupport(VkSurfaceKHR surface);
+private:
+
+    static bool isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
+
+    static int rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
+
+    static VkSampleCountFlagBits getMaxUsableSampleCount(VkSampleCountFlagBits maxDesiredSamples);
 
     static void pickPhysicalDevice();
 
     static void createLogicalDevice();
 
-    static void findDepthFormat();
 
-    static VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-
-    static VkSampleCountFlagBits getMaxUsableSampleCount(VkSampleCountFlagBits maxDesiredSamples);
-
-    static bool hasStencilComponent(VkFormat format);
-
-    static bool checkValidationLayerSupport();
-
-    static int rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
-    static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice);
-    static bool isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
-
-    // Deleting the copy constructor to prevent copies
-    CoreVulkan(const CoreVulkan& obj) = delete;
+public:
 
     static void destroy();
 
-    //* utils
+    explicit CoreVulkan();
+    ~CoreVulkan();
 
-    static SwapchainSupportDetails querySwapchainSupport(VkSurfaceKHR surface);
+    // Deleting the copy constructor and copy assignment to prevent copies
+    CoreVulkan(const CoreVulkan& obj) = delete;
+    CoreVulkan& operator=(const CoreVulkan& other) = delete;
 
+    // move constructor and move assignment
+    CoreVulkan(CoreVulkan&& other) noexcept;
+    CoreVulkan& operator=(CoreVulkan&& other) noexcept;
+
+    //TODO remove form class or make global
+    static VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     static uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred);
+
+    static void init(GLFWwindow* window);
 
     static VkInstance getInstance() { return instance; }
     static VkPhysicalDevice getPhysicalDevice() { return physicalDevice; }

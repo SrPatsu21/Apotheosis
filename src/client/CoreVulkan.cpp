@@ -17,8 +17,8 @@ const std::vector<const char*> CoreVulkan::DEVICE_EXTENSIONS = { //* Enable swap
 VkSampleCountFlagBits CoreVulkan::msaaSamples = VK_SAMPLE_COUNT_1_BIT; // Multisampling
 
 //* functions
-
-void CoreVulkan::init()
+//TODO remove and make crateInstance public
+void CoreVulkan::init(GLFWwindow* window)
 {
     if (CoreVulkan::instance != VK_NULL_HANDLE) {
         return;
@@ -26,6 +26,39 @@ void CoreVulkan::init()
 
     // Create Vulkan instance
     createInstance();
+    createSurface(window);
+    pickPhysicalDevice();
+    createLogicalDevice();
+    CoreVulkan::depthFormat = findSupportedFormat(
+        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+    );
+}
+
+bool CoreVulkan::checkValidationLayerSupport() {
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (const char* layerName : validationLayers) {
+        bool layerFound = false;
+
+        for (const auto& layerProperties : availableLayers) {
+            if (strcmp(layerName, layerProperties.layerName) == 0) {
+                layerFound = true;
+                break;
+            }
+        }
+
+        if (!layerFound) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void CoreVulkan::createInstance() {
@@ -65,19 +98,19 @@ void CoreVulkan::createInstance() {
     }
 
     // Checking for extension support and print
-        #ifndef NDEBUG
-            uint32_t extensionCount = 0;
-            vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+    #ifndef NDEBUG
+        uint32_t extensionCount = 0;
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
 
-            std::vector<VkExtensionProperties> extensions(extensionCount);
-            vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+        std::vector<VkExtensionProperties> extensions(extensionCount);
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
-            std::cout << "available extensions:\n";
-            for (const auto& extension : extensions) {
-                std::cout << extension.extensionName << '\t' << '\t';
-            }
-            std::cout << std::endl;
-        #endif
+        std::cout << "available extensions:\n";
+        for (const auto& extension : extensions) {
+            std::cout << extension.extensionName << '\t' << '\t';
+        }
+        std::cout << std::endl;
+    #endif
 }
 
 void CoreVulkan::createSurface(GLFWwindow* window)
@@ -86,6 +119,130 @@ void CoreVulkan::createSurface(GLFWwindow* window)
         throw std::runtime_error("failed to create window surface!");
     }
 };
+
+QueueFamilyIndices CoreVulkan::findQueueFamilies(VkPhysicalDevice physicalDevice) {
+    QueueFamilyIndices indices;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
+
+    int i = 0;
+    for (const auto& queueFamily : queueFamilies) {
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, CoreVulkan::surface, &presentSupport);
+        if (presentSupport) {
+            indices.presentFamily = i;
+        }
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            indices.graphicsFamily = i;
+        }
+        if (indices.isComplete()) {
+            break;
+        }
+
+        i++;
+    }
+
+    return indices;
+}
+
+SwapchainSupportDetails CoreVulkan::querySwapchainSupport(VkSurfaceKHR surface) {
+    SwapchainSupportDetails details;
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(CoreVulkan::getPhysicalDevice(), surface, &details.capabilities);
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(CoreVulkan::getPhysicalDevice(), surface, &formatCount, nullptr);
+    if (formatCount != 0) {
+        details.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(CoreVulkan::getPhysicalDevice(), surface, &formatCount, details.formats.data());
+    }
+
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(CoreVulkan::getPhysicalDevice(), surface, &presentModeCount, nullptr);
+    if (presentModeCount != 0) {
+        details.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(CoreVulkan::getPhysicalDevice(), surface, &presentModeCount, details.presentModes.data());
+    }
+
+    return details;
+}
+
+bool CoreVulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions) {
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+
+    //* check Device Extension Support
+    bool extensionsSupported = false;
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
+    VkPhysicalDeviceFeatures supportedFeatures;
+    vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+    for (const auto& extension : availableExtensions) {
+        requiredExtensions.erase(std::string(extension.extensionName));
+    }
+
+    //* swap chain support
+    bool swapChainAdequate = false;
+    if (extensionsSupported) {
+        SwapchainSupportDetails swapChainSupport = CoreVulkan::querySwapchainSupport(CoreVulkan::surface);
+        swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+    }
+
+    return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+}
+
+int CoreVulkan::rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions) {
+    VkPhysicalDeviceProperties deviceProperties;
+    VkPhysicalDeviceFeatures deviceFeatures;
+    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+    vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+
+        // Application can't function without geometry shaders
+    if (!deviceFeatures.geometryShader && !isDeviceSuitable(physicalDevice, deviceExtensions)) {
+        return 0;
+    }
+
+    int score = 0;
+
+    // Discrete GPUs have a significant performance advantage
+    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+        score += 1000;
+    }
+
+    // Maximum possible size of textures affects graphics quality
+    score += deviceProperties.limits.maxImageDimension2D;
+
+    return score;
+}
+
+VkSampleCountFlagBits CoreVulkan::getMaxUsableSampleCount(
+    VkSampleCountFlagBits maxDesiredSamples
+) {
+    VkPhysicalDeviceProperties props{};
+    vkGetPhysicalDeviceProperties(CoreVulkan::physicalDevice, &props);
+
+    VkSampleCountFlags supported =
+        props.limits.framebufferColorSampleCounts &
+        props.limits.framebufferDepthSampleCounts &
+        maxDesiredSamples;
+
+    if (supported == 0) {
+        return VK_SAMPLE_COUNT_1_BIT;
+    }
+
+    return static_cast<VkSampleCountFlagBits>(
+        1u << (31 - __builtin_clz(supported)) // get the max desired
+    );
+}
 
 void CoreVulkan::pickPhysicalDevice() {
     //TODO extend this to implement device selection based on features, queue families, performance, etc.
@@ -124,59 +281,6 @@ void CoreVulkan::pickPhysicalDevice() {
     } else {
         throw std::runtime_error("failed to find a suitable GPU!");
     }
-}
-
-int CoreVulkan::rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions) {
-    VkPhysicalDeviceProperties deviceProperties;
-    VkPhysicalDeviceFeatures deviceFeatures;
-    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-    vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
-
-        // Application can't function without geometry shaders
-    if (!deviceFeatures.geometryShader && !isDeviceSuitable(physicalDevice, deviceExtensions)) {
-        return 0;
-    }
-
-    int score = 0;
-
-    // Discrete GPUs have a significant performance advantage
-    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-        score += 1000;
-    }
-
-    // Maximum possible size of textures affects graphics quality
-    score += deviceProperties.limits.maxImageDimension2D;
-
-    return score;
-}
-
-bool CoreVulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions) {
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-
-    //* check Device Extension Support
-    bool extensionsSupported = false;
-    uint32_t extensionCount;
-    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
-    VkPhysicalDeviceFeatures supportedFeatures;
-    vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
-
-    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
-
-    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
-
-    for (const auto& extension : availableExtensions) {
-        requiredExtensions.erase(std::string(extension.extensionName));
-    }
-
-    //* swap chain support
-    bool swapChainAdequate = false;
-    if (extensionsSupported) {
-        SwapchainSupportDetails swapChainSupport = CoreVulkan::querySwapchainSupport(CoreVulkan::surface);
-        swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
-    }
-
-    return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 }
 
 void CoreVulkan::createLogicalDevice() {
@@ -232,14 +336,6 @@ void CoreVulkan::createLogicalDevice() {
     vkGetDeviceQueue(CoreVulkan::device, CoreVulkan::graphicsQueueFamilyIndices.presentFamily.value(), 0, &CoreVulkan::presentQueue);
 }
 
-void CoreVulkan::findDepthFormat() {
-    CoreVulkan::depthFormat = findSupportedFormat(
-        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-    );
-}
-
 VkFormat CoreVulkan::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
     for (VkFormat format : candidates) {
         VkFormatProperties props;
@@ -253,130 +349,6 @@ VkFormat CoreVulkan::findSupportedFormat(const std::vector<VkFormat>& candidates
     }
 
     throw std::runtime_error("failed to find supported format!");
-}
-
-VkSampleCountFlagBits CoreVulkan::getMaxUsableSampleCount(
-    VkSampleCountFlagBits maxDesiredSamples
-) {
-    VkPhysicalDeviceProperties props{};
-    vkGetPhysicalDeviceProperties(CoreVulkan::physicalDevice, &props);
-
-    VkSampleCountFlags supported =
-        props.limits.framebufferColorSampleCounts &
-        props.limits.framebufferDepthSampleCounts &
-        maxDesiredSamples;
-
-    if (supported == 0) {
-        return VK_SAMPLE_COUNT_1_BIT;
-    }
-
-    return static_cast<VkSampleCountFlagBits>(
-        1u << (31 - __builtin_clz(supported)) // get the max desired
-    );
-}
-
-bool CoreVulkan::hasStencilComponent(VkFormat format) {
-    return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
-};
-
-
-uint32_t CoreVulkan::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred) {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(CoreVulkan::physicalDevice, &memProperties);
-
-    uint32_t fallback = UINT32_MAX;
-
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if (!(typeFilter & (1 << i))) continue;
-
-        VkMemoryPropertyFlags flags = memProperties.memoryTypes[i].propertyFlags;
-
-        if ((flags & required) == required) {
-            if ((flags & preferred) == preferred) {
-                return i;
-            }
-            fallback = i;
-        }
-    }
-
-    if (fallback != UINT32_MAX) return fallback;
-    throw std::runtime_error("no suitable memory type found");
-}
-
-bool CoreVulkan::checkValidationLayerSupport() {
-    uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-    std::vector<VkLayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-    for (const char* layerName : validationLayers) {
-        bool layerFound = false;
-
-        for (const auto& layerProperties : availableLayers) {
-            if (strcmp(layerName, layerProperties.layerName) == 0) {
-                layerFound = true;
-                break;
-            }
-        }
-
-        if (!layerFound) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-QueueFamilyIndices CoreVulkan::findQueueFamilies(VkPhysicalDevice physicalDevice) {
-    QueueFamilyIndices indices;
-
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
-
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
-
-    int i = 0;
-    for (const auto& queueFamily : queueFamilies) {
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, CoreVulkan::surface, &presentSupport);
-        if (presentSupport) {
-            indices.presentFamily = i;
-        }
-        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            indices.graphicsFamily = i;
-        }
-        if (indices.isComplete()) {
-            break;
-        }
-
-        i++;
-    }
-
-    return indices;
-}
-
-SwapchainSupportDetails CoreVulkan::querySwapchainSupport(VkSurfaceKHR surface) {
-    SwapchainSupportDetails details;
-
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(CoreVulkan::getPhysicalDevice(), surface, &details.capabilities);
-
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(CoreVulkan::getPhysicalDevice(), surface, &formatCount, nullptr);
-    if (formatCount != 0) {
-        details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(CoreVulkan::getPhysicalDevice(), surface, &formatCount, details.formats.data());
-    }
-
-    uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(CoreVulkan::getPhysicalDevice(), surface, &presentModeCount, nullptr);
-    if (presentModeCount != 0) {
-        details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(CoreVulkan::getPhysicalDevice(), surface, &presentModeCount, details.presentModes.data());
-    }
-
-    return details;
 }
 
 void CoreVulkan::destroy() {
@@ -402,4 +374,28 @@ void CoreVulkan::destroy() {
         vkDestroyInstance(CoreVulkan::instance, nullptr);
         CoreVulkan::instance = VK_NULL_HANDLE;
     }
+}
+
+// TODO remove from class
+uint32_t CoreVulkan::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred) {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(CoreVulkan::physicalDevice, &memProperties);
+
+    uint32_t fallback = UINT32_MAX;
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if (!(typeFilter & (1 << i))) continue;
+
+        VkMemoryPropertyFlags flags = memProperties.memoryTypes[i].propertyFlags;
+
+        if ((flags & required) == required) {
+            if ((flags & preferred) == preferred) {
+                return i;
+            }
+            fallback = i;
+        }
+    }
+
+    if (fallback != UINT32_MAX) return fallback;
+    throw std::runtime_error("no suitable memory type found");
 }

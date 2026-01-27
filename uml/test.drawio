@@ -1,41 +1,31 @@
 <mxfile host="65bd71144e">
     <diagram id="bxjjAgYnEO3b2iykfed9" name="Page-1">
-        <mxGraphModel dx="1086" dy="590" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="1086" dy="827" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="3" value="&amp;lt;&amp;lt;keyword&amp;gt;&amp;gt;&lt;br&gt;&lt;b&gt;Classifier1&lt;/b&gt;&lt;br&gt;{abstract}" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=55;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;whiteSpace=wrap;" vertex="1" parent="1">
-                    <mxGeometry x="210" y="240" width="140" height="198" as="geometry"/>
+                <mxCell id="16" value="CoreVulkan" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="50" width="300" height="106" as="geometry">
+                        <mxRectangle x="110" y="100" width="100" height="30" as="alternateBounds"/>
+                    </mxGeometry>
                 </mxCell>
-                <mxCell id="4" value="attributes" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" vertex="1" parent="3">
-                    <mxGeometry y="55" width="140" height="20" as="geometry"/>
+                <mxCell id="44" value="&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;-VkQueue presentQueue&lt;/font&gt;&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="16" vertex="1">
+                    <mxGeometry y="26" width="300" height="24" as="geometry"/>
                 </mxCell>
-                <mxCell id="5" value="+attribute1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" vertex="1" parent="3">
-                    <mxGeometry y="75" width="140" height="20" as="geometry"/>
+                <mxCell id="54" value="-VkQueue graphicsQueue" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="16" vertex="1">
+                    <mxGeometry y="50" width="300" height="24" as="geometry"/>
                 </mxCell>
-                <mxCell id="6" value="-inherited attribute2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontColor=#808080;whiteSpace=wrap;" vertex="1" parent="3">
-                    <mxGeometry y="95" width="140" height="15" as="geometry"/>
+                <mxCell id="43" value="&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;-VkFormat depthFormat&lt;/font&gt;&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="16" vertex="1">
+                    <mxGeometry y="74" width="300" height="24" as="geometry"/>
                 </mxCell>
-                <mxCell id="11" value="..." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" vertex="1" parent="3">
-                    <mxGeometry y="110" width="140" height="20" as="geometry"/>
+                <mxCell id="18" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" parent="16" vertex="1">
+                    <mxGeometry y="98" width="300" height="8" as="geometry"/>
                 </mxCell>
-                <mxCell id="7" value="..." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" vertex="1" parent="3">
-                    <mxGeometry y="130" width="140" height="20" as="geometry"/>
+                <mxCell id="70" value="&lt;p style=&quot;margin:0px;margin-top:4px;text-align:center;&quot;&gt;&lt;b&gt;Class&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;+ field: Type&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;+ method(): Type&lt;/p&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;" vertex="1" parent="1">
+                    <mxGeometry x="340" y="260" width="160" height="90" as="geometry"/>
                 </mxCell>
-                <mxCell id="8" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;" vertex="1" parent="3">
-                    <mxGeometry y="150" width="140" height="8" as="geometry"/>
-                </mxCell>
-                <mxCell id="9" value="operations" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" vertex="1" parent="3">
-                    <mxGeometry y="158" width="140" height="20" as="geometry"/>
-                </mxCell>
-                <mxCell id="10" value="+operation1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" vertex="1" parent="3">
-                    <mxGeometry y="178" width="140" height="20" as="geometry"/>
-                </mxCell>
-                <mxCell id="12" value=":3" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
-                    <mxGeometry x="570" y="270" width="80" height="80" as="geometry"/>
-                </mxCell>
-                <mxCell id="13" style="edgeStyle=none;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="6" target="12">
-                    <mxGeometry relative="1" as="geometry"/>
+                <mxCell id="75" value="&lt;p style=&quot;margin:0px;margin-top:4px;text-align:center;&quot;&gt;&lt;b&gt;Class&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;+const std::vector&amp;lt;const char*&amp;gt; DEVICE_EXTENSIONS&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;-VkInstance instance&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;-VkSurfaceKHR surface&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;-VkPhysicalDevice physicalDevice&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;-VkSampleCountFlagBits msaaSamples&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;-QueueFamilyIndices graphicsQueueFamilyIndices&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;-VkDevice device&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;-VkQueue presentQueue&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;-VkQueue graphicsQueue&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;-VkFormat depthFormat&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;-CoreVulkan()&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;+CoreVulkan(const CoreVulkan&amp;amp; obj) = delete;&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;-bool checkValidationLayerSupport();&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;+void createInstance();&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;+void createSurface(GLFWwindow* window);&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;~QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice);&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;~SwapchainSupportDetails querySwapchainSupport(VkSurfaceKHR surface);&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;~bool isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector&amp;lt;const char*&amp;gt;&amp;amp; deviceExtensions);&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;~int rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector&amp;lt;const char*&amp;gt;&amp;amp; deviceExtensions);&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;~VkSampleCountFlagBits getMaxUsableSampleCount(VkSampleCountFlagBits maxDesiredSamples);&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;~void pickPhysicalDevice();&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;~void createLogicalDevice();&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;~void destroy();&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;&lt;br&gt;&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;~VkFormat findSupportedFormat(const std::vector&amp;lt;VkFormat&amp;gt;&amp;amp; candidates, VkImageTiling tiling, VkFormatFeatureFlags features);&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:4px;&quot;&gt;~void findDepthFormat();&lt;/p&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;" vertex="1" parent="1">
+                    <mxGeometry x="30" y="190" width="520" height="460" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

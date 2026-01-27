@@ -52,20 +52,8 @@ void Render::initVulkan(){
     BufferManager bufferManager = BufferManager();
     //TODO better description
     //* Core Vulkan
-    //Create Vulkan instance
-    CoreVulkan::init();
-
-    // create surface
-    CoreVulkan::createSurface(this->window);
-
-    // Pick a physical GPU
-    CoreVulkan::pickPhysicalDevice();
-
-    // Create logical device
-    CoreVulkan::createLogicalDevice();
-
-    // find the Depth Format of GPU
-    CoreVulkan::findDepthFormat();
+    //Create Vulkan
+    CoreVulkan::init(window);
 
     // Create swapchain
     this->swapchainManager = new SwapchainManager(CoreVulkan::getSurface(), CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value(), this->window);
