@@ -5,6 +5,7 @@
 class DepthBufferManager
 {
 private:
+    VkDevice device;
     /*
     A GPU image resource that stores the depth buffer for your render pass.
     It is needed for proper depth testing in 3D scenes.
@@ -34,7 +35,13 @@ public:
 
     @throws std::runtime_error if image, memory, or image view creation fails.
     */
-    DepthBufferManager(VkExtent2D swapchainExtent);
+    DepthBufferManager(
+        VkPhysicalDevice physicalDevice,
+        VkDevice device,
+        VkExtent2D swapchainExtent,
+        VkSampleCountFlagBits msaaSamples,
+        VkFormat depthFormat
+    );
     /**
     @brief Destructor, cleans up the Vulkan depth buffer resources.
 

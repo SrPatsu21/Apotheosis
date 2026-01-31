@@ -45,48 +45,119 @@ void Render::initWindow(){
 
 void Render::initImGui(){
     this->ui = new UI;
-    this->ui->init(this->window, this->renderPass->get(), this->swapchainManager->getImages().size());
+    this->ui->init(
+        this->window,
+        coreVulkan->getInstance(),
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        coreVulkan->getGraphicsQueueFamilyIndices(),
+        coreVulkan->getGraphicsQueue(),
+        this->renderPass->get(),
+        this->swapchainManager->getImages().size(),
+        coreVulkan->getMsaaSamples()
+    );
 }
 
 void Render::initVulkan(){
-    BufferManager bufferManager = BufferManager();
     //TODO better description
     //* Core Vulkan
     //Create Vulkan
-    CoreVulkan::init(window);
+    coreVulkan = new CoreVulkan();
+    coreVulkan->init(window);
+
+    BufferManager bufferManager = BufferManager(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        coreVulkan->getGraphicsQueue()
+    );
 
     // Create swapchain
-    this->swapchainManager = new SwapchainManager(CoreVulkan::getSurface(), CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value(), this->window);
+    swapchainManager = new SwapchainManager(
+        coreVulkan->getDevice(),
+        coreVulkan->getGraphicsQueueFamilyIndices(),
+        coreVulkan->getSwapchainDetails(),
+        coreVulkan->getSurface(),
+        window
+    );
 
     // Create render pass
-    this->renderPass = new RenderPass(this->swapchainManager->getImageFormat(), CoreVulkan::getMsaaSamples());
+    renderPass = new RenderPass(
+        coreVulkan->getDevice(),
+        swapchainManager->getImageFormat(),
+        coreVulkan->getMsaaSamples(),
+        coreVulkan->getDepthFormat()
+    );
 
     // Create camera buff with uniformBuffer
-    this->cameraBufferManager = new CameraBufferManager(&bufferManager, Render::MAX_FRAMES_IN_FLIGHT);
+    cameraBufferManager = new CameraBufferManager(
+        coreVulkan->getDevice(),
+        &bufferManager,
+        Render::MAX_FRAMES_IN_FLIGHT
+    );
 
     //Multisampling implementation
-    imageColor = new ImageColor(swapchainManager->getImageFormat(),swapchainManager->getExtent(), CoreVulkan::getMsaaSamples());
+    imageColor = new ImageColor(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        swapchainManager->getImageFormat(),
+        swapchainManager->getExtent(),
+        coreVulkan->getMsaaSamples()
+    );
 
     //Create DepthResources
-    this->depthBufferManager = new DepthBufferManager(this->swapchainManager->getExtent());
+    depthBufferManager = new DepthBufferManager(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        swapchainManager->getExtent(),
+        coreVulkan->getMsaaSamples(),
+        coreVulkan->getDepthFormat()
+    );
 
     //Create framebuffers
-    this->framebufferManager = new FramebufferManager(this->renderPass->get(), this->swapchainManager, imageColor->getColorImageView(), this->depthBufferManager);
+    framebufferManager = new FramebufferManager(
+        coreVulkan->getDevice(),
+        renderPass->get(),
+        swapchainManager->getImageViews(),
+        imageColor->getColorImageView(),
+        depthBufferManager->getDepthImageView(),
+        swapchainManager->getExtent()
+    );
 
     // create semaphore and fence
     createSyncObjects();
     initImagesInFlight(this->swapchainManager->getImages().size());
 
     // Create command
-    this->commandManager = new CommandManager(CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value(), this->framebufferManager->getFramebuffers());
+    this->commandManager = new CommandManager(
+        coreVulkan->getDevice(),
+        coreVulkan->getGraphicsQueueFamilyIndices().graphicsFamily.value(),
+        this->framebufferManager->getFramebuffers()
+    );
 
-    textureImage = new TextureImage("./textures/viking_room.png", &bufferManager, commandManager->getCommandPool());
+    textureImage = new TextureImage(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        "./textures/viking_room.png",
+        &bufferManager,
+        commandManager->getCommandPool()
+    );
 
     // Create descript
-    this->descriptorManager = new DescriptorManager(this->cameraBufferManager, textureImage, Render::MAX_FRAMES_IN_FLIGHT);
+    this->descriptorManager = new DescriptorManager(
+        coreVulkan->getDevice(),
+        this->cameraBufferManager,
+        textureImage,
+        Render::MAX_FRAMES_IN_FLIGHT
+    );
 
     // Create graphics pipeline
-    this->graphicsPipeline = new GraphicsPipeline(this->swapchainManager->getExtent(), this->renderPass->get(), this->descriptorManager->getLayout());
+    this->graphicsPipeline = new GraphicsPipeline(
+        coreVulkan->getDevice(),
+        swapchainManager->getExtent(),
+        renderPass->get(),
+        descriptorManager->getLayout(),
+        coreVulkan->getMsaaSamples()
+    );
 
     // VkPhysicalDeviceProperties deviceProperties;
     // vkGetPhysicalDeviceProperties(CoreVulkan::getPhysicalDevice(), &deviceProperties);
@@ -96,18 +167,18 @@ void Render::initVulkan(){
     this->meshLoader = new MeshLoader("./models/viking_room.obj");
 
     // Create vertex buffer
-    this->vertexBufferManager = new VertexBufferManager(meshLoader->getVertices(), this->commandManager->getCommandPool());
-    this->indexBufferManager = new IndexBufferManager(meshLoader->getIndices(), this->commandManager->getCommandPool());
+    this->vertexBufferManager = new VertexBufferManager(coreVulkan->getDevice(), bufferManager, meshLoader->getVertices(), this->commandManager->getCommandPool());
+    this->indexBufferManager = new IndexBufferManager(coreVulkan->getDevice(), bufferManager, meshLoader->getIndices(), this->commandManager->getCommandPool());
 };
 
 void Render::drawFrame(){
     float time = glfwGetTime();
 
     // Wait for this frame to be free
-    vkWaitForFences(CoreVulkan::getDevice(), 1, &this->inFlightFences[this->currentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(coreVulkan->getDevice(), 1, &this->inFlightFences[this->currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
-    VkResult next_img_result = vkAcquireNextImageKHR(CoreVulkan::getDevice(), this->swapchainManager->getSwapchain(),
+    VkResult next_img_result = vkAcquireNextImageKHR(coreVulkan->getDevice(), this->swapchainManager->getSwapchain(),
             UINT64_MAX, this->imageAvailableSemaphores[this->currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     if (next_img_result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -119,13 +190,13 @@ void Render::drawFrame(){
 
     // If this swapchain image is already in flight, wait for the fence that owns it
     if (this->imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
-        vkWaitForFences(CoreVulkan::getDevice(), 1, &this->imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+        vkWaitForFences(coreVulkan->getDevice(), 1, &this->imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
     }
     // Mark this image as now owned by the current frame's fence
     this->imagesInFlight[imageIndex] = this->inFlightFences[this->currentFrame];
 
     // Reset the fence for the current frame
-    vkResetFences(CoreVulkan::getDevice(), 1, &this->inFlightFences[this->currentFrame]);
+    vkResetFences(coreVulkan->getDevice(), 1, &this->inFlightFences[this->currentFrame]);
 
     // Reset + record only the command buffer for this swapchain image
     VkCommandBuffer cmd = this->commandManager->getCommandBuffers()[imageIndex];
@@ -153,7 +224,7 @@ void Render::drawFrame(){
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(CoreVulkan::getGraphicsQueue(), 1, &submitInfo, this->inFlightFences[this->currentFrame]) != VK_SUCCESS) {
+    if (vkQueueSubmit(coreVulkan->getGraphicsQueue(), 1, &submitInfo, this->inFlightFences[this->currentFrame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 
@@ -168,8 +239,9 @@ void Render::drawFrame(){
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr;
 
-    VkResult presentResult = vkQueuePresentKHR(CoreVulkan::getPresentQueue(), &presentInfo);
+    VkResult presentResult = vkQueuePresentKHR(coreVulkan->getPresentQueue(), &presentInfo);
     if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR  || framebufferResized) {
+        // std::cout << "work here:" << presentResult << " framebufferResized:" << framebufferResized << std::endl;
         framebufferResized = false;
         recreateSwapChain();
     } else if (presentResult != VK_SUCCESS) {
@@ -181,56 +253,62 @@ void Render::drawFrame(){
 }
 
 void Render::cleanup(){
-    // 1) Stop the GPU first so nothing is in flight.
-    if (CoreVulkan::getDevice() != VK_NULL_HANDLE) {
-        vkQueueWaitIdle(CoreVulkan::getPresentQueue());
-        vkDeviceWaitIdle(CoreVulkan::getDevice());
-    }
-
-    // 2) Per-frame sync primitives.
-    for (VkSemaphore s : this->renderFinishedSemaphores)
-        if (s != VK_NULL_HANDLE) vkDestroySemaphore(CoreVulkan::getDevice(), s, nullptr);
-    this->renderFinishedSemaphores.clear(); this->renderFinishedSemaphores.shrink_to_fit();
-
-    for (VkSemaphore s : this->imageAvailableSemaphores)
-        if (s != VK_NULL_HANDLE) vkDestroySemaphore(CoreVulkan::getDevice(), s, nullptr);
-    this->imageAvailableSemaphores.clear(); this->imageAvailableSemaphores.shrink_to_fit();
-
-    for (VkFence f : this->inFlightFences)
-        if (f != VK_NULL_HANDLE) vkDestroyFence(CoreVulkan::getDevice(), f, nullptr);
-    this->inFlightFences.clear(); this->inFlightFences.shrink_to_fit();
-
-    // 3) Managers: destroy in strict reverse-creation order.
-    //    (Everything that depends on the swapchain must go BEFORE swapchain.)
-    //    Delete pointers and null them to avoid accidental double free later.
-    if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
-    if (this->meshLoader){delete this->meshLoader; this->meshLoader = nullptr; }
-    if (this->vertexBufferManager){ delete this->vertexBufferManager; this->vertexBufferManager = nullptr; }
-    if (this->indexBufferManager){ delete this->indexBufferManager; this->indexBufferManager = nullptr; }
-    if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
-    if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
-    if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
-    if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
-    if (this->descriptorManager){ delete this->descriptorManager; this->descriptorManager = nullptr; }
-    if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
-    if (this->textureImage){ delete this->textureImage; this->textureImage = nullptr; }
-    if (this->ui) { this->ui->cleanup(); delete this->ui; this->ui = nullptr; }
-    if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
-
-    // Swapchain and resources that own VkSwapchainKHR should be last among managers.
-    if (this->swapchainManager)
+    if (coreVulkan)
     {
-        delete this->swapchainManager;
-        this->swapchainManager = nullptr;
-    }
+        // 1) Stop the GPU first so nothing is in flight.
+        if (coreVulkan->getDevice() != VK_NULL_HANDLE) {
+            vkQueueWaitIdle(coreVulkan->getPresentQueue());
+            vkDeviceWaitIdle(coreVulkan->getDevice());
+        }
 
-    // 4) Vulkan core teardown (device, surface, instance, debug messenger, etc.).
-    //    Ensure CoreVulkan::destroy() destroys in the order:
-    //    - vkDeviceWaitIdle (if not already) -> vkDestroyDevice
-    //    - vkDestroySurfaceKHR
-    //    - vkDestroyInstance
-    //    - Destroy debug messenger (if you use one) before vkDestroyInstance.
-    CoreVulkan::destroy();
+        // 2) Per-frame sync primitives.
+        for (VkSemaphore s : this->renderFinishedSemaphores)
+            if (s != VK_NULL_HANDLE) vkDestroySemaphore(coreVulkan->getDevice(), s, nullptr);
+        this->renderFinishedSemaphores.clear(); this->renderFinishedSemaphores.shrink_to_fit();
+
+        for (VkSemaphore s : this->imageAvailableSemaphores)
+            if (s != VK_NULL_HANDLE) vkDestroySemaphore(coreVulkan->getDevice(), s, nullptr);
+        this->imageAvailableSemaphores.clear(); this->imageAvailableSemaphores.shrink_to_fit();
+
+        for (VkFence f : this->inFlightFences)
+            if (f != VK_NULL_HANDLE) vkDestroyFence(coreVulkan->getDevice(), f, nullptr);
+        this->inFlightFences.clear(); this->inFlightFences.shrink_to_fit();
+
+        // 3) Managers: destroy in strict reverse-creation order.
+        //    (Everything that depends on the swapchain must go BEFORE swapchain.)
+        //    Delete pointers and null them to avoid accidental double free later.
+        if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
+        if (this->meshLoader){delete this->meshLoader; this->meshLoader = nullptr; }
+        if (this->vertexBufferManager){ delete this->vertexBufferManager; this->vertexBufferManager = nullptr; }
+        if (this->indexBufferManager){ delete this->indexBufferManager; this->indexBufferManager = nullptr; }
+        if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
+        if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
+        if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
+        if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
+        if (this->descriptorManager){ delete this->descriptorManager; this->descriptorManager = nullptr; }
+        if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
+        if (this->textureImage){ delete this->textureImage; this->textureImage = nullptr; }
+        if (this->ui) { this->ui->cleanup(); delete this->ui; this->ui = nullptr; }
+        if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
+
+        // Swapchain and resources that own VkSwapchainKHR should be last among managers.
+        if (this->swapchainManager)
+        {
+            delete this->swapchainManager;
+            this->swapchainManager = nullptr;
+        }
+
+        // 4) Vulkan core teardown (device, surface, instance, debug messenger, etc.).
+        //    Ensure CoreVulkan::destroy() destroys in the order:
+        //    - vkDeviceWaitIdle (if not already) -> vkDestroyDevice
+        //    - vkDestroySurfaceKHR
+        //    - vkDestroyInstance
+        //    - Destroy debug messenger (if you use one) before vkDestroyInstance.
+        if (this->coreVulkan) {
+            delete coreVulkan;
+            this->coreVulkan = nullptr;
+        }
+    }
 
     // 5) Windowing. Destroy the window AFTER you've destroyed the VkSurfaceKHR.
     if (this->window) {
@@ -252,10 +330,13 @@ void Render::createSyncObjects() {
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // start signaled so first frame doesn't block
 
+    VkDevice device = coreVulkan->getDevice();
     for (uint32_t i = 0; i < Render::MAX_FRAMES_IN_FLIGHT; ++i) {
-        if (vkCreateSemaphore(CoreVulkan::getDevice(), &semaphoreInfo, nullptr, &this->imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(CoreVulkan::getDevice(), &semaphoreInfo, nullptr, &this->renderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(CoreVulkan::getDevice(), &fenceInfo, nullptr, &this->inFlightFences[i]) != VK_SUCCESS) {
+        if (
+            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateFence(device, &fenceInfo, nullptr, &this->inFlightFences[i]) != VK_SUCCESS
+        ) {
             throw std::runtime_error("failed to create per-frame sync objects!");
         }
     }
@@ -269,7 +350,7 @@ void Render::cleanupSwapChain() {
 
     // Command Buffers
     vkFreeCommandBuffers(
-        CoreVulkan::getDevice(),
+        coreVulkan->getDevice(),
         commandManager->getCommandPool(),
         static_cast<uint32_t>(commandManager->getCommandBuffers().size()),
         commandManager->getCommandBuffers().data()
@@ -279,7 +360,7 @@ void Render::cleanupSwapChain() {
     if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
     if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
     if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
-    if (this->ui) { vkDeviceWaitIdle(CoreVulkan::getDevice()); ImGui_ImplVulkan_Shutdown(); }
+    if (this->ui) { vkDeviceWaitIdle(coreVulkan->getDevice()); ImGui_ImplVulkan_Shutdown(); }
     if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
 
     // Swapchain itself
@@ -287,7 +368,7 @@ void Render::cleanupSwapChain() {
 }
 
 void Render::recreateSwapChain() {
-    vkDeviceWaitIdle(CoreVulkan::getDevice());
+    vkDeviceWaitIdle(coreVulkan->getDevice());
 
     int width = 0, height = 0;
     glfwGetFramebufferSize(this->window, &width, &height);
@@ -300,31 +381,75 @@ void Render::recreateSwapChain() {
     cleanupSwapChain();
 
     // 2. Recreate swapchain
-    this->swapchainManager->recreate(CoreVulkan::getSurface(), this->window, CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value());
+    coreVulkan->updateSwapchainDetails();
+
+    this->swapchainManager->recreate(
+        coreVulkan->getGraphicsQueueFamilyIndices(),
+        coreVulkan->getSwapchainDetails(),
+        coreVulkan->getSurface(), this->window
+    );
 
     // 3. Recreate render pass (might depend on swapchain format)
-    this->renderPass = new RenderPass(this->swapchainManager->getImageFormat(), CoreVulkan::getMsaaSamples());
+    this->renderPass = new RenderPass(
+        coreVulkan->getDevice(),
+        swapchainManager->getImageFormat(),
+        coreVulkan->getMsaaSamples(),
+        coreVulkan->getDepthFormat()
+    );
 
     // 4. Recreate pipeline (depends on render pass + extent)
-    this->graphicsPipeline = new GraphicsPipeline(this->swapchainManager->getExtent(), this->renderPass->get(), this->descriptorManager->getLayout());
+    this->graphicsPipeline = new GraphicsPipeline(
+        coreVulkan->getDevice(),
+        swapchainManager->getExtent(),
+        renderPass->get(),
+        descriptorManager->getLayout(),
+        coreVulkan->getMsaaSamples()
+    );
 
     // 5. Recreate Multisampling
-    imageColor = new ImageColor(swapchainManager->getImageFormat(),swapchainManager->getExtent(), CoreVulkan::getMsaaSamples());
+    imageColor = new ImageColor(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        swapchainManager->getImageFormat(),
+        swapchainManager->getExtent(),
+        coreVulkan->getMsaaSamples()
+    );
 
     // 6. Recreate depth buffer
-    this->depthBufferManager = new DepthBufferManager(this->swapchainManager->getExtent());
+    depthBufferManager = new DepthBufferManager(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        swapchainManager->getExtent(),
+        coreVulkan->getMsaaSamples(),
+        coreVulkan->getDepthFormat()
+    );
 
     // 7. Recreate framebuffers
-    this->framebufferManager = new FramebufferManager(this->renderPass->get(), this->swapchainManager, imageColor->getColorImageView(), this->depthBufferManager);
+    framebufferManager = new FramebufferManager(
+        coreVulkan->getDevice(),
+        renderPass->get(),
+        swapchainManager->getImageViews(),
+        imageColor->getColorImageView(),
+        depthBufferManager->getDepthImageView(),
+        swapchainManager->getExtent()
+    );
 
     // 8. Recreate command buffers
-    this->commandManager->allocateCommandbuffers(this->framebufferManager->getFramebuffers());
+    this->commandManager->allocateCommandbuffers(coreVulkan->getDevice(), framebufferManager->getFramebuffers());
 
     // 9. Resize imagesInFlight vector to match new swapchain image count
     initImagesInFlight(this->swapchainManager->getImages().size());
 
     // 10. Recreate ImGui resources
-    this->ui->initSwapchainResources(this->renderPass->get(), this->swapchainManager->getImages().size());
+    this->ui->initSwapchainResources(
+        coreVulkan->getInstance(),
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getGraphicsQueueFamilyIndices(),
+        coreVulkan->getGraphicsQueue(),
+        renderPass->get(),
+        swapchainManager->getImages().size(),
+        coreVulkan->getMsaaSamples()
+    );
 }
 
 void Render::framebufferResizeCallback(GLFWwindow* window, int width, int height) {

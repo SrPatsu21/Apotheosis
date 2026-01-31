@@ -7,6 +7,7 @@
 class TextureImage
 {
 private:
+    VkDevice device;
     uint32_t mipLevels;
     VkImage textureImage;
     VkDeviceMemory textureImageMemory;
@@ -56,11 +57,16 @@ private:
     };
 
     struct StagingBufferRAII {
+        VkDevice device = VK_NULL_HANDLE;
         VkBuffer buffer = VK_NULL_HANDLE;
         VkDeviceMemory memory = VK_NULL_HANDLE;
 
+        StagingBufferRAII() = delete;
+
+        explicit StagingBufferRAII(VkDevice device_)
+        : device(device_) {}
+
         ~StagingBufferRAII() {
-            VkDevice device = CoreVulkan::getDevice();
             if (buffer != VK_NULL_HANDLE)
                 vkDestroyBuffer(device, buffer, nullptr);
             if (memory != VK_NULL_HANDLE)
@@ -69,11 +75,24 @@ private:
 
         StagingBufferRAII(const StagingBufferRAII&) = delete;
         StagingBufferRAII& operator=(const StagingBufferRAII&) = delete;
+
+        StagingBufferRAII(StagingBufferRAII&& other) = delete;
+        StagingBufferRAII& operator=(StagingBufferRAII&& other) = delete;
     };
 
+    void createTextureImage(
+        VkPhysicalDevice physicalDevice,
+        const char* path,
+        BufferManager* bufferManager,
+        VkCommandPool commandPool
+    );
+    void createTextureImageView();
+    void createTextureSampler(VkPhysicalDevice physicalDevice);
 public:
 
     TextureImage(
+        VkPhysicalDevice physicalDevice,
+        VkDevice device,
         const char* path,
         BufferManager* bufferManager,
         VkCommandPool commandPool
@@ -97,13 +116,6 @@ public:
         VkImageLayout newLayout,
         uint32_t mipLevels
     );
-    void createTextureImage(
-        const char* path,
-        BufferManager* bufferManager,
-        VkCommandPool commandPool
-    );
-    void createTextureImageView();
-    void createTextureSampler();
     ~TextureImage();
 
 const VkImage& getTextureImage() const { return textureImage; }

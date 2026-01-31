@@ -3,12 +3,18 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-CommandManager::CommandManager(uint32_t graphicsQueueFamily, const std::vector<VkFramebuffer>& framebuffers){
+CommandManager::CommandManager(
+    VkDevice device,
+    uint32_t graphicsQueueFamily,
+    const std::vector<VkFramebuffer>& framebuffers
+):
+    device(device)
+{
     // Create command pool
     createCommandPool(graphicsQueueFamily);
 
     // Allocate command buffers
-    allocateCommandbuffers(framebuffers);
+    allocateCommandbuffers(device, framebuffers);
 }
 
 void CommandManager::createCommandPool(uint32_t graphicsQueueFamily) {
@@ -18,12 +24,12 @@ void CommandManager::createCommandPool(uint32_t graphicsQueueFamily) {
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     poolInfo.queueFamilyIndex = graphicsQueueFamily;
 
-    if (vkCreateCommandPool(CoreVulkan::getDevice(), &poolInfo, nullptr, &this->commandPool) != VK_SUCCESS) {
+    if (vkCreateCommandPool(device, &poolInfo, nullptr, &this->commandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create command pool!");
     }
 }
 
-void CommandManager::allocateCommandbuffers(const std::vector<VkFramebuffer>& framebuffers){
+void CommandManager::allocateCommandbuffers(VkDevice device, const std::vector<VkFramebuffer>& framebuffers){
     this->commandBuffers.resize(framebuffers.size());
 
     VkCommandBufferAllocateInfo allocInfo{};
@@ -32,7 +38,7 @@ void CommandManager::allocateCommandbuffers(const std::vector<VkFramebuffer>& fr
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = static_cast<uint32_t>(this->commandBuffers.size());
 
-    if (vkAllocateCommandBuffers(CoreVulkan::getDevice(), &allocInfo, this->commandBuffers.data()) != VK_SUCCESS) {
+    if (vkAllocateCommandBuffers(device, &allocInfo, this->commandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 }
@@ -94,5 +100,5 @@ void CommandManager::recordCommandBuffer(size_t imageIndex, VkRenderPass renderP
 }
 
 CommandManager::~CommandManager() {
-    vkDestroyCommandPool(CoreVulkan::getDevice(), this->commandPool, nullptr);
+    vkDestroyCommandPool(device, this->commandPool, nullptr);
 }

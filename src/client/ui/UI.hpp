@@ -7,15 +7,35 @@
 
 class UI {
 private:
+    GLFWwindow* window;
+    VkDevice device;
     VkDescriptorPool descriptorPool;
 
 public:
     UI();
     ~UI();
 
-    void initContext(GLFWwindow* window);
-    void initSwapchainResources(VkRenderPass renderPass, uint32_t imageCount);
-    void init(GLFWwindow* window, VkRenderPass renderPass, uint32_t imageCount);
+    void initContext();
+    void initSwapchainResources(
+        VkInstance instance,
+        VkPhysicalDevice physicalDevice,
+        QueueFamilyIndices graphicsQueueFamilyIndices,
+        VkQueue GraphicsQueue,
+        VkRenderPass renderPass,
+        uint32_t imageCount,
+        VkSampleCountFlagBits msaaSamples
+    );
+    void init(
+        GLFWwindow* window,
+        VkInstance instance,
+        VkPhysicalDevice physicalDevice,
+        VkDevice device,
+        QueueFamilyIndices graphicsQueueFamilyIndices,
+        VkQueue GraphicsQueue,
+        VkRenderPass renderPass,
+        uint32_t imageCount,
+        VkSampleCountFlagBits msaaSamples
+    );
 
     void newFrame(); // start UI frame
     void build(); // build your UI widgets

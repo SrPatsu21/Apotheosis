@@ -10,6 +10,7 @@
 class CameraBufferManager
 {
 private:
+    VkDevice device;
     /*
     A buffer that holds uniform data, such as camera matrices or scene parameters, that are the same for all vertices/fragments in a draw call.
     */
@@ -41,7 +42,7 @@ public:
 
     @throws std::runtime_error if buffer creation or memory allocation fails.
     */
-    CameraBufferManager(BufferManager* bufferManager, int max_frames_in_flight);
+    CameraBufferManager(VkDevice device, BufferManager* bufferManager, int max_frames_in_flight);
 
     /*
     @brief Destructor for CameraBufferManager.

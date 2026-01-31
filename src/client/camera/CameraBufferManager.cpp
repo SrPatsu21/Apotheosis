@@ -23,13 +23,13 @@ void CameraBufferManager::createUniformBuffer(BufferManager* bufferManager, int 
         );
 
         vkBindBufferMemory(
-            CoreVulkan::getDevice(),
+            device,
             uniformBuffers[i],
             uniformBuffersMemory[i],
             0
         );
 
-        vkMapMemory(CoreVulkan::getDevice(), uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+        vkMapMemory(device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
     }
 }
 
@@ -69,15 +69,14 @@ void CameraBufferManager::updateUniformBuffer(
 }
 
 
-CameraBufferManager::CameraBufferManager(BufferManager* bufferManager, int max_frames_in_flight)
+CameraBufferManager::CameraBufferManager(VkDevice device, BufferManager* bufferManager, int max_frames_in_flight)
+: device(device)
 {
     createUniformBuffer(bufferManager, max_frames_in_flight);
 };
 
 CameraBufferManager::~CameraBufferManager()
 {
-    VkDevice device = CoreVulkan::getDevice();
-
     for (size_t i = 0; i < uniformBuffers.size(); ++i)
     {
         if (uniformBuffersMapped[i] != nullptr)

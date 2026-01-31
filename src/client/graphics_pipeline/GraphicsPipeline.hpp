@@ -10,6 +10,7 @@
 */
 class GraphicsPipeline {
 private:
+    VkDevice device;
     /**
     @brief Vulkan graphics pipeline handle.
 
@@ -112,7 +113,7 @@ private:
 
     @return A fully populated VkPipelineMultisampleStateCreateInfo structure.
     */
-    VkPipelineMultisampleStateCreateInfo createMultisampleState();
+    VkPipelineMultisampleStateCreateInfo createMultisampleState(VkSampleCountFlagBits msaaSamples);
     /**
     @brief Creates the depth and stencil state for the pipeline.
 
@@ -147,7 +148,13 @@ public:
 
     @throws std::runtime_error if pipeline layout or graphics pipeline creation fails.
     */
-    GraphicsPipeline(VkExtent2D swapchainExtent, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
+    GraphicsPipeline(
+        VkDevice device,
+        VkExtent2D swapchainExtent,
+        VkRenderPass renderPass,
+        VkDescriptorSetLayout descriptorSetLayout,
+        VkSampleCountFlagBits msaaSamples
+    );
 
     /**
     @brief Destructor.

@@ -5,8 +5,15 @@
 class BufferManager
 {
 private:
+    VkDevice device;
+    VkPhysicalDevice physicalDevice;
+    VkQueue graphicsQueue;
 public:
-    BufferManager();
+    BufferManager(
+        VkPhysicalDevice physicalDevice,
+        VkDevice device,
+        VkQueue graphicsQueue
+    );
     void createBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags usage, VkBuffer& buffer);
     void allocateBufferMemory(VkBuffer buffer, VkMemoryPropertyFlags properties, VkDeviceMemory& bufferMemory);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool commandPool);

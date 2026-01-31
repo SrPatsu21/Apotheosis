@@ -2,7 +2,14 @@
 #include <array>
 #include <stdexcept>
 
-RenderPass::RenderPass(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSamples) {
+RenderPass::RenderPass(
+    VkDevice device,
+    VkFormat swapchainImageFormat,
+    VkSampleCountFlagBits msaaSamples,
+    VkFormat depthFormat
+)
+: device(device)
+{
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = swapchainImageFormat;
     colorAttachment.samples = msaaSamples;
@@ -17,7 +24,7 @@ RenderPass::RenderPass(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaa
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = CoreVulkan::getDepthFormat();
+    depthAttachment.format = depthFormat;
     depthAttachment.samples = msaaSamples;
 
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -77,13 +84,13 @@ RenderPass::RenderPass(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaa
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
 
-    if (vkCreateRenderPass(CoreVulkan::getDevice(), &renderPassInfo, nullptr, &this->renderPass) != VK_SUCCESS) {
+    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &this->renderPass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");
     }
 }
 
 RenderPass::~RenderPass() {
     if (this->renderPass != VK_NULL_HANDLE) {
-        vkDestroyRenderPass(CoreVulkan::getDevice(), this->renderPass, nullptr);
+        vkDestroyRenderPass(device, this->renderPass, nullptr);
     }
 }

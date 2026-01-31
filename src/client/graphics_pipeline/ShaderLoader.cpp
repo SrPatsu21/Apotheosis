@@ -24,14 +24,19 @@ VkShaderModule ShaderLoader::createShaderModule(const std::vector<char>& code) {
     createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
     VkShaderModule shaderModule;
-    if (vkCreateShaderModule(CoreVulkan::getDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+    if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
         throw std::runtime_error("failed to create shader module!");
     }
 
     return shaderModule;
 }
 
-ShaderLoader::ShaderLoader(const std::string& vertPath, const std::string& fragPath)
+ShaderLoader::ShaderLoader(
+    VkDevice device,
+    const std::string& vertPath,
+    const std::string& fragPath
+) :
+    device(device)
 {
     auto vertCode = readFile(vertPath);
     auto fragCode = readFile(fragPath);
@@ -42,9 +47,9 @@ ShaderLoader::ShaderLoader(const std::string& vertPath, const std::string& fragP
 
 ShaderLoader::~ShaderLoader() {
     if (this->vertModule != VK_NULL_HANDLE) {
-        vkDestroyShaderModule(CoreVulkan::getDevice(), this->vertModule, nullptr);
+        vkDestroyShaderModule(device, this->vertModule, nullptr);
     }
     if (this->fragModule != VK_NULL_HANDLE) {
-        vkDestroyShaderModule(CoreVulkan::getDevice(), this->fragModule, nullptr);
+        vkDestroyShaderModule(device, this->fragModule, nullptr);
     }
 }

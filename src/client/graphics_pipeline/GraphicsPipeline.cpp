@@ -1,10 +1,17 @@
 #include "GraphicsPipeline.hpp"
 #include <stdexcept>
 
-GraphicsPipeline::GraphicsPipeline(VkExtent2D swapchainExtent, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout) {
-
+GraphicsPipeline::GraphicsPipeline(
+    VkDevice device,
+    VkExtent2D swapchainExtent,
+    VkRenderPass renderPass,
+    VkDescriptorSetLayout descriptorSetLayout,
+    VkSampleCountFlagBits msaaSamples
+) :
+    device(device)
+{
     // Load shaders
-    ShaderLoader* shaderLoader = new ShaderLoader("shaders/vertex.glsl.spv", "shaders/fragment.glsl.spv");
+    ShaderLoader* shaderLoader = new ShaderLoader(device, "shaders/vertex.glsl.spv", "shaders/fragment.glsl.spv");
 
     // Shader stages
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
@@ -35,7 +42,7 @@ GraphicsPipeline::GraphicsPipeline(VkExtent2D swapchainExtent, VkRenderPass rend
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
-    if (vkCreatePipelineLayout(CoreVulkan::getDevice(), &pipelineLayoutInfo, nullptr, &this->pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &this->pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
@@ -55,7 +62,7 @@ GraphicsPipeline::GraphicsPipeline(VkExtent2D swapchainExtent, VkRenderPass rend
     auto inputAssembly = createInputAssemblyState();
     auto viewportState = createViewportState(swapchainExtent);
     auto rasterizer = createRasterizerState();
-    auto multisampling = createMultisampleState();
+    auto multisampling = createMultisampleState(msaaSamples);
     auto depthStencil = createDepthStencilState();
     auto colorBlending = createColorBlendState();
 
@@ -75,7 +82,7 @@ GraphicsPipeline::GraphicsPipeline(VkExtent2D swapchainExtent, VkRenderPass rend
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
 
-    if (vkCreateGraphicsPipelines(CoreVulkan::getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &this->graphicsPipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &this->graphicsPipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
     //shaders is not required anymore
@@ -84,10 +91,10 @@ GraphicsPipeline::GraphicsPipeline(VkExtent2D swapchainExtent, VkRenderPass rend
 
 GraphicsPipeline::~GraphicsPipeline() {
     if (this->graphicsPipeline != VK_NULL_HANDLE) {
-        vkDestroyPipeline(CoreVulkan::getDevice(), this->graphicsPipeline, nullptr);
+        vkDestroyPipeline(device, this->graphicsPipeline, nullptr);
     }
     if (this->pipelineLayout != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(CoreVulkan::getDevice(), this->pipelineLayout, nullptr);
+        vkDestroyPipelineLayout(device, this->pipelineLayout, nullptr);
     }
 }
 
@@ -151,11 +158,11 @@ VkPipelineRasterizationStateCreateInfo GraphicsPipeline::createRasterizerState()
     return rasterizer;
 }
 
-VkPipelineMultisampleStateCreateInfo GraphicsPipeline::createMultisampleState() {
+VkPipelineMultisampleStateCreateInfo GraphicsPipeline::createMultisampleState(VkSampleCountFlagBits msaaSamples) {
     VkPipelineMultisampleStateCreateInfo multisampling{};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampling.sampleShadingEnable = VK_TRUE; // enable sample shading in the pipeline
-    multisampling.rasterizationSamples = CoreVulkan::getMsaaSamples();
+    multisampling.rasterizationSamples = msaaSamples;
     multisampling.minSampleShading = .2f; // min fraction for sample shading; closer to one is smoother
     multisampling.pSampleMask = nullptr;
     multisampling.alphaToCoverageEnable = VK_FALSE;

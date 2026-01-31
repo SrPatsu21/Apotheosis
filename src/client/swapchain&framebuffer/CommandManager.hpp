@@ -23,6 +23,7 @@
  */
 class CommandManager {
 private:
+    VkDevice device;
     /*
     A Vulkan object that manages the memory used to allocate and record command buffers.
     Command buffers are the actual "scripts" of GPU instructions that you submit to a queue.
@@ -55,7 +56,11 @@ public:
      *
      * This constructor allocates and records one command buffer per framebuffer.
      */
-    CommandManager(uint32_t graphicsQueueFamily, const std::vector<VkFramebuffer>& framebuffers);
+    CommandManager(
+        VkDevice device,
+        uint32_t graphicsQueueFamily,
+        const std::vector<VkFramebuffer>& framebuffers
+    );
 
     /**
      * @brief Destructor. Cleans up the Vulkan command pool and command buffers.
@@ -67,5 +72,5 @@ public:
         uint32_t indicesSize, VkDescriptorSet descriptorSet, std::function<void(VkCommandBuffer)> extraRecording);
     VkCommandPool getCommandPool() const { return commandPool; }
     const std::vector<VkCommandBuffer>& getCommandBuffers() const { return commandBuffers; }
-    void allocateCommandbuffers(const std::vector<VkFramebuffer>& framebuffers);
+    void allocateCommandbuffers(VkDevice device, const std::vector<VkFramebuffer>& framebuffers);
 };

@@ -9,6 +9,7 @@
 class VertexBufferManager
 {
 private:
+    VkDevice device;
     /*
     A GPU buffer that holds the mesh's vertex data (positions, normals, etc.).
     A vertex, also called a corner, is a point where two or more curves, lines, or line segments meet or intersect.
@@ -41,7 +42,12 @@ public:
             - suitable memory type is not found,
             - memory mapping fails.
     */
-    VertexBufferManager(const std::vector<Vertex> vertices, VkCommandPool commandPool);
+    VertexBufferManager(
+        VkDevice device,
+        BufferManager& bufferManager,
+        const std::vector<Vertex> vertices,
+        VkCommandPool commandPool
+    );
     /*
     @brief Destructor. Cleans up the vertex buffer and its allocated memory.
 

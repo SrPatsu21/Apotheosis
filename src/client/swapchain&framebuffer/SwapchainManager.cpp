@@ -3,25 +3,28 @@
 #include <algorithm> // Necessary for std::clamp
 #include "../image/VulkanImageUtils.hpp"
 
-SwapchainManager::SwapchainManager(VkSurfaceKHR surface, uint32_t graphicsQueueFamily, GLFWwindow* window) {
-    SwapchainSupportDetails support = CoreVulkan::querySwapchainSupport(surface);
-
-    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(support.formats);
-    VkPresentModeKHR presentMode = chooseSwapPresentMode(support.presentModes);
-    VkExtent2D extent = chooseSwapExtent(support.capabilities, window);
+SwapchainManager::SwapchainManager(
+        VkDevice device,
+        const QueueFamilyIndices& queueFamilies,
+        const SwapchainSupportDetails& swapchainSupportDetails,
+        VkSurfaceKHR surface,
+        GLFWwindow* window
+) :
+    device(device)
+{
+    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapchainSupportDetails.formats);
+    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapchainSupportDetails.presentModes);
+    VkExtent2D extent = chooseSwapExtent(swapchainSupportDetails.capabilities, window);
 
     this->swapchainImageFormat = surfaceFormat.format;
     this->swapchainExtent = extent;
 
-    createSwapchainInternal(surface, surfaceFormat, presentMode, extent, support, graphicsQueueFamily);
+    createSwapchainInternal(surface, queueFamilies, surfaceFormat, presentMode, extent, swapchainSupportDetails);
     createImageViews();
 }
 
 SwapchainManager::~SwapchainManager() {
-    for (auto view : this->swapchainImageViews) {
-        vkDestroyImageView(CoreVulkan::getDevice(), view, nullptr);
-    }
-    vkDestroySwapchainKHR(CoreVulkan::getDevice(), this->swapchain, nullptr);
+    safeDestroySwapchain();
 }
 
 VkSurfaceFormatKHR SwapchainManager::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
@@ -68,7 +71,14 @@ VkExtent2D SwapchainManager::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& ca
     }
 }
 
-void SwapchainManager::createSwapchainInternal(VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat, VkPresentModeKHR presentMode, VkExtent2D extent, const SwapchainSupportDetails& swapChainSupport, uint32_t graphicsQueueFamily) {
+void SwapchainManager::createSwapchainInternal(
+        VkSurfaceKHR surface,
+        const QueueFamilyIndices& queueFamilies,
+        VkSurfaceFormatKHR surfaceFormat,
+        VkPresentModeKHR presentMode,
+        VkExtent2D extent,
+        const SwapchainSupportDetails& swapChainSupport
+) {
     // how many images we would like to have in the swap chain
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
 
@@ -87,8 +97,8 @@ void SwapchainManager::createSwapchainInternal(VkSurfaceKHR surface, VkSurfaceFo
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     // swapChainSupport
-    uint32_t queueFamilyIndices[] = {CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily.value(), CoreVulkan::getGraphicsQueueFamilyIndices().presentFamily.value()};
-    if (CoreVulkan::getGraphicsQueueFamilyIndices().graphicsFamily != CoreVulkan::getGraphicsQueueFamilyIndices().presentFamily) {
+    uint32_t queueFamilyIndices[] = {queueFamilies.graphicsFamily.value(), queueFamilies.presentFamily.value()};
+    if (queueFamilies.graphicsFamily != queueFamilies.presentFamily) {
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
         createInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -104,14 +114,14 @@ void SwapchainManager::createSwapchainInternal(VkSurfaceKHR surface, VkSurfaceFo
     createInfo.clipped = VK_TRUE;
     createInfo.oldSwapchain = VK_NULL_HANDLE; //TODO remake the swapchain
 
-    if (vkCreateSwapchainKHR(CoreVulkan::getDevice(), &createInfo, nullptr, &this->swapchain) != VK_SUCCESS) {
+    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &this->swapchain) != VK_SUCCESS) {
         throw std::runtime_error("failed to create swap chain!");
     }
 
     uint32_t count;
-    vkGetSwapchainImagesKHR(CoreVulkan::getDevice(), this->swapchain, &count, nullptr);
+    vkGetSwapchainImagesKHR(device, this->swapchain, &count, nullptr);
     this->swapchainImages.resize(count);
-    vkGetSwapchainImagesKHR(CoreVulkan::getDevice(), this->swapchain, &count, this->swapchainImages.data());
+    vkGetSwapchainImagesKHR(device, this->swapchain, &count, this->swapchainImages.data());
 }
 
 
@@ -119,41 +129,42 @@ void SwapchainManager::createImageViews() {
     this->swapchainImageViews.resize(this->swapchainImages.size());
 
     for (size_t i = 0; i < this->swapchainImages.size(); i++) {
-        swapchainImageViews[i] = createImageView(swapchainImages[i], swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        swapchainImageViews[i] = createImageView(device, swapchainImages[i], swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
     }
 }
 
 void SwapchainManager::safeDestroySwapchain(){
     if (!this->swapchainImageViews.empty()) {
         for (auto view : swapchainImageViews) {
-            vkDestroyImageView(CoreVulkan::getDevice(), view, nullptr);
+            vkDestroyImageView(device, view, nullptr);
         }
         swapchainImageViews.clear();
     }
     if (this->swapchain != VK_NULL_HANDLE) {
-        vkDestroySwapchainKHR(CoreVulkan::getDevice(), this->swapchain, nullptr);
+        vkDestroySwapchainKHR(device, this->swapchain, nullptr);
         this->swapchain = VK_NULL_HANDLE; // reset
     }
 }
 
-void SwapchainManager::recreate(VkSurfaceKHR surface, GLFWwindow* window, uint32_t graphicsQueueFamily)
-{
+void SwapchainManager::recreate(
+    const QueueFamilyIndices& queueFamilies,
+    const SwapchainSupportDetails& swapchainSupportDetails,
+    VkSurfaceKHR surface,
+    GLFWwindow* window
+) {
 
     //TODO optimise
-
     safeDestroySwapchain();
     // details
-    SwapchainSupportDetails swapChainSupport = CoreVulkan::querySwapchainSupport(surface);
-
-    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-    VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities, window);
+    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapchainSupportDetails.formats);
+    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapchainSupportDetails.presentModes);
+    VkExtent2D extent = chooseSwapExtent(swapchainSupportDetails.capabilities, window);
 
     this->swapchainExtent = extent;
     this->swapchainImageFormat = surfaceFormat.format;
 
     // create a new one
-    createSwapchainInternal(surface, surfaceFormat, presentMode, extent, swapChainSupport, graphicsQueueFamily);
+    createSwapchainInternal(surface, queueFamilies, surfaceFormat, presentMode, extent, swapchainSupportDetails);
 
     // recreate imageViews
     createImageViews();

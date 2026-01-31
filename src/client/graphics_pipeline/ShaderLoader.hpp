@@ -11,6 +11,7 @@ automatically when this object goes out of scope.
 */
 class ShaderLoader {
 private:
+    VkDevice device;
     /**
     @brief Vulkan shader module handle for the vertex shader.
 
@@ -56,7 +57,7 @@ public:
     @param vertPath Path to the vertex shader SPIR-V file.
     @param fragPath Path to the fragment shader SPIR-V file.
     */
-    ShaderLoader(const std::string& vertPath, const std::string& fragPath);
+    ShaderLoader(VkDevice device, const std::string& vertPath, const std::string& fragPath);
 
     /**
     Cleans up the shader modules.

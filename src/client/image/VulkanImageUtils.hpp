@@ -15,6 +15,8 @@
 @param imageMemory (out) Allocated VkDeviceMemory handle.
 */
 void createImage(
+    VkPhysicalDevice physicalDevice,
+    VkDevice device,
     uint32_t width,
     uint32_t height,
     uint32_t mipLevels,
@@ -38,6 +40,7 @@ void createImage(
 @throws std::runtime_error if image view creation fails.
  */
 VkImageView createImageView(
+    VkDevice device,
     VkImage image,
     VkFormat format,
     VkImageAspectFlags aspectFlags,
@@ -45,6 +48,7 @@ VkImageView createImageView(
 );
 
 void generateMipmaps(
+    VkPhysicalDevice physicalDevice,
     BufferManager* bufferManager,
     VkCommandPool commandPool,
     VkImage image,

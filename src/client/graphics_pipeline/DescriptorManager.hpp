@@ -25,6 +25,7 @@
 class DescriptorManager
 {
 private:
+    VkDevice device;
     /*
     Defines the layout of resources (uniforms, samplers, etc.) that shaders will access.
     Specifies what kinds of descriptors are expected and their bindings.
@@ -53,7 +54,12 @@ public:
 
     @throws std::runtime_error if descriptor set layout creation, pool creation, or descriptor set allocation fails.
     */
-    DescriptorManager(CameraBufferManager* cameraBufferManager, TextureImage* textureImage, uint32_t max_frames_in_flight);
+    DescriptorManager(
+        VkDevice device,
+        CameraBufferManager* cameraBufferManager,
+        TextureImage* textureImage,
+        uint32_t max_frames_in_flight
+    );
     /*
     defines what kind of resources your shaders expect to be bound, and where
     @return VkDescriptorSetLayout* descriptorSetLayout
@@ -62,7 +68,11 @@ public:
     void createDescriptorSetLayout();
     void createDescriptorPool(uint32_t max_frames_in_flight);
     void createDescriptorSets(uint32_t max_frames_in_flight);
-    void populateDescriptorSets(CameraBufferManager* cameraBufferManager, TextureImage* textureImage, uint32_t max_frames_in_flight);
+    void populateDescriptorSets(
+        CameraBufferManager* cameraBufferManager,
+        TextureImage* textureImage,
+        uint32_t max_frames_in_flight
+    );
 
     VkDescriptorSetLayout getLayout() const { return descriptorSetLayout; }
     VkDescriptorPool getPool() const { return descriptorPool; }

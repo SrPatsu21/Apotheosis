@@ -35,12 +35,12 @@ void TextureImage::createStagingBuffer(
         memory
     );
 
-    vkBindBufferMemory(CoreVulkan::getDevice(), buffer, memory, 0);
+    vkBindBufferMemory(device, buffer, memory, 0);
 
     void* data;
-    vkMapMemory(CoreVulkan::getDevice(), memory, 0, img.size, 0, &data);
+    vkMapMemory(device, memory, 0, img.size, 0, &data);
     memcpy(data, img.pixels, static_cast<size_t>(img.size));
-    vkUnmapMemory(CoreVulkan::getDevice(), memory);
+    vkUnmapMemory(device, memory);
 }
 
 void TextureImage::transitionImageLayout(
@@ -111,10 +111,12 @@ void TextureImage::transitionImageLayout(
 }
 
 void TextureImage::createTextureImageView(){
-    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+    textureImageView = createImageView(device, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 }
 
-void TextureImage::createTextureSampler() {
+void TextureImage::createTextureSampler(
+    VkPhysicalDevice physicalDevice
+) {
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -126,8 +128,8 @@ void TextureImage::createTextureSampler() {
 
     samplerInfo.anisotropyEnable = VK_TRUE;
     VkPhysicalDeviceProperties properties{};
-    vkGetPhysicalDeviceProperties(CoreVulkan::getPhysicalDevice(), &properties);
-    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy; //TODO it`s on max quality sould change this
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy; //TODO it`s on max quality sould change this?
 
     samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 
@@ -140,12 +142,13 @@ void TextureImage::createTextureSampler() {
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
 
-    if (vkCreateSampler(CoreVulkan::getDevice(), &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
+    if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 }
 
 void TextureImage::createTextureImage(
+    VkPhysicalDevice physicalDevice,
     const char* path,
     BufferManager* bufferManager,
     VkCommandPool commandPool
@@ -158,11 +161,13 @@ void TextureImage::createTextureImage(
 
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(img.width, img.height)))) + 1;
 
-    StagingBufferRAII staging = {};
+    StagingBufferRAII staging(device);
     createStagingBuffer(bufferManager, img, staging.buffer, staging.memory);
 
     // createGpuImage
     createImage(
+        physicalDevice,
+        device,
         img.width,
         img.height,
         mipLevels,
@@ -197,6 +202,7 @@ void TextureImage::createTextureImage(
 
 
     generateMipmaps(
+        physicalDevice,
         bufferManager,
         commandPool,
         textureImage,
@@ -208,18 +214,21 @@ void TextureImage::createTextureImage(
 }
 
 TextureImage::TextureImage(
+    VkPhysicalDevice physicalDevice,
+    VkDevice device,
     const char* path,
     BufferManager* bufferManager,
     VkCommandPool commandPool
-) {
-    createTextureImage(path, bufferManager, commandPool);
+) :
+    device(device)
+{
+    createTextureImage(physicalDevice, path, bufferManager, commandPool);
     createTextureImageView();
-    createTextureSampler();
+    createTextureSampler(physicalDevice);
 }
 
 TextureImage::~TextureImage()
 {
-    VkDevice device = CoreVulkan::getDevice();
     if (textureImage != VK_NULL_HANDLE)
         vkDestroyImage(device, textureImage, nullptr);
 

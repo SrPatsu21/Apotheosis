@@ -40,6 +40,7 @@ private:
     uint32_t currentFrame = 0;
 
     GLFWwindow* window;
+    CoreVulkan* coreVulkan;
     SwapchainManager* swapchainManager;
     UI* ui;
 

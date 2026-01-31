@@ -1,6 +1,8 @@
 #include "VulkanImageUtils.hpp"
 
 void createImage(
+    VkPhysicalDevice physicalDevice,
+    VkDevice device,
     uint32_t width,
     uint32_t height,
     uint32_t mipLevels,
@@ -27,26 +29,27 @@ void createImage(
     imageInfo.samples = numSamples;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (vkCreateImage(CoreVulkan::getDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS) {
+    if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image!");
     }
 
     VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(CoreVulkan::getDevice(), image, &memRequirements);
+    vkGetImageMemoryRequirements(device, image, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = CoreVulkan::findMemoryType(memRequirements.memoryTypeBits, properties, 0);
+    allocInfo.memoryTypeIndex = CoreVulkan::findMemoryType(physicalDevice ,memRequirements.memoryTypeBits, properties, 0);
 
-    if (vkAllocateMemory(CoreVulkan::getDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
+    if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate image memory!");
     }
 
-    vkBindImageMemory(CoreVulkan::getDevice(), image, imageMemory, 0);
+    vkBindImageMemory(device, image, imageMemory, 0);
 }
 
 VkImageView createImageView(
+    VkDevice device,
     VkImage image,
     VkFormat format,
     VkImageAspectFlags aspectFlags,
@@ -68,7 +71,7 @@ VkImageView createImageView(
     viewInfo.subresourceRange.layerCount = 1;
 
     VkImageView imageView;
-    if (vkCreateImageView(CoreVulkan::getDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
+    if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image view!");
     }
 
@@ -76,6 +79,7 @@ VkImageView createImageView(
 }
 
 void generateMipmaps(
+    VkPhysicalDevice physicalDevice,
     BufferManager* bufferManager,
     VkCommandPool commandPool,
     VkImage image,
@@ -86,7 +90,7 @@ void generateMipmaps(
 ) {
     // Check if image format supports linear blitting
     VkFormatProperties formatProperties;
-    vkGetPhysicalDeviceFormatProperties(CoreVulkan::getPhysicalDevice(), imageFormat, &formatProperties);
+    vkGetPhysicalDeviceFormatProperties(physicalDevice, imageFormat, &formatProperties);
     if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
         throw std::runtime_error("texture image format does not support linear blitting!");
     }

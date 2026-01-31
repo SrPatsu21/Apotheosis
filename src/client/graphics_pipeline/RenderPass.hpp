@@ -22,6 +22,7 @@ private:
 
     Initialized to VK_NULL_HANDLE before creation.
     */
+    VkDevice device;
     VkRenderPass renderPass{VK_NULL_HANDLE};
 
 public:
@@ -38,7 +39,7 @@ public:
 
     @throws std::runtime_error if vkCreateRenderPass fails.
     */
-    RenderPass(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSamples);
+    RenderPass(VkDevice device, VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSamples, VkFormat depthFormat);
 
     /**
     @brief Destroys the Vulkan render pass and cleans up resources.

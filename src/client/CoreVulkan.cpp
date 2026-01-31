@@ -1,59 +1,135 @@
 #include "CoreVulkan.hpp"
 #include <set>
 
-//* pre set vars, need because of static
+CoreVulkan::CoreVulkan(){
+    instance = VK_NULL_HANDLE;
+    surface = VK_NULL_HANDLE;
+    graphicsQueueFamilyIndices = {};
+    physicalDevice = VK_NULL_HANDLE;
+    swapchainDetails = {};
+    msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+    device = VK_NULL_HANDLE;
+    presentQueue = VK_NULL_HANDLE;
+    graphicsQueue = VK_NULL_HANDLE;
+    depthFormat = VK_FORMAT_UNDEFINED;
+}
 
-VkInstance CoreVulkan::instance = VK_NULL_HANDLE;
-VkDevice CoreVulkan::device = VK_NULL_HANDLE;
-VkPhysicalDevice CoreVulkan::physicalDevice = VK_NULL_HANDLE;
-VkFormat CoreVulkan::depthFormat = VK_FORMAT_UNDEFINED;
-QueueFamilyIndices CoreVulkan::graphicsQueueFamilyIndices{};
-VkQueue CoreVulkan::presentQueue = VK_NULL_HANDLE;
-VkQueue CoreVulkan::graphicsQueue = VK_NULL_HANDLE;
-VkSurfaceKHR CoreVulkan::surface = VK_NULL_HANDLE;
-const std::vector<const char*> CoreVulkan::DEVICE_EXTENSIONS = { //* Enable swapchain extension
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
-VkSampleCountFlagBits CoreVulkan::msaaSamples = VK_SAMPLE_COUNT_1_BIT; // Multisampling
+CoreVulkan::CoreVulkan(CoreVulkan&& other) noexcept
+{
+    instance = other.instance;
+    surface = other.surface;
+    graphicsQueueFamilyIndices = std::move(other.graphicsQueueFamilyIndices);
+    physicalDevice = other.physicalDevice;
+    swapchainDetails = std::move(other.swapchainDetails);
+    msaaSamples = other.msaaSamples;
+    device = other.device;
+    presentQueue = other.presentQueue;
+    graphicsQueue = other.graphicsQueue;
+    depthFormat = other.depthFormat;
 
-//* functions
-//TODO remove and make crateInstance public
+    // deixa o objeto movido em estado seguro
+    other.instance = VK_NULL_HANDLE;
+    other.surface = VK_NULL_HANDLE;
+    other.physicalDevice = VK_NULL_HANDLE;
+    other.device = VK_NULL_HANDLE;
+    other.presentQueue = VK_NULL_HANDLE;
+    other.graphicsQueue = VK_NULL_HANDLE;
+    other.msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+    other.depthFormat = VK_FORMAT_UNDEFINED;
+    other.graphicsQueueFamilyIndices = {};
+    other.swapchainDetails = {};
+}
+
+CoreVulkan& CoreVulkan::operator=(CoreVulkan&& other) noexcept
+{
+    if (this != &other)
+    {
+        cleanup(); //avoid zombie memory
+
+        instance = other.instance;
+        surface = other.surface;
+        physicalDevice = other.physicalDevice;
+        device = other.device;
+        presentQueue = other.presentQueue;
+        graphicsQueue = other.graphicsQueue;
+        msaaSamples = other.msaaSamples;
+        depthFormat = other.depthFormat;
+        graphicsQueueFamilyIndices = std::move(other.graphicsQueueFamilyIndices);
+        swapchainDetails = std::move(other.swapchainDetails);
+
+        other.instance = VK_NULL_HANDLE;
+        other.surface = VK_NULL_HANDLE;
+        other.device = VK_NULL_HANDLE;
+        other.physicalDevice = VK_NULL_HANDLE;
+        other.presentQueue = VK_NULL_HANDLE;
+        other.graphicsQueue = VK_NULL_HANDLE;
+        other.msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+        other.depthFormat = VK_FORMAT_UNDEFINED;
+        other.graphicsQueueFamilyIndices =  {};
+        other.swapchainDetails = {};
+    }
+    return *this;
+}
+
 void CoreVulkan::init(GLFWwindow* window)
 {
-    if (CoreVulkan::instance != VK_NULL_HANDLE) {
+    if (instance != VK_NULL_HANDLE) {
         return;
     }
+
+    //extensions
+    deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME  //* Enable swapchain extension
+        // VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME //TODO test it 
+        // VK_KHR_MULTIVIEW_EXTENSION_NAME
+        // VK_EXT_MEMORY_BUDGET_EXTENSION_NAME
+        // VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME
+        // VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME
+    };
 
     // Create Vulkan instance
     createInstance();
     createSurface(window);
+
     pickPhysicalDevice();
+    msaaSamples = findMaxLimitedUsableSampleCount(VK_SAMPLE_COUNT_8_BIT, physicalDevice);
+    #ifndef NDEBUG
+        std::cout << "Sample Count: " << msaaSamples << std::endl;
+    #endif
+    graphicsQueueFamilyIndices = findQueueFamilies(physicalDevice);
+    if (!graphicsQueueFamilyIndices.isComplete()) {
+        throw std::runtime_error("failed to find a graphics queue family!");
+    }
+    updateSwapchainDetails();
     createLogicalDevice();
-    CoreVulkan::depthFormat = findSupportedFormat(
+    vkGetDeviceQueue(device, graphicsQueueFamilyIndices.graphicsFamily.value(), 0, &graphicsQueue);
+    vkGetDeviceQueue(device, graphicsQueueFamilyIndices.presentFamily.value(), 0, &presentQueue);
+    depthFormat = findSupportedFormat(
         {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );
 }
 
-bool CoreVulkan::checkValidationLayerSupport() {
-    uint32_t layerCount;
+bool CoreVulkan::checkValidationLayerSupport()
+{
+    uint32_t layerCount = 0;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
     std::vector<VkLayerProperties> availableLayers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-    for (const char* layerName : validationLayers) {
-        bool layerFound = false;
+    for (const char* requiredLayer : validationLayers) {
+        bool found = false;
 
-        for (const auto& layerProperties : availableLayers) {
-            if (strcmp(layerName, layerProperties.layerName) == 0) {
-                layerFound = true;
+        for (const VkLayerProperties& layer : availableLayers) {
+            if (std::strcmp(requiredLayer, layer.layerName) == 0) {
+                found = true;
                 break;
             }
         }
 
-        if (!layerFound) {
+        if (!found) {
             return false;
         }
     }
@@ -86,9 +162,7 @@ void CoreVulkan::createInstance() {
     }
 
     uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
     createInfo.enabledExtensionCount = glfwExtensionCount;
     createInfo.ppEnabledExtensionNames = glfwExtensions;
@@ -113,14 +187,39 @@ void CoreVulkan::createInstance() {
     #endif
 }
 
-void CoreVulkan::createSurface(GLFWwindow* window)
-{
-    if (glfwCreateWindowSurface(CoreVulkan::getInstance(), window, nullptr, &CoreVulkan::surface) != VK_SUCCESS) {
+void CoreVulkan::createSurface(
+    GLFWwindow* window
+) {
+    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
 };
 
-QueueFamilyIndices CoreVulkan::findQueueFamilies(VkPhysicalDevice physicalDevice) {
+SwapchainSupportDetails CoreVulkan::querySwapchainSupport(
+    VkPhysicalDevice physicalDevice
+) {
+    SwapchainSupportDetails swapchainDetails;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &swapchainDetails.capabilities);
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
+    if (formatCount != 0) {
+        swapchainDetails.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, swapchainDetails.formats.data());
+    }
+
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
+    if (presentModeCount != 0) {
+        swapchainDetails.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, swapchainDetails.presentModes.data());
+    }
+    return swapchainDetails;
+}
+
+QueueFamilyIndices CoreVulkan::findQueueFamilies(
+    VkPhysicalDevice physicalDevice
+) {
     QueueFamilyIndices indices;
 
     uint32_t queueFamilyCount = 0;
@@ -129,10 +228,17 @@ QueueFamilyIndices CoreVulkan::findQueueFamilies(VkPhysicalDevice physicalDevice
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
 
-    int i = 0;
-    for (const auto& queueFamily : queueFamilies) {
+    for (uint32_t i = 0; i < queueFamilies.size(); ++i) {
+        const auto& queueFamily = queueFamilies[i];
+
         VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, CoreVulkan::surface, &presentSupport);
+        vkGetPhysicalDeviceSurfaceSupportKHR(
+            physicalDevice,
+            i,
+            surface,
+            &presentSupport
+        );
+
         if (presentSupport) {
             indices.presentFamily = i;
         }
@@ -140,74 +246,65 @@ QueueFamilyIndices CoreVulkan::findQueueFamilies(VkPhysicalDevice physicalDevice
             indices.graphicsFamily = i;
         }
         if (indices.isComplete()) {
-            break;
+            return indices;
         }
-
-        i++;
     }
 
     return indices;
 }
 
-SwapchainSupportDetails CoreVulkan::querySwapchainSupport(VkSurfaceKHR surface) {
-    SwapchainSupportDetails details;
-
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(CoreVulkan::getPhysicalDevice(), surface, &details.capabilities);
-
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(CoreVulkan::getPhysicalDevice(), surface, &formatCount, nullptr);
-    if (formatCount != 0) {
-        details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(CoreVulkan::getPhysicalDevice(), surface, &formatCount, details.formats.data());
-    }
-
-    uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(CoreVulkan::getPhysicalDevice(), surface, &presentModeCount, nullptr);
-    if (presentModeCount != 0) {
-        details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(CoreVulkan::getPhysicalDevice(), surface, &presentModeCount, details.presentModes.data());
-    }
-
-    return details;
-}
-
-bool CoreVulkan::isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions) {
+bool CoreVulkan::isDeviceSuitable(
+    VkPhysicalDevice physicalDevice,
+    const std::vector<const char*>& deviceExtensions
+) {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
     //* check Device Extension Support
-    bool extensionsSupported = false;
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
-    VkPhysicalDeviceFeatures supportedFeatures;
-    vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
 
     std::vector<VkExtensionProperties> availableExtensions(extensionCount);
     vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
 
-    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+    bool extensionsSupported = true;
 
-    for (const auto& extension : availableExtensions) {
-        requiredExtensions.erase(std::string(extension.extensionName));
+    for (const char* required : deviceExtensions) {
+        bool found = false;
+
+        for (const auto& available : availableExtensions) {
+            if (std::strcmp(required, available.extensionName) == 0) {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            extensionsSupported = false;
+            break;
+        }
     }
+
+    //* feature
+    VkPhysicalDeviceFeatures supportedFeatures{};
+    vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
 
     //* swap chain support
     bool swapChainAdequate = false;
     if (extensionsSupported) {
-        SwapchainSupportDetails swapChainSupport = CoreVulkan::querySwapchainSupport(CoreVulkan::surface);
-        swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+        SwapchainSupportDetails swapchainDetails = querySwapchainSupport(physicalDevice);
+        swapChainAdequate = !swapchainDetails.formats.empty() && !swapchainDetails.presentModes.empty();
     }
 
-    return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+    return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy && supportedFeatures.geometryShader;
 }
 
-int CoreVulkan::rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions) {
+int CoreVulkan::rateDeviceSuitability(
+    VkPhysicalDevice physicalDevice,
+    const std::vector<const char*>& deviceExtensions
+) {
     VkPhysicalDeviceProperties deviceProperties;
-    VkPhysicalDeviceFeatures deviceFeatures;
     vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-    vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
-
-        // Application can't function without geometry shaders
-    if (!deviceFeatures.geometryShader && !isDeviceSuitable(physicalDevice, deviceExtensions)) {
+    if (!isDeviceSuitable(physicalDevice, deviceExtensions)) {
         return 0;
     }
 
@@ -224,11 +321,12 @@ int CoreVulkan::rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std
     return score;
 }
 
-VkSampleCountFlagBits CoreVulkan::getMaxUsableSampleCount(
-    VkSampleCountFlagBits maxDesiredSamples
+VkSampleCountFlagBits CoreVulkan::findMaxLimitedUsableSampleCount(
+    VkSampleCountFlagBits maxDesiredSamples,
+    VkPhysicalDevice physicalDevice
 ) {
     VkPhysicalDeviceProperties props{};
-    vkGetPhysicalDeviceProperties(CoreVulkan::physicalDevice, &props);
+    vkGetPhysicalDeviceProperties(physicalDevice, &props);
 
     VkSampleCountFlags supported =
         props.limits.framebufferColorSampleCounts &
@@ -245,55 +343,51 @@ VkSampleCountFlagBits CoreVulkan::getMaxUsableSampleCount(
 }
 
 void CoreVulkan::pickPhysicalDevice() {
-    //TODO extend this to implement device selection based on features, queue families, performance, etc.
     //TODO make user able to select the device and save this config
 
     uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(CoreVulkan::instance, &deviceCount, nullptr);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
     if (deviceCount == 0) {
         throw std::runtime_error("failed to find GPUs with Vulkan support!");
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(CoreVulkan::instance, &deviceCount, devices.data());
+    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
-    // Use an ordered map to automatically sort candidates by score
-    std::multimap<int, VkPhysicalDevice> candidates;
+    VkPhysicalDevice bestDevice = VK_NULL_HANDLE;
+    int bestScore = 0;
 
     for (const auto& device : devices) {
-        int score = rateDeviceSuitability(device, CoreVulkan::DEVICE_EXTENSIONS);
-        candidates.insert(std::make_pair(score, device));
+        int score = rateDeviceSuitability(device, deviceExtensions);
+        if (score > bestScore) {
+            bestScore = score;
+            bestDevice = device;
+        }
     }
 
     // Check if the best candidate is suitable at all
-    if (candidates.rbegin()->first > 0) {
-        CoreVulkan::physicalDevice = candidates.rbegin()->second;
-        CoreVulkan::msaaSamples = getMaxUsableSampleCount(VK_SAMPLE_COUNT_8_BIT);
-
-        // debug
-        #ifndef NDEBUG
-            VkPhysicalDeviceProperties deviceProperties;
-            vkGetPhysicalDeviceProperties(CoreVulkan::physicalDevice, &deviceProperties);
-            std::cout << "GPU name: " << deviceProperties.deviceName << std::endl;
-            std::cout << "Sample Count: " << CoreVulkan::msaaSamples << std::endl;
-        #endif
-
-    } else {
+    if (bestDevice == VK_NULL_HANDLE) {
         throw std::runtime_error("failed to find a suitable GPU!");
     }
+    physicalDevice = bestDevice;
+
+    // debug
+    #ifndef NDEBUG
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+        std::cout << "GPU name: " << deviceProperties.deviceName << std::endl;
+    #endif
 }
 
+void CoreVulkan::updateSwapchainDetails()
+{
+    swapchainDetails = querySwapchainSupport(physicalDevice);
+};
+
 void CoreVulkan::createLogicalDevice() {
-    // Find queue family
-    CoreVulkan::graphicsQueueFamilyIndices = findQueueFamilies(CoreVulkan::physicalDevice);
-
-    if (!CoreVulkan::graphicsQueueFamilyIndices.isComplete()) {
-        throw std::runtime_error("failed to find a graphics queue family!");
-    }
-
     // set queue info
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {CoreVulkan::graphicsQueueFamilyIndices.graphicsFamily.value(), CoreVulkan::graphicsQueueFamilyIndices.presentFamily.value()};
+    std::set<uint32_t> uniqueQueueFamilies = {graphicsQueueFamilyIndices.graphicsFamily.value(), graphicsQueueFamilyIndices.presentFamily.value()};
 
     float queuePriority = 1.0f;
 
@@ -309,7 +403,11 @@ void CoreVulkan::createLogicalDevice() {
     // Device info
     VkPhysicalDeviceFeatures deviceFeatures{}; //* enable features if needed
     deviceFeatures.samplerAnisotropy = VK_TRUE;
-    deviceFeatures.sampleRateShading = VK_TRUE; // enable sample shading feature for the device
+    deviceFeatures.sampleRateShading = VK_TRUE;
+    //TODO verify if I will use it and if make sense
+    // VkPhysicalDeviceFeatures supported{};
+    // vkGetPhysicalDeviceFeatures(physicalDevice, &supported);
+    // deviceFeatures.sampleRateShading = supported.sampleRateShading;
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -317,9 +415,10 @@ void CoreVulkan::createLogicalDevice() {
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pEnabledFeatures = &deviceFeatures;
 
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(CoreVulkan::DEVICE_EXTENSIONS.size());
-    createInfo.ppEnabledExtensionNames = CoreVulkan::DEVICE_EXTENSIONS.data();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
+    //TODO teste if work without this because vulkan make validation layers in instance-level.
     if (enableValidationLayers) {
         //debug
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
@@ -328,18 +427,15 @@ void CoreVulkan::createLogicalDevice() {
         createInfo.enabledLayerCount = 0;
     }
 
-    if (vkCreateDevice(CoreVulkan::physicalDevice, &createInfo, nullptr, &CoreVulkan::device) != VK_SUCCESS) {
+    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
         throw std::runtime_error("failed to create logical device!");
     }
-
-    vkGetDeviceQueue(CoreVulkan::device, CoreVulkan::graphicsQueueFamilyIndices.graphicsFamily.value(), 0, &CoreVulkan::graphicsQueue);
-    vkGetDeviceQueue(CoreVulkan::device, CoreVulkan::graphicsQueueFamilyIndices.presentFamily.value(), 0, &CoreVulkan::presentQueue);
 }
 
 VkFormat CoreVulkan::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
     for (VkFormat format : candidates) {
         VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(CoreVulkan::physicalDevice, format, &props);
+        vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
 
         if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
             return format;
@@ -351,40 +447,40 @@ VkFormat CoreVulkan::findSupportedFormat(const std::vector<VkFormat>& candidates
     throw std::runtime_error("failed to find supported format!");
 }
 
-void CoreVulkan::destroy() {
-    // 1) Stop GPU before destroying anything.
-    if (CoreVulkan::device != VK_NULL_HANDLE) {
-        vkDeviceWaitIdle(CoreVulkan::device);
+void CoreVulkan::cleanup()
+{
+    if (device != VK_NULL_HANDLE) {
+        vkDeviceWaitIdle(device);
     }
 
-    // 2) Destroy logical device (if valid).
-    if (CoreVulkan::device != VK_NULL_HANDLE) {
-        vkDestroyDevice(CoreVulkan::device, nullptr);
-        CoreVulkan::device = VK_NULL_HANDLE;
+    if (device != VK_NULL_HANDLE) {
+        vkDestroyDevice(device, nullptr);
+        device = VK_NULL_HANDLE;
     }
 
-    // 3) Destroy surface (must happen before instance destruction).
-    if (CoreVulkan::surface != VK_NULL_HANDLE && CoreVulkan::instance != VK_NULL_HANDLE) {
-        vkDestroySurfaceKHR(CoreVulkan::instance, CoreVulkan::surface, nullptr);
-        CoreVulkan::surface = VK_NULL_HANDLE;
+    if (surface != VK_NULL_HANDLE && instance != VK_NULL_HANDLE) {
+        vkDestroySurfaceKHR(instance, surface, nullptr);
+        surface = VK_NULL_HANDLE;
     }
 
-    // 4) Destroy instance last.
-    if (CoreVulkan::instance != VK_NULL_HANDLE) {
-        vkDestroyInstance(CoreVulkan::instance, nullptr);
-        CoreVulkan::instance = VK_NULL_HANDLE;
+    if (instance != VK_NULL_HANDLE) {
+        vkDestroyInstance(instance, nullptr);
+        instance = VK_NULL_HANDLE;
     }
 }
 
-// TODO remove from class
-uint32_t CoreVulkan::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred) {
+CoreVulkan::~CoreVulkan(){
+    cleanup();
+}
+
+uint32_t CoreVulkan::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred) {
     VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(CoreVulkan::physicalDevice, &memProperties);
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
     uint32_t fallback = UINT32_MAX;
 
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if (!(typeFilter & (1 << i))) continue;
+        if (!(typeFilter & (1u << i))) continue;
 
         VkMemoryPropertyFlags flags = memProperties.memoryTypes[i].propertyFlags;
 
@@ -392,7 +488,8 @@ uint32_t CoreVulkan::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags r
             if ((flags & preferred) == preferred) {
                 return i;
             }
-            fallback = i;
+            if (fallback == UINT32_MAX)
+                fallback = i;
         }
     }
 

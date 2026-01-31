@@ -12,81 +12,61 @@
 #include <optional>
 #include "./swapchain&framebuffer/SwapchainSupportDetails.hpp"
 
-const static std::vector<const char*> validationLayers = {
+const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 #ifdef DISABLE_VALIDATION_LAYERS
-        const static bool enableValidationLayers = false;
+        const bool enableValidationLayers = false;
 #else
-        const static bool enableValidationLayers = true;
+        const bool enableValidationLayers = true;
 #endif
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
 
-    bool isComplete() {
+    bool isComplete() const {
         return graphicsFamily.has_value() && presentFamily.has_value();
     }
 };
 
-//TODO VkPhysicalDeviceProperties
 
 class CoreVulkan
 {
 protected:
-    static VkInstance instance;
+    VkInstance instance;
+    VkSurfaceKHR surface;
+    QueueFamilyIndices graphicsQueueFamilyIndices;
+    VkPhysicalDevice physicalDevice;
+    SwapchainSupportDetails swapchainDetails;
+    VkSampleCountFlagBits msaaSamples;
+    VkDevice device;
+    VkQueue presentQueue;
+    VkQueue graphicsQueue;
+    VkFormat depthFormat;
+    std::vector<const char*> deviceExtensions;
 
-    static VkPhysicalDevice physicalDevice;
-
-    static VkDevice device;
-
-    static VkFormat depthFormat;
-
-    static VkSurfaceKHR surface;
-
-    static VkQueue presentQueue;
-
-    static VkQueue graphicsQueue;
-
-    static const std::vector<const char*> DEVICE_EXTENSIONS;
-
-    static QueueFamilyIndices graphicsQueueFamilyIndices;
-
-    static VkSampleCountFlagBits msaaSamples;
-
+//* functions
 private:
-    //* functions
-    static bool checkValidationLayerSupport();
-
-    static void createInstance();
-
-    static void createSurface(GLFWwindow* window);
-
-    static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice);
-
+    bool checkValidationLayerSupport();
+    void createInstance();
+    void createSurface(GLFWwindow* window);
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice);
+    SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice physicalDevice);
+    bool isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
+    int rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
+    VkSampleCountFlagBits findMaxLimitedUsableSampleCount(VkSampleCountFlagBits maxDesiredSamples, VkPhysicalDevice physicalDevice);
+    void pickPhysicalDevice();
+    bool IsDeviceExtensionSupported(VkPhysicalDevice physicalDevice, const char* extensionName);
+    void createLogicalDevice();
+    void cleanup();
 public:
-    static SwapchainSupportDetails querySwapchainSupport(VkSurfaceKHR surface);
-private:
-
-    static bool isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
-
-    static int rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
-
-    static VkSampleCountFlagBits getMaxUsableSampleCount(VkSampleCountFlagBits maxDesiredSamples);
-
-    static void pickPhysicalDevice();
-
-    static void createLogicalDevice();
-
-
-public:
-
-    static void destroy();
+    VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+    void updateSwapchainDetails();
 
     explicit CoreVulkan();
-    ~CoreVulkan();
 
+    ~CoreVulkan();
     // Deleting the copy constructor and copy assignment to prevent copies
     CoreVulkan(const CoreVulkan& obj) = delete;
     CoreVulkan& operator=(const CoreVulkan& other) = delete;
@@ -95,20 +75,20 @@ public:
     CoreVulkan(CoreVulkan&& other) noexcept;
     CoreVulkan& operator=(CoreVulkan&& other) noexcept;
 
-    //TODO remove form class or make global
-    static VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-    static uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred);
+    static uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred);
 
-    static void init(GLFWwindow* window);
+    virtual void init(GLFWwindow* window);
 
-    static VkInstance getInstance() { return instance; }
-    static VkPhysicalDevice getPhysicalDevice() { return physicalDevice; }
-    static VkDevice getDevice() { return device; }
-    static VkFormat getDepthFormat() { return depthFormat; }
-    static VkQueue getGraphicsQueue() { return graphicsQueue; }
-    static VkQueue getPresentQueue() { return presentQueue; }
-    static QueueFamilyIndices getGraphicsQueueFamilyIndices() { return graphicsQueueFamilyIndices; }
-    static VkSurfaceKHR getSurface() { return surface; }
-    static VkSampleCountFlagBits getMsaaSamples() { return msaaSamples; }
-
+//* get
+    const VkInstance& getInstance() const { return instance; }
+    const VkSurfaceKHR& getSurface() const { return surface; }
+    const QueueFamilyIndices& getGraphicsQueueFamilyIndices() const { return graphicsQueueFamilyIndices; }
+    const VkPhysicalDevice& getPhysicalDevice() const { return physicalDevice; }
+    const SwapchainSupportDetails& getSwapchainDetails() const { return swapchainDetails; }
+    const VkSampleCountFlagBits& getMsaaSamples() const { return msaaSamples; }
+    const VkDevice& getDevice() const { return device; }
+    const VkQueue& getGraphicsQueue() const { return graphicsQueue; }
+    const VkQueue& getPresentQueue() const { return presentQueue; }
+    const VkFormat& getDepthFormat() const { return depthFormat; }
+    const std::vector<const char*>& getDeviceExtensions() const { return deviceExtensions; }
 };

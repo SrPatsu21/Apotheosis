@@ -2,15 +2,15 @@
 #include <array>
 
 FramebufferManager::FramebufferManager(
+    VkDevice device,
     VkRenderPass renderPass,
-    const SwapchainManager* swapchainManager,
+    std::vector<VkImageView> swapchainImageViews,
     const VkImageView colorImageView,
-    const DepthBufferManager* depthBufferManager
-) {
-    const auto& swapchainImageViews = swapchainManager->getImageViews();
-    VkImageView depthImageView = depthBufferManager->getDepthImageView();
-    VkExtent2D swapChainExtent = swapchainManager->getExtent();
-
+    const VkImageView depthImageView,
+    VkExtent2D swapChainExtent
+) :
+    device(device)
+{
     this->swapchainFramebuffers.resize(swapchainImageViews.size());
 
     for (size_t i = 0; i < swapchainImageViews.size(); ++i) {
@@ -30,7 +30,7 @@ FramebufferManager::FramebufferManager(
         framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
 
-        if (vkCreateFramebuffer(CoreVulkan::getDevice(), &framebufferInfo, nullptr, &this->swapchainFramebuffers[i]) != VK_SUCCESS) {
+        if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &this->swapchainFramebuffers[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create framebuffer!");
         }
     }
@@ -38,6 +38,6 @@ FramebufferManager::FramebufferManager(
 
 FramebufferManager::~FramebufferManager() {
     for (auto framebuffer : this->swapchainFramebuffers) {
-        vkDestroyFramebuffer(CoreVulkan::getDevice(), framebuffer, nullptr);
+        vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
 }

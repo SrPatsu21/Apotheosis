@@ -1,6 +1,14 @@
 #include "BufferManager.hpp"
 
-BufferManager::BufferManager(){}
+BufferManager::BufferManager(
+    VkPhysicalDevice physicalDevice,
+    VkDevice device,
+    VkQueue graphicsQueue
+) :
+    physicalDevice(physicalDevice),
+    device(device),
+    graphicsQueue(graphicsQueue)
+{}
 
 void BufferManager::createBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags usage, VkBuffer& buffer){
     VkBufferCreateInfo bufferInfo{};
@@ -9,21 +17,21 @@ void BufferManager::createBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags usa
     bufferInfo.usage = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (vkCreateBuffer(CoreVulkan::getDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+    if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to create vertex buffer!");
     }
 }
 
 void BufferManager::allocateBufferMemory(VkBuffer buffer, VkMemoryPropertyFlags properties, VkDeviceMemory& bufferMemory){
     VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(CoreVulkan::getDevice(), buffer, &memRequirements);
+    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = CoreVulkan::findMemoryType(memRequirements.memoryTypeBits, properties, 0);
+    allocInfo.memoryTypeIndex = CoreVulkan::findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties, 0);
 
-    if (vkAllocateMemory(CoreVulkan::getDevice(), &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+    if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate vertex buffer memory!");
     }
 };
@@ -55,7 +63,7 @@ VkCommandBuffer BufferManager::beginSingleTimeCommands(
     allocInfo.commandBufferCount = 1;
 
     VkCommandBuffer commandBuffer;
-    vkAllocateCommandBuffers(CoreVulkan::getDevice(), &allocInfo, &commandBuffer);
+    vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -77,10 +85,10 @@ void BufferManager::endSingleTimeCommands(
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    vkQueueSubmit(CoreVulkan::getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(CoreVulkan::getGraphicsQueue());
+    vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(graphicsQueue);
 
-    vkFreeCommandBuffers(CoreVulkan::getDevice(), commandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }
 
 void BufferManager::copyBufferToImage(

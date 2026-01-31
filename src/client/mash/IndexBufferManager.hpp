@@ -8,6 +8,7 @@
 class IndexBufferManager
 {
 private:
+    VkDevice device;
     /*
     Same as vertexBuffer, but for indices (used in indexed drawing).
     */
@@ -36,7 +37,12 @@ public:
             - suitable memory type is not found,
             - memory mapping fails.
     */
-    IndexBufferManager(const std::vector<uint32_t> indices, VkCommandPool commandPool);
+    IndexBufferManager(
+        VkDevice device,
+        BufferManager& bufferManager,
+        const std::vector<uint32_t> indices,
+        VkCommandPool commandPool
+    );
 
     /*
     @brief Destructor. Cleans up the index buffer and its allocated memory.

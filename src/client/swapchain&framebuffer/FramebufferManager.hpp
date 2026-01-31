@@ -15,6 +15,7 @@
 class FramebufferManager
 {
 private:
+    VkDevice device;
     /*
     A list of framebuffers — one for each swapchain image.
     A framebuffer is what your render pass writes into. It combines attachments:
@@ -33,10 +34,12 @@ public:
      * @param depthBufferManager Reference to the DepthBufferManager for depth image view.
      */
     FramebufferManager(
+        VkDevice device,
         VkRenderPass renderPass,
-        const SwapchainManager* swapchainManager,
+        std::vector<VkImageView> swapchainImageViews,
         const VkImageView colorImageView,
-        const DepthBufferManager* depthBufferManager
+        const VkImageView depthImageView,
+        VkExtent2D swapChainExtent
     );
 
     /**

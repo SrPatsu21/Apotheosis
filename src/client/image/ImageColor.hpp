@@ -7,16 +7,14 @@
 class ImageColor
 {
 private:
+    VkDevice device;
     VkImage colorImage;
     VkDeviceMemory colorImageMemory;
     VkImageView colorImageView;
-    void createColorResources(
-        VkFormat swapchainImageFormat,
-        VkExtent2D swapchainExtent,
-        VkSampleCountFlagBits msaaSamples
-    );
 public:
     ImageColor(
+        VkPhysicalDevice physicalDevice,
+        VkDevice device,
         VkFormat swapchainImageFormat,
         VkExtent2D swapchainExtent,
         VkSampleCountFlagBits msaaSamples
