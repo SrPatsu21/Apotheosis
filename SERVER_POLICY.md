@@ -1,4 +1,4 @@
-## Server Policy
+# Server Policy
 
 This project allows the creation and operation of third-party, community-run multiplayer servers.
 
