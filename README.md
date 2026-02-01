@@ -9,6 +9,12 @@ This project is open source, but the trademark is not licensed.
 
 [more](TRADEMARK.md)
 
+## Modding Policy
+
+This project supports and encourages modding.
+
+[more](MODDING.md)
+
 ## Started at
 
     Jun 21, 2024
