@@ -12,7 +12,7 @@ are trademarks of SrPatsu21.
 
 This project is open source, but the trademark is not licensed.
 
-[more](TRADEMARK.md)
+[more](docs/TRADEMARK.md)
 
 ## Server Policy
 
@@ -20,13 +20,19 @@ This project allows the creation and operation of third-party, community-run mul
 
 The project does not support or endorse gambling-related mechanics in third-party servers.
 
-[more](SERVER_POLICY.md)
+[more](docs/SERVER_POLICY.md)
 
 ## Modding Policy
 
 This project supports and encourages modding.
 
-[more](MODDING.md)
+[more](docs/MODDING.md)
+
+## Start Contributing
+
+The [SETUP](docs/SETUP.md) file has an easy tutorial to the fist compile.
+
+On [What Need To Be Done](docs/WhatNeedToBeDone.md) file we have what are missing, but you are free ❤️.
 
 ## Started at
 

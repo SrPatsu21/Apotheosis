@@ -71,8 +71,6 @@ fix transparenc with Two-pass (back faces first, then front faces)
 
 ## Sources used
 
-- [Emojipedia ✅](https://emojipedia.org/check-mark-button) \
-[Emojipedia ❎](https://emojipedia.org/cross-mark-button) \
-[Emojipedia 👍](https://emojipedia.org/thumbs-up) \
-[Emojipedia 👎](https://emojipedia.org/thumbs-down)
-[understanding the concepts, Swapchain, Render Pass, Pipeline, Shader, and Buffers](https://itch.io/t/5019971/engine-dev-log-9-swapchain-render-pass-pipeline-shader-and-buffers)
+[Emojipedia ✅](https://emojipedia.org) \
+[understanding the concepts, Swapchain, Render Pass, Pipeline, Shader, and Buffers](https://itch.io/t/5019971/engine-dev-log-9-swapchain-render-pass-pipeline-shader-and-buffers) \
+[Vulkan Tutorial](https://vulkan-tutorial.com/)
