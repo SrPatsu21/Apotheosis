@@ -1,9 +1,12 @@
 # ProjectD
 
-## Rules
+## Trademark Notice
 
-1. For every issue, commit to a different branch.
-2. Do not pass along this code to anyone.
+The name "ProjectD", the project name, logo, and all associated branding
+are trademarks of SrPatsu21.
+
+This project is open source, but the trademark is not licensed.
+[more](DOCUMENTATION.md)
 
 ## Started at
 
