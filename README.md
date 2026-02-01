@@ -14,6 +14,14 @@ This project is open source, but the trademark is not licensed.
 
 [more](TRADEMARK.md)
 
+## Server Policy
+
+This project allows the creation and operation of third-party, community-run multiplayer servers.
+
+The project does not support or endorse gambling-related mechanics in third-party servers.
+
+[more](SERVER_POLICY.md)
+
 ## Modding Policy
 
 This project supports and encourages modding.
