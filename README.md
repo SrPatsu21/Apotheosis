@@ -1,5 +1,10 @@
 # ProjectD
 
+Official builds are distributed by the project maintainers. \
+Third-party builds are not official.
+
+//TODO Short description
+
 ## Trademark Notice
 
 The name "ProjectD", the project name, logo, and all associated branding
