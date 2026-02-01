@@ -1,0 +1,27 @@
+Copyright © 2026 SrPatsu21
+
+This product includes software developed by third parties. The following
+is a non-exhaustive summary of some of those components; refer to the
+corresponding source files and folders for full license text and details.
+
+- Vulkan Headers and related tooling
+  Copyright © Khronos Group
+  Licensed under the Apache License 2.0 and MIT (dual license)
+
+- GLFW
+  Copyright © Marcus Geelnard, Camilla Löwy
+  Licensed under the zlib/libpng License
+
+- Dear ImGui
+  Copyright © Omar Cornut
+  Licensed under the MIT License
+
+- stb libraries
+  Copyright © Sean Barrett
+  Licensed under the MIT License or Public Domain
+
+- assimp (Open Asset Import Library)
+  Copyright © assimp team
+  Licensed under the BSD 3-Clause License
+
+This software is distributed under the Apache License, Version 2.0.
