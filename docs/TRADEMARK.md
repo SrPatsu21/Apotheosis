@@ -6,6 +6,7 @@ are trademarks of SrPatsu21.
 This project is open source, but the trademark is not licensed.
 
 Forks, modified versions, and redistributions:
+
 - May not use the name "ProjectD" or any confusingly similar name.
 - May not use the official logo or branding.
 - May not claim to be the original project or an official build.

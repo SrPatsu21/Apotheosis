@@ -1,14 +1,23 @@
 # ProjectD
 
 Official builds are distributed by the project maintainers. \
-Third-party builds are not official.
+Third-party builds are not official and are not endorsed.
 
 //TODO Short description
 
+## License
+
+This project is licensed under the Apache License, Version 2.0. \
+See the [LICENSE](LICENSE) file for details.
+
+## Third-Party Notices
+
+This project makes use of third-party open source libraries. \
+Attribution and license notices for these components are provided in the [NOTICE](NOTICE) file, which must be preserved in redistributions.
+
 ## Trademark Notice
 
-The name "ProjectD", the project name, logo, and all associated branding
-are trademarks of SrPatsu21.
+The name "ProjectD", the project name, logo, and all associated branding are trademarks of SrPatsu21. \
 
 This project is open source, but the trademark is not licensed.
 
@@ -30,10 +39,10 @@ This project supports and encourages modding.
 
 ## Start Contributing
 
-The [SETUP](docs/SETUP.md) file has an easy tutorial to the fist compile.
+The [SETUP](docs/SETUP.md) file contains an easy guide for your first build.
 
-On [What Need To Be Done](docs/WhatNeedToBeDone.md) file we have what are missing, but you are free ❤️.
+The [WhatNeedToBeDone](docs/WhatNeedToBeDone.md) file lists missing features, but you are free to contribute in any way you like ❤️
 
-## Started at
+## Project Started
 
     Jun 21, 2024
