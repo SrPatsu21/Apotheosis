@@ -1,17 +1,47 @@
 #include "CoreVulkan.hpp"
 #include <set>
 
-CoreVulkan::CoreVulkan(){
-    instance = VK_NULL_HANDLE;
-    surface = VK_NULL_HANDLE;
-    graphicsQueueFamilyIndices = {};
-    physicalDevice = VK_NULL_HANDLE;
-    swapchainSupportDetails = {};
-    msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-    device = VK_NULL_HANDLE;
-    presentQueue = VK_NULL_HANDLE;
-    graphicsQueue = VK_NULL_HANDLE;
-    depthFormat = VK_FORMAT_UNDEFINED;
+CoreVulkan::CoreVulkan(
+    GLFWwindow* window,
+    const std::vector<IInstanceConfigProvider*>& instanceProviders
+){
+    // test debug mode
+    if (enableValidationLayers && !checkValidationLayerSupport()) {
+        throw std::runtime_error("validation layers requested, but not available!");
+    }
+
+    //extensions
+    deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME  //* Enable swapchain extension
+        // VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME //TODO test it 
+        // VK_KHR_MULTIVIEW_EXTENSION_NAME
+        // VK_EXT_MEMORY_BUDGET_EXTENSION_NAME
+        // VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME
+        // VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME
+    };
+
+    // Create Vulkan instance
+    createInstance(instanceProviders);
+    createSurface(window);
+
+    pickPhysicalDevice();
+    msaaSamples = findMaxLimitedUsableSampleCount(VK_SAMPLE_COUNT_8_BIT, physicalDevice);
+    #ifndef NDEBUG
+        std::cout << "Sample Count: " << msaaSamples << std::endl;
+    #endif
+    graphicsQueueFamilyIndices = findQueueFamilies(physicalDevice);
+    if (!graphicsQueueFamilyIndices.isComplete()) {
+        throw std::runtime_error("failed to find a graphics queue family!");
+    }
+    updateSwapchainDetails();
+    createLogicalDevice();
+    vkGetDeviceQueue(device, graphicsQueueFamilyIndices.graphicsFamily.value(), 0, &graphicsQueue);
+    vkGetDeviceQueue(device, graphicsQueueFamilyIndices.presentFamily.value(), 0, &presentQueue);
+    depthFormat = findSupportedFormat(
+        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+    );
 }
 
 CoreVulkan::CoreVulkan(CoreVulkan&& other) noexcept
@@ -71,46 +101,6 @@ CoreVulkan& CoreVulkan::operator=(CoreVulkan&& other) noexcept
     return *this;
 }
 
-void CoreVulkan::init(GLFWwindow* window)
-{
-    if (instance != VK_NULL_HANDLE) {
-        return;
-    }
-
-    //extensions
-    deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME  //* Enable swapchain extension
-        // VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME //TODO test it 
-        // VK_KHR_MULTIVIEW_EXTENSION_NAME
-        // VK_EXT_MEMORY_BUDGET_EXTENSION_NAME
-        // VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME
-        // VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME
-    };
-
-    // Create Vulkan instance
-    createInstance();
-    createSurface(window);
-
-    pickPhysicalDevice();
-    msaaSamples = findMaxLimitedUsableSampleCount(VK_SAMPLE_COUNT_8_BIT, physicalDevice);
-    #ifndef NDEBUG
-        std::cout << "Sample Count: " << msaaSamples << std::endl;
-    #endif
-    graphicsQueueFamilyIndices = findQueueFamilies(physicalDevice);
-    if (!graphicsQueueFamilyIndices.isComplete()) {
-        throw std::runtime_error("failed to find a graphics queue family!");
-    }
-    updateSwapchainDetails();
-    createLogicalDevice();
-    vkGetDeviceQueue(device, graphicsQueueFamilyIndices.graphicsFamily.value(), 0, &graphicsQueue);
-    vkGetDeviceQueue(device, graphicsQueueFamilyIndices.presentFamily.value(), 0, &presentQueue);
-    depthFormat = findSupportedFormat(
-        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-    );
-}
-
 bool CoreVulkan::checkValidationLayerSupport()
 {
     uint32_t layerCount = 0;
@@ -137,35 +127,50 @@ bool CoreVulkan::checkValidationLayerSupport()
     return true;
 }
 
-void CoreVulkan::createInstance() {
-    if (enableValidationLayers && !checkValidationLayerSupport()) {
-        throw std::runtime_error("validation layers requested, but not available!");
+void CoreVulkan::createInstance(
+    const std::vector<IInstanceConfigProvider*>& providers
+) {
+    // base config
+    InstanceConfig config{};
+    config.apiVersion = VK_API_VERSION_1_3;
+
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    for (uint32_t i = 0; i < glfwExtensionCount; ++i) {
+        config.extensions.push_back(glfwExtensions[i]);
+    }
+    #ifndef NDEBUG
+        config.layers.insert(
+            config.layers.end(),
+            validationLayers.begin(),
+            validationLayers.end()
+        );
+    #endif
+
+    // contributions
+    for (auto* provider : providers) {
+        provider->contribute(config);
     }
 
+    // build VkInstanceCreateInfo
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "ProjectD";
     appInfo.applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_3;
+    appInfo.apiVersion = config.apiVersion;
 
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
-    if (enableValidationLayers) {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-        createInfo.ppEnabledLayerNames = validationLayers.data();
-    } else {
-        createInfo.enabledLayerCount = 0;
-        createInfo.ppEnabledLayerNames = nullptr;
-    }
 
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(config.extensions.size());
+    createInfo.ppEnabledExtensionNames = config.extensions.data();
 
-    createInfo.enabledExtensionCount = glfwExtensionCount;
-    createInfo.ppEnabledExtensionNames = glfwExtensions;
+    createInfo.enabledLayerCount = static_cast<uint32_t>(config.layers.size());
+    createInfo.ppEnabledLayerNames = config.layers.data();
 
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
         std::cerr << "Failed to create Vulkan instance\n";

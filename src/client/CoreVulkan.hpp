@@ -33,6 +33,7 @@ struct QueueFamilyIndices {
 
 class CoreVulkan
 {
+//* vars
 protected:
     VkInstance instance;
     VkSurfaceKHR surface;
@@ -46,10 +47,26 @@ protected:
     VkFormat depthFormat;
     std::vector<const char*> deviceExtensions;
 
+//* behaviors
+public:
+
+    //* instance behavioral
+    struct InstanceConfig {
+        uint32_t apiVersion = VK_API_VERSION_1_3;
+        std::vector<const char*> extensions;
+        std::vector<const char*> layers;
+    };
+    struct IInstanceConfigProvider {
+        virtual ~IInstanceConfigProvider() = default;
+        virtual void contribute(InstanceConfig& config) = 0;
+    };
+
 //* functions
 private:
     bool checkValidationLayerSupport();
-    void createInstance();
+    void createInstance(
+        const std::vector<IInstanceConfigProvider*>& providers
+    );
     void createSurface(GLFWwindow* window);
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice);
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice physicalDevice);
@@ -63,7 +80,10 @@ public:
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     void updateSwapchainDetails();
 
-    explicit CoreVulkan();
+    explicit CoreVulkan(
+        GLFWwindow* window,
+        const std::vector<IInstanceConfigProvider*>& instanceProviders
+    );
 
     ~CoreVulkan();
     // Deleting the copy constructor and copy assignment to prevent copies
@@ -75,8 +95,6 @@ public:
     CoreVulkan& operator=(CoreVulkan&& other) noexcept;
 
     static uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred);
-
-    virtual void init(GLFWwindow* window);
 
 //* get
     const VkInstance& getInstance() const { return instance; }

@@ -62,8 +62,10 @@ void Render::initVulkan(){
     //TODO better description
     //* Core Vulkan
     //Create Vulkan
-    coreVulkan = new CoreVulkan();
-    coreVulkan->init(window);
+    coreVulkan = new CoreVulkan(
+        window,
+        {}
+    );
 
     BufferManager bufferManager = BufferManager(
         coreVulkan->getPhysicalDevice(),
