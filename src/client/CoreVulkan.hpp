@@ -38,7 +38,7 @@ protected:
     VkSurfaceKHR surface;
     QueueFamilyIndices graphicsQueueFamilyIndices;
     VkPhysicalDevice physicalDevice;
-    SwapchainSupportDetails swapchainDetails;
+    SwapchainSupportDetails swapchainSupportDetails;
     VkSampleCountFlagBits msaaSamples;
     VkDevice device;
     VkQueue presentQueue;
@@ -57,7 +57,6 @@ private:
     int rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
     VkSampleCountFlagBits findMaxLimitedUsableSampleCount(VkSampleCountFlagBits maxDesiredSamples, VkPhysicalDevice physicalDevice);
     void pickPhysicalDevice();
-    bool IsDeviceExtensionSupported(VkPhysicalDevice physicalDevice, const char* extensionName);
     void createLogicalDevice();
     void cleanup();
 public:
@@ -84,7 +83,7 @@ public:
     const VkSurfaceKHR& getSurface() const { return surface; }
     const QueueFamilyIndices& getGraphicsQueueFamilyIndices() const { return graphicsQueueFamilyIndices; }
     const VkPhysicalDevice& getPhysicalDevice() const { return physicalDevice; }
-    const SwapchainSupportDetails& getSwapchainDetails() const { return swapchainDetails; }
+    const SwapchainSupportDetails& getSwapchainSupportDetails() const { return swapchainSupportDetails; }
     const VkSampleCountFlagBits& getMsaaSamples() const { return msaaSamples; }
     const VkDevice& getDevice() const { return device; }
     const VkQueue& getGraphicsQueue() const { return graphicsQueue; }

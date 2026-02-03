@@ -75,7 +75,7 @@ void Render::initVulkan(){
     swapchainManager = new SwapchainManager(
         coreVulkan->getDevice(),
         coreVulkan->getGraphicsQueueFamilyIndices(),
-        coreVulkan->getSwapchainDetails(),
+        coreVulkan->getSwapchainSupportDetails(),
         coreVulkan->getSurface(),
         window
     );
@@ -385,7 +385,7 @@ void Render::recreateSwapChain() {
 
     this->swapchainManager->recreate(
         coreVulkan->getGraphicsQueueFamilyIndices(),
-        coreVulkan->getSwapchainDetails(),
+        coreVulkan->getSwapchainSupportDetails(),
         coreVulkan->getSurface(), this->window
     );
 

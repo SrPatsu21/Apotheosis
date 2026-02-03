@@ -6,7 +6,7 @@ CoreVulkan::CoreVulkan(){
     surface = VK_NULL_HANDLE;
     graphicsQueueFamilyIndices = {};
     physicalDevice = VK_NULL_HANDLE;
-    swapchainDetails = {};
+    swapchainSupportDetails = {};
     msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     device = VK_NULL_HANDLE;
     presentQueue = VK_NULL_HANDLE;
@@ -20,7 +20,7 @@ CoreVulkan::CoreVulkan(CoreVulkan&& other) noexcept
     surface = other.surface;
     graphicsQueueFamilyIndices = std::move(other.graphicsQueueFamilyIndices);
     physicalDevice = other.physicalDevice;
-    swapchainDetails = std::move(other.swapchainDetails);
+    swapchainSupportDetails = std::move(other.swapchainSupportDetails);
     msaaSamples = other.msaaSamples;
     device = other.device;
     presentQueue = other.presentQueue;
@@ -37,7 +37,7 @@ CoreVulkan::CoreVulkan(CoreVulkan&& other) noexcept
     other.msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     other.depthFormat = VK_FORMAT_UNDEFINED;
     other.graphicsQueueFamilyIndices = {};
-    other.swapchainDetails = {};
+    other.swapchainSupportDetails = {};
 }
 
 CoreVulkan& CoreVulkan::operator=(CoreVulkan&& other) noexcept
@@ -55,7 +55,7 @@ CoreVulkan& CoreVulkan::operator=(CoreVulkan&& other) noexcept
         msaaSamples = other.msaaSamples;
         depthFormat = other.depthFormat;
         graphicsQueueFamilyIndices = std::move(other.graphicsQueueFamilyIndices);
-        swapchainDetails = std::move(other.swapchainDetails);
+        swapchainSupportDetails = std::move(other.swapchainSupportDetails);
 
         other.instance = VK_NULL_HANDLE;
         other.surface = VK_NULL_HANDLE;
@@ -66,7 +66,7 @@ CoreVulkan& CoreVulkan::operator=(CoreVulkan&& other) noexcept
         other.msaaSamples = VK_SAMPLE_COUNT_1_BIT;
         other.depthFormat = VK_FORMAT_UNDEFINED;
         other.graphicsQueueFamilyIndices =  {};
-        other.swapchainDetails = {};
+        other.swapchainSupportDetails = {};
     }
     return *this;
 }
@@ -198,23 +198,23 @@ void CoreVulkan::createSurface(
 SwapchainSupportDetails CoreVulkan::querySwapchainSupport(
     VkPhysicalDevice physicalDevice
 ) {
-    SwapchainSupportDetails swapchainDetails;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &swapchainDetails.capabilities);
+    SwapchainSupportDetails swapchainSupportDetails;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &swapchainSupportDetails.capabilities);
 
     uint32_t formatCount;
     vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
     if (formatCount != 0) {
-        swapchainDetails.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, swapchainDetails.formats.data());
+        swapchainSupportDetails.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, swapchainSupportDetails.formats.data());
     }
 
     uint32_t presentModeCount;
     vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
     if (presentModeCount != 0) {
-        swapchainDetails.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, swapchainDetails.presentModes.data());
+        swapchainSupportDetails.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, swapchainSupportDetails.presentModes.data());
     }
-    return swapchainDetails;
+    return swapchainSupportDetails;
 }
 
 QueueFamilyIndices CoreVulkan::findQueueFamilies(
@@ -291,8 +291,8 @@ bool CoreVulkan::isDeviceSuitable(
     //* swap chain support
     bool swapChainAdequate = false;
     if (extensionsSupported) {
-        SwapchainSupportDetails swapchainDetails = querySwapchainSupport(physicalDevice);
-        swapChainAdequate = !swapchainDetails.formats.empty() && !swapchainDetails.presentModes.empty();
+        SwapchainSupportDetails swapchainSupportDetails = querySwapchainSupport(physicalDevice);
+        swapChainAdequate = !swapchainSupportDetails.formats.empty() && !swapchainSupportDetails.presentModes.empty();
     }
 
     return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy && supportedFeatures.geometryShader;
@@ -381,7 +381,7 @@ void CoreVulkan::pickPhysicalDevice() {
 
 void CoreVulkan::updateSwapchainDetails()
 {
-    swapchainDetails = querySwapchainSupport(physicalDevice);
+    swapchainSupportDetails = querySwapchainSupport(physicalDevice);
 };
 
 void CoreVulkan::createLogicalDevice() {
