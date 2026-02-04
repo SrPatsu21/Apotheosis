@@ -4,7 +4,7 @@
 CoreVulkan::CoreVulkan(
     GLFWwindow* window,
     const std::vector<IInstanceConfigProvider*>& instanceProviders,
-    const std::vector<IDeviceSelector*>& DeviceSelector
+    const std::vector<IPhysicalDeviceSelector*>& DeviceSelector
 ){
     // test debug mode
     if (enableValidationLayers && !checkValidationLayerSupport()) {
@@ -252,8 +252,8 @@ QueueFamilyIndices CoreVulkan::findQueueFamilies(
 
 bool CoreVulkan::isDeviceSuitable(
     VkPhysicalDevice physicalDevice,
-    const DeviceRequirements& reqs,
-    const std::vector<IDeviceSelector*>& selectors
+    const PhysicalDeviceRequirements& reqs,
+    const std::vector<IPhysicalDeviceSelector*>& selectors
 ) {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
@@ -314,8 +314,8 @@ bool CoreVulkan::isDeviceSuitable(
 
 int CoreVulkan::rateDeviceSuitability(
     VkPhysicalDevice physicalDevice,
-    const DeviceRequirements& reqs,
-    const std::vector<IDeviceSelector*>& selectors
+    const PhysicalDeviceRequirements& reqs,
+    const std::vector<IPhysicalDeviceSelector*>& selectors
 ) {
     if (!isDeviceSuitable(physicalDevice, reqs, selectors))
         return 0;
@@ -361,9 +361,9 @@ VkSampleCountFlagBits CoreVulkan::findMaxLimitedUsableSampleCount(
 }
 
 void CoreVulkan::pickPhysicalDevice(
-    const std::vector<IDeviceSelector*>& selectors
+    const std::vector<IPhysicalDeviceSelector*>& selectors
 ) {
-    DeviceRequirements reqs{};
+    PhysicalDeviceRequirements reqs{};
     reqs.requiredExtensions = DEVICE_EXTENSIONS;
     reqs.requiredFeatures.samplerAnisotropy = VK_TRUE;
     reqs.requiredFeatures.geometryShader = VK_TRUE;

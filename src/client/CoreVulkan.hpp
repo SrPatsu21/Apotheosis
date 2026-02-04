@@ -72,16 +72,16 @@ public:
         ) = 0;
     };
     //physicaldevice
-    struct DeviceRequirements {
+    struct PhysicalDeviceRequirements {
         std::vector<const char*> requiredExtensions;
         VkPhysicalDeviceFeatures requiredFeatures{};
     };
-    struct IDeviceSelector {
-        virtual ~IDeviceSelector() = default;
+    struct IPhysicalDeviceSelector {
+        virtual ~IPhysicalDeviceSelector() = default;
 
         virtual bool isDeviceCompatible(
             VkPhysicalDevice device,
-            const DeviceRequirements& requirements
+            const PhysicalDeviceRequirements& requirements
         ) = 0;
 
         virtual void scoreDevice(
@@ -101,17 +101,17 @@ private:
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice physicalDevice);
     bool isDeviceSuitable(
         VkPhysicalDevice physicalDevice,
-        const DeviceRequirements& reqs,
-        const std::vector<IDeviceSelector*>& selectors
+        const PhysicalDeviceRequirements& reqs,
+        const std::vector<IPhysicalDeviceSelector*>& selectors
     );
     int rateDeviceSuitability(
         VkPhysicalDevice physicalDevice,
-        const DeviceRequirements& reqs,
-        const std::vector<IDeviceSelector*>& selectors
+        const PhysicalDeviceRequirements& reqs,
+        const std::vector<IPhysicalDeviceSelector*>& selectors
     );
     VkSampleCountFlagBits findMaxLimitedUsableSampleCount(VkSampleCountFlagBits maxDesiredSamples, VkPhysicalDevice physicalDevice);
     void pickPhysicalDevice(
-        const std::vector<IDeviceSelector*>& selectors
+        const std::vector<IPhysicalDeviceSelector*>& selectors
     );
     void createLogicalDevice();
     void cleanup();
@@ -122,7 +122,7 @@ public:
     explicit CoreVulkan(
         GLFWwindow* window,
         const std::vector<IInstanceConfigProvider*>& instanceProviders,
-        const std::vector<IDeviceSelector*>& DeviceSelector
+        const std::vector<IPhysicalDeviceSelector*>& DeviceSelector
     );
 
     ~CoreVulkan();
