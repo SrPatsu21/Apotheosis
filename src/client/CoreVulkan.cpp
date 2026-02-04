@@ -4,8 +4,9 @@
 CoreVulkan::CoreVulkan(
     GLFWwindow* window,
     const std::vector<IInstanceConfigProvider*>& instanceProviders,
-    const std::vector<IPhysicalDeviceSelector*>& PhysicalDeviceSelectors,
-    const std::vector<IDeviceConfigProvider*>& DeviceProviders
+    const std::vector<IPhysicalDeviceSelector*>& physicalDeviceSelectors,
+    const std::vector<IDeviceConfigProvider*>& deviceProviders,
+    const std::vector<IDepthFormatProvider*>& depthProviders
 ){
     // test debug mode
     #ifndef NDEBUG
@@ -19,7 +20,7 @@ CoreVulkan::CoreVulkan(
     createSurface(window);
 
     // device extensions
-    pickPhysicalDevice(PhysicalDeviceSelectors);
+    pickPhysicalDevice(physicalDeviceSelectors);
     msaaSamples = findMaxLimitedUsableSampleCount(VK_SAMPLE_COUNT_8_BIT, physicalDevice);
     #ifndef NDEBUG
         std::cout << "Sample Count: " << msaaSamples << std::endl;
@@ -29,11 +30,35 @@ CoreVulkan::CoreVulkan(
         throw std::runtime_error("failed to find a graphics queue family!");
     }
     updateSwapchainDetails();
-    createLogicalDevice(DeviceProviders);
+    createLogicalDevice(deviceProviders);
     vkGetDeviceQueue(device, graphicsQueueFamilyIndices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, graphicsQueueFamilyIndices.presentFamily.value(), 0, &presentQueue);
+
+    DepthFormatRequirements req{};
+
+    for (auto* d : depthProviders) {
+        d->contribute(req);
+    }
+    std::vector<VkFormat> candidates;
+    if (req.requireStencil) {
+        candidates = {
+            VK_FORMAT_D32_SFLOAT_S8_UINT,
+            VK_FORMAT_D24_UNORM_S8_UINT
+        };
+    } else if (req.preferHighPrecision) {
+        candidates = {
+            VK_FORMAT_D32_SFLOAT,
+            VK_FORMAT_D24_UNORM_S8_UINT
+        };
+    } else {
+        candidates = {
+            VK_FORMAT_D24_UNORM_S8_UINT,
+            VK_FORMAT_D32_SFLOAT
+        };
+    }
+
     depthFormat = findSupportedFormat(
-        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+        candidates,
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );

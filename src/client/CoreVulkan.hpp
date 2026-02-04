@@ -94,6 +94,14 @@ public:
         virtual ~IDeviceConfigProvider() = default;
         virtual void contribute(DeviceConfig& config) = 0;
     };
+    //depth
+    struct DepthFormatRequirements {
+        bool requireStencil = false;
+        bool preferHighPrecision = false;
+    };
+    struct IDepthFormatProvider {
+        virtual void contribute(DepthFormatRequirements&) = 0;
+    };
 
 //* functions
 private:
@@ -130,7 +138,8 @@ public:
         GLFWwindow* window,
         const std::vector<IInstanceConfigProvider*>& instanceProviders,
         const std::vector<IPhysicalDeviceSelector*>& PhysicalDeviceSelector,
-        const std::vector<IDeviceConfigProvider*>& DeviceProviders
+        const std::vector<IDeviceConfigProvider*>& DeviceProviders,
+        const std::vector<IDepthFormatProvider*>& depthProviders
     );
 
     ~CoreVulkan();
