@@ -554,7 +554,12 @@ CoreVulkan::~CoreVulkan(){
     cleanup();
 }
 
-uint32_t CoreVulkan::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred) {
+uint32_t CoreVulkan::findMemoryType(
+    VkPhysicalDevice physicalDevice,
+    uint32_t typeFilter,
+    VkMemoryPropertyFlags required,
+    VkMemoryPropertyFlags preferred
+) {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
