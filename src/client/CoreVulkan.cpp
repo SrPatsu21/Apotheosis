@@ -3,28 +3,20 @@
 
 CoreVulkan::CoreVulkan(
     GLFWwindow* window,
-    const std::vector<IInstanceConfigProvider*>& instanceProviders
+    const std::vector<IInstanceConfigProvider*>& instanceProviders,
+    const std::vector<IDeviceSelector*>& DeviceSelector
 ){
     // test debug mode
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
 
-    //extensions
-    deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME  //* Enable swapchain extension
-        // VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME //TODO test it 
-        // VK_KHR_MULTIVIEW_EXTENSION_NAME
-        // VK_EXT_MEMORY_BUDGET_EXTENSION_NAME
-        // VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME
-        // VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME
-    };
-
-    // Create Vulkan instance
+    // instance and surface
     createInstance(instanceProviders);
     createSurface(window);
 
-    pickPhysicalDevice();
+    // device extensions
+    pickPhysicalDevice(DeviceSelector);
     msaaSamples = findMaxLimitedUsableSampleCount(VK_SAMPLE_COUNT_8_BIT, physicalDevice);
     #ifndef NDEBUG
         std::cout << "Sample Count: " << msaaSamples << std::endl;
@@ -148,7 +140,7 @@ void CoreVulkan::createInstance(
         );
     #endif
 
-    // contributions
+    // mods
     for (auto* provider : providers) {
         provider->contribute(config);
     }
@@ -260,68 +252,89 @@ QueueFamilyIndices CoreVulkan::findQueueFamilies(
 
 bool CoreVulkan::isDeviceSuitable(
     VkPhysicalDevice physicalDevice,
-    const std::vector<const char*>& deviceExtensions
+    const DeviceRequirements& reqs,
+    const std::vector<IDeviceSelector*>& selectors
 ) {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
-    //* check Device Extension Support
+    if (!indices.isComplete())
+        return false;
+
+    // check Device Extension Support
     uint32_t extensionCount;
-    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
+    vkEnumerateDeviceExtensionProperties(
+        physicalDevice,
+        nullptr,
+        &extensionCount,
+        nullptr
+    );
+    std::vector<VkExtensionProperties> available(extensionCount);
+    vkEnumerateDeviceExtensionProperties(
+        physicalDevice,
+        nullptr,
+        &extensionCount,
+        available.data()
+    );
 
-    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
-
-    bool extensionsSupported = true;
-
-    for (const char* required : deviceExtensions) {
+    for (auto* required : reqs.requiredExtensions) {
         bool found = false;
-
-        for (const auto& available : availableExtensions) {
-            if (std::strcmp(required, available.extensionName) == 0) {
+        for (auto& avail : available) {
+            if (strcmp(required, avail.extensionName) == 0) {
                 found = true;
                 break;
             }
         }
-
-        if (!found) {
-            extensionsSupported = false;
-            break;
-        }
+        if (!found)
+            return false;
     }
 
-    //* feature
-    VkPhysicalDeviceFeatures supportedFeatures{};
-    vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
+    // features
+    VkPhysicalDeviceFeatures supported{};
+    vkGetPhysicalDeviceFeatures(physicalDevice, &supported);
 
-    //* swap chain support
-    bool swapChainAdequate = false;
-    if (extensionsSupported) {
-        SwapchainSupportDetails swapchainSupportDetails = querySwapchainSupport(physicalDevice);
-        swapChainAdequate = !swapchainSupportDetails.formats.empty() && !swapchainSupportDetails.presentModes.empty();
+    if ((supported.samplerAnisotropy & reqs.requiredFeatures.samplerAnisotropy) != reqs.requiredFeatures.samplerAnisotropy)
+        return false;
+
+    if ((supported.geometryShader & reqs.requiredFeatures.geometryShader) != reqs.requiredFeatures.geometryShader)
+        return false;
+
+    // swapchain
+    SwapchainSupportDetails swapchainSupportDetails = querySwapchainSupport(physicalDevice);
+    if (swapchainSupportDetails.formats.empty() || swapchainSupportDetails.presentModes.empty())
+        return false;
+
+    // mods
+    for (auto* sel : selectors) {
+        if (!sel->isDeviceCompatible(physicalDevice, reqs))
+            return false;
     }
 
-    return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy && supportedFeatures.geometryShader;
+    return true;
 }
 
 int CoreVulkan::rateDeviceSuitability(
     VkPhysicalDevice physicalDevice,
-    const std::vector<const char*>& deviceExtensions
+    const DeviceRequirements& reqs,
+    const std::vector<IDeviceSelector*>& selectors
 ) {
-    VkPhysicalDeviceProperties deviceProperties;
-    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-    if (!isDeviceSuitable(physicalDevice, deviceExtensions)) {
+    if (!isDeviceSuitable(physicalDevice, reqs, selectors))
         return 0;
-    }
 
     int score = 0;
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
 
     // Discrete GPUs have a significant performance advantage
-    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
         score += 1000;
-    }
 
     // Maximum possible size of textures affects graphics quality
     score += deviceProperties.limits.maxImageDimension2D;
+
+    // mods
+    for (auto* sel : selectors) {
+        sel->scoreDevice(physicalDevice, score);
+    }
 
     return score;
 }
@@ -347,8 +360,13 @@ VkSampleCountFlagBits CoreVulkan::findMaxLimitedUsableSampleCount(
     );
 }
 
-void CoreVulkan::pickPhysicalDevice() {
-    //TODO make user able to select the device and save this config
+void CoreVulkan::pickPhysicalDevice(
+    const std::vector<IDeviceSelector*>& selectors
+) {
+    DeviceRequirements reqs{};
+    reqs.requiredExtensions = DEVICE_EXTENSIONS;
+    reqs.requiredFeatures.samplerAnisotropy = VK_TRUE;
+    reqs.requiredFeatures.geometryShader = VK_TRUE;
 
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -363,7 +381,7 @@ void CoreVulkan::pickPhysicalDevice() {
     int bestScore = 0;
 
     for (const auto& device : devices) {
-        int score = rateDeviceSuitability(device, deviceExtensions);
+        int score = rateDeviceSuitability(device, reqs, selectors);
         if (score > bestScore) {
             bestScore = score;
             bestDevice = device;
@@ -420,8 +438,8 @@ void CoreVulkan::createLogicalDevice() {
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pEnabledFeatures = &deviceFeatures;
 
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(DEVICE_EXTENSIONS.size());
+    createInfo.ppEnabledExtensionNames = DEVICE_EXTENSIONS.data();
 
     //TODO teste if work without this because vulkan make validation layers in instance-level.
     if (enableValidationLayers) {

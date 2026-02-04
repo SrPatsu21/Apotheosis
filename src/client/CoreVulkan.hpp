@@ -45,12 +45,20 @@ protected:
     VkQueue presentQueue;
     VkQueue graphicsQueue;
     VkFormat depthFormat;
-    std::vector<const char*> deviceExtensions;
+    const std::vector<const char*> DEVICE_EXTENSIONS = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,  // * Enables swapchain functionality for presenting images to the screen
+        VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, // * Allows binding descriptors with dynamic indexing to improve resource management
+        VK_EXT_MEMORY_BUDGET_EXTENSION_NAME, // * Provides information about memory budgets, allowing applications to make better memory usage decisions
+        // VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME, // * Allows querying performance-related metrics to help optimize graphics performance
+        // VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME, // * Provides a mechanism for high-precision timestamps for better timing and synchronization in applications
+        // VK_KHR_MULTIVIEW_EXTENSION_NAME, // * Enables rendering to multiple views within a single pass, useful for VR and stereoscopic rendering
+    };
+
 
 //* behaviors
 public:
 
-    //* instance behavioral
+    // instance
     struct InstanceConfig {
         uint32_t apiVersion = VK_API_VERSION_1_3;
         std::vector<const char*> extensions;
@@ -58,7 +66,28 @@ public:
     };
     struct IInstanceConfigProvider {
         virtual ~IInstanceConfigProvider() = default;
-        virtual void contribute(InstanceConfig& config) = 0;
+
+        virtual void contribute(
+            InstanceConfig& config
+        ) = 0;
+    };
+    //physicaldevice
+    struct DeviceRequirements {
+        std::vector<const char*> requiredExtensions;
+        VkPhysicalDeviceFeatures requiredFeatures{};
+    };
+    struct IDeviceSelector {
+        virtual ~IDeviceSelector() = default;
+
+        virtual bool isDeviceCompatible(
+            VkPhysicalDevice device,
+            const DeviceRequirements& requirements
+        ) = 0;
+
+        virtual void scoreDevice(
+            VkPhysicalDevice device,
+            int& score
+        ) = 0;
     };
 
 //* functions
@@ -70,10 +99,20 @@ private:
     void createSurface(GLFWwindow* window);
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice);
     SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice physicalDevice);
-    bool isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
-    int rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
+    bool isDeviceSuitable(
+        VkPhysicalDevice physicalDevice,
+        const DeviceRequirements& reqs,
+        const std::vector<IDeviceSelector*>& selectors
+    );
+    int rateDeviceSuitability(
+        VkPhysicalDevice physicalDevice,
+        const DeviceRequirements& reqs,
+        const std::vector<IDeviceSelector*>& selectors
+    );
     VkSampleCountFlagBits findMaxLimitedUsableSampleCount(VkSampleCountFlagBits maxDesiredSamples, VkPhysicalDevice physicalDevice);
-    void pickPhysicalDevice();
+    void pickPhysicalDevice(
+        const std::vector<IDeviceSelector*>& selectors
+    );
     void createLogicalDevice();
     void cleanup();
 public:
@@ -82,7 +121,8 @@ public:
 
     explicit CoreVulkan(
         GLFWwindow* window,
-        const std::vector<IInstanceConfigProvider*>& instanceProviders
+        const std::vector<IInstanceConfigProvider*>& instanceProviders,
+        const std::vector<IDeviceSelector*>& DeviceSelector
     );
 
     ~CoreVulkan();
@@ -107,5 +147,5 @@ public:
     const VkQueue& getGraphicsQueue() const { return graphicsQueue; }
     const VkQueue& getPresentQueue() const { return presentQueue; }
     const VkFormat& getDepthFormat() const { return depthFormat; }
-    const std::vector<const char*>& getDeviceExtensions() const { return deviceExtensions; }
+    const std::vector<const char*>& getDeviceExtensions() const { return DEVICE_EXTENSIONS; }
 };
