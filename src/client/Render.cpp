@@ -65,6 +65,7 @@ void Render::initVulkan(){
     coreVulkan = new CoreVulkan(
         window,
         {},
+        {},
         {}
     );
 

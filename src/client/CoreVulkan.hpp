@@ -15,11 +15,6 @@
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
-#ifdef DISABLE_VALIDATION_LAYERS
-        const bool enableValidationLayers = false;
-#else
-        const bool enableValidationLayers = true;
-#endif
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
@@ -89,6 +84,16 @@ public:
             int& score
         ) = 0;
     };
+    //device
+    struct DeviceConfig {
+        std::vector<const char*> extensions;
+        VkPhysicalDeviceFeatures requiredFeatures{};
+        VkPhysicalDeviceFeatures optionalFeatures{};
+    };
+    struct IDeviceConfigProvider {
+        virtual ~IDeviceConfigProvider() = default;
+        virtual void contribute(DeviceConfig& config) = 0;
+    };
 
 //* functions
 private:
@@ -113,7 +118,9 @@ private:
     void pickPhysicalDevice(
         const std::vector<IPhysicalDeviceSelector*>& selectors
     );
-    void createLogicalDevice();
+    void createLogicalDevice(
+        const std::vector<IDeviceConfigProvider*>& providers
+    );
     void cleanup();
 public:
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
@@ -122,7 +129,8 @@ public:
     explicit CoreVulkan(
         GLFWwindow* window,
         const std::vector<IInstanceConfigProvider*>& instanceProviders,
-        const std::vector<IPhysicalDeviceSelector*>& DeviceSelector
+        const std::vector<IPhysicalDeviceSelector*>& PhysicalDeviceSelector,
+        const std::vector<IDeviceConfigProvider*>& DeviceProviders
     );
 
     ~CoreVulkan();

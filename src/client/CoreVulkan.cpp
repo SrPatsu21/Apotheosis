@@ -4,19 +4,22 @@
 CoreVulkan::CoreVulkan(
     GLFWwindow* window,
     const std::vector<IInstanceConfigProvider*>& instanceProviders,
-    const std::vector<IPhysicalDeviceSelector*>& DeviceSelector
+    const std::vector<IPhysicalDeviceSelector*>& PhysicalDeviceSelectors,
+    const std::vector<IDeviceConfigProvider*>& DeviceProviders
 ){
     // test debug mode
-    if (enableValidationLayers && !checkValidationLayerSupport()) {
-        throw std::runtime_error("validation layers requested, but not available!");
-    }
+    #ifndef NDEBUG
+        if (!checkValidationLayerSupport()) {
+            throw std::runtime_error("validation layers requested, but not available!");
+        }
+    #endif
 
     // instance and surface
     createInstance(instanceProviders);
     createSurface(window);
 
     // device extensions
-    pickPhysicalDevice(DeviceSelector);
+    pickPhysicalDevice(PhysicalDeviceSelectors);
     msaaSamples = findMaxLimitedUsableSampleCount(VK_SAMPLE_COUNT_8_BIT, physicalDevice);
     #ifndef NDEBUG
         std::cout << "Sample Count: " << msaaSamples << std::endl;
@@ -26,7 +29,7 @@ CoreVulkan::CoreVulkan(
         throw std::runtime_error("failed to find a graphics queue family!");
     }
     updateSwapchainDetails();
-    createLogicalDevice();
+    createLogicalDevice(DeviceProviders);
     vkGetDeviceQueue(device, graphicsQueueFamilyIndices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, graphicsQueueFamilyIndices.presentFamily.value(), 0, &presentQueue);
     depthFormat = findSupportedFormat(
@@ -407,11 +410,15 @@ void CoreVulkan::updateSwapchainDetails()
     swapchainSupportDetails = querySwapchainSupport(physicalDevice);
 };
 
-void CoreVulkan::createLogicalDevice() {
+void CoreVulkan::createLogicalDevice(
+    const std::vector<IDeviceConfigProvider*>& providers
+) {
     // set queue info
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {graphicsQueueFamilyIndices.graphicsFamily.value(), graphicsQueueFamilyIndices.presentFamily.value()};
-
+    std::set<uint32_t> uniqueQueueFamilies = {
+        graphicsQueueFamilyIndices.graphicsFamily.value(),
+        graphicsQueueFamilyIndices.presentFamily.value()
+    };
     float queuePriority = 1.0f;
 
     for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -423,35 +430,61 @@ void CoreVulkan::createLogicalDevice() {
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
-    // Device info
-    VkPhysicalDeviceFeatures deviceFeatures{}; //* enable features if needed
-    deviceFeatures.samplerAnisotropy = VK_TRUE;
-    deviceFeatures.sampleRateShading = VK_TRUE;
-    //TODO verify if I will use it and if make sense
-    // VkPhysicalDeviceFeatures supported{};
-    // vkGetPhysicalDeviceFeatures(physicalDevice, &supported);
-    // deviceFeatures.sampleRateShading = supported.sampleRateShading;
+    // base config
+    DeviceConfig config{};
+    config.extensions = DEVICE_EXTENSIONS;
 
+    config.requiredFeatures.samplerAnisotropy = VK_TRUE;
+    config.optionalFeatures.sampleRateShading = VK_TRUE;
+
+    // mods
+    for (auto* p : providers) {
+        p->contribute(config);
+    }
+
+    // resolve feature suport
+    VkPhysicalDeviceFeatures supported{};
+    vkGetPhysicalDeviceFeatures(physicalDevice, &supported);
+    VkPhysicalDeviceFeatures enabled{};
+
+    auto enableIfSupported = [&](
+        VkBool32 required,
+        VkBool32 supportedFeature,
+        VkBool32& out
+    ) {
+        if (required && !supportedFeature)
+            throw std::runtime_error("Required device feature not supported");
+        out = required || supportedFeature;
+    };
+
+    enableIfSupported(
+        config.requiredFeatures.samplerAnisotropy,
+        supported.samplerAnisotropy,
+        enabled.samplerAnisotropy
+    );
+    enableIfSupported(
+        config.optionalFeatures.sampleRateShading,
+        supported.sampleRateShading,
+        enabled.sampleRateShading
+    );
+
+    // create info
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-    createInfo.pEnabledFeatures = &deviceFeatures;
+    createInfo.pEnabledFeatures = &enabled;
 
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(DEVICE_EXTENSIONS.size());
-    createInfo.ppEnabledExtensionNames = DEVICE_EXTENSIONS.data();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(config.extensions.size());
+    createInfo.ppEnabledExtensionNames = config.extensions.data();
 
-    //TODO teste if work without this because vulkan make validation layers in instance-level.
-    if (enableValidationLayers) {
-        //debug
-        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-        createInfo.ppEnabledLayerNames = validationLayers.data();
-    } else {
-        createInfo.enabledLayerCount = 0;
-    }
+    // #ifndef NDEBUG
+    //     createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+    //     createInfo.ppEnabledLayerNames = validationLayers.data();
+    // #endif
 
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create logical device!");
+        throw std::runtime_error("failed to create logical device");
     }
 }
 
