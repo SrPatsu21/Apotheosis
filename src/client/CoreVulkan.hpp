@@ -52,7 +52,6 @@ protected:
 
 //* behaviors
 public:
-
     // instance
     struct InstanceConfig {
         uint32_t apiVersion = VK_API_VERSION_1_3;
@@ -109,9 +108,15 @@ private:
     void createInstance(
         const std::vector<IInstanceConfigProvider*>& providers
     );
-    void createSurface(GLFWwindow* window);
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice);
-    SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice physicalDevice);
+    void createSurface(
+        GLFWwindow* window
+    );
+    QueueFamilyIndices findQueueFamilies(
+        VkPhysicalDevice physicalDevice
+    );
+    SwapchainSupportDetails querySwapchainSupport(
+        VkPhysicalDevice physicalDevice
+    );
     bool isDeviceSuitable(
         VkPhysicalDevice physicalDevice,
         const PhysicalDeviceRequirements& reqs,
@@ -122,7 +127,10 @@ private:
         const PhysicalDeviceRequirements& reqs,
         const std::vector<IPhysicalDeviceSelector*>& selectors
     );
-    VkSampleCountFlagBits findMaxLimitedUsableSampleCount(VkSampleCountFlagBits maxDesiredSamples, VkPhysicalDevice physicalDevice);
+    VkSampleCountFlagBits findMaxLimitedUsableSampleCount(
+        VkSampleCountFlagBits maxDesiredSamples,
+        VkPhysicalDevice physicalDevice
+    );
     void pickPhysicalDevice(
         const std::vector<IPhysicalDeviceSelector*>& selectors
     );

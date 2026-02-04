@@ -34,8 +34,8 @@ CoreVulkan::CoreVulkan(
     vkGetDeviceQueue(device, graphicsQueueFamilyIndices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, graphicsQueueFamilyIndices.presentFamily.value(), 0, &presentQueue);
 
+    // find depth requirements
     DepthFormatRequirements req{};
-
     for (auto* d : depthProviders) {
         d->contribute(req);
     }
