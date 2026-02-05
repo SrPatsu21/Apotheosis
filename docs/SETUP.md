@@ -131,5 +131,5 @@ chmod +x scripts/install_vulkansdk_wine.sh
 ```shell
 cd build-windows
 source ./wine-vulkan-env.sh
-wine ProjectD_client.exe
+wine Apotheosis_client.exe
 ```
