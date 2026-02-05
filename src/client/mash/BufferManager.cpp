@@ -3,14 +3,21 @@
 BufferManager::BufferManager(
     VkPhysicalDevice physicalDevice,
     VkDevice device,
-    VkQueue graphicsQueue
+    VkQueue graphicsQueue,
+    uint32_t graphicsQueueFamily
 ) :
     physicalDevice(physicalDevice),
     device(device),
     graphicsQueue(graphicsQueue)
-{}
+{
+    initImmediateContext(graphicsQueueFamily);
+}
 
-void BufferManager::createBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags usage, VkBuffer& buffer){
+void BufferManager::createBuffer(
+    VkDeviceSize bufferSize,
+    VkBufferUsageFlags usage,
+    VkBuffer& buffer
+) {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = bufferSize;
@@ -22,7 +29,11 @@ void BufferManager::createBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags usa
     }
 }
 
-void BufferManager::allocateBufferMemory(VkBuffer buffer, VkMemoryPropertyFlags properties, VkDeviceMemory& bufferMemory){
+void BufferManager::allocateBufferMemory(
+    VkBuffer buffer,
+    VkMemoryPropertyFlags properties,
+    VkDeviceMemory& bufferMemory
+) {
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
 
@@ -39,10 +50,9 @@ void BufferManager::allocateBufferMemory(VkBuffer buffer, VkMemoryPropertyFlags 
 void BufferManager::copyBuffer(
     VkBuffer srcBuffer,
     VkBuffer dstBuffer,
-    VkDeviceSize size,
-    VkCommandPool commandPool
+    VkDeviceSize size
 ) {
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands(commandPool);
+    VkCommandBuffer commandBuffer = beginImmediate();
 
     VkBufferCopy copyRegion{};
     copyRegion.srcOffset = 0; // Optional
@@ -50,55 +60,83 @@ void BufferManager::copyBuffer(
     copyRegion.size = size;
     vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-    endSingleTimeCommands(commandPool, commandBuffer);
+    endImmediate();
 }
 
-VkCommandBuffer BufferManager::beginSingleTimeCommands(
-    VkCommandPool commandPool
+void BufferManager::initImmediateContext(
+    uint32_t graphicsQueueFamily
 ) {
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.queueFamilyIndex = graphicsQueueFamily;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+    vkCreateCommandPool(device, &poolInfo, nullptr, &immediate.pool);
+
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = immediate.pool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = commandPool;
     allocInfo.commandBufferCount = 1;
 
-    VkCommandBuffer commandBuffer;
-    vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+    vkAllocateCommandBuffers(device, &allocInfo, &immediate.cmd);
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    vkCreateFence(device, &fenceInfo, nullptr, &immediate.fence);
+}
+
+void BufferManager::destroyImmediateContext()
+{
+    if (immediate.pool == VK_NULL_HANDLE) return;
+
+    vkDeviceWaitIdle(device);
+
+    if (immediate.fence != VK_NULL_HANDLE) {
+        vkDestroyFence(device, immediate.fence, nullptr);
+        immediate.fence = VK_NULL_HANDLE;
+    }
+
+    vkDestroyCommandPool(device, immediate.pool, nullptr);
+    immediate.pool = VK_NULL_HANDLE;
+    immediate.cmd = VK_NULL_HANDLE;
+}
+
+VkCommandBuffer BufferManager::beginImmediate() {
+    vkWaitForFences(device, 1, &immediate.fence, VK_TRUE, UINT64_MAX);
+    vkResetFences(device, 1, &immediate.fence);
+
+    vkResetCommandPool(device, immediate.pool, 0);
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-    vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-    return commandBuffer;
+    vkBeginCommandBuffer(immediate.cmd, &beginInfo);
+    return immediate.cmd;
 }
 
-void BufferManager::endSingleTimeCommands(
-    VkCommandPool commandPool,
-    VkCommandBuffer commandBuffer
-) {
-    vkEndCommandBuffer(commandBuffer);
+void BufferManager::endImmediate() {
+    vkEndCommandBuffer(immediate.cmd);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
+    submitInfo.pCommandBuffers = &immediate.cmd;
 
-    vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(graphicsQueue);
-
-    vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+    vkQueueSubmit(graphicsQueue, 1, &submitInfo, immediate.fence);
+    vkWaitForFences(device, 1, &immediate.fence, VK_TRUE, UINT64_MAX);
 }
 
 void BufferManager::copyBufferToImage(
-    VkCommandPool commandPool,
     VkBuffer buffer,
     VkImage image,
     uint32_t width,
     uint32_t height
 ) {
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands(commandPool);
+    VkCommandBuffer commandBuffer = beginImmediate();
 
     VkBufferImageCopy region{};
     region.bufferOffset = 0;
@@ -126,8 +164,9 @@ void BufferManager::copyBufferToImage(
         &region
     );
 
-
-    endSingleTimeCommands(commandPool, commandBuffer);
+    endImmediate();
 }
 
-BufferManager::~BufferManager(){}
+BufferManager::~BufferManager() {
+    destroyImmediateContext();
+}

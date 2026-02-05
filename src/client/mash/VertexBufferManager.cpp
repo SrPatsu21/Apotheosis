@@ -3,8 +3,7 @@
 VertexBufferManager::VertexBufferManager(
         VkDevice device,
         BufferManager& bufferManager,
-        const std::vector<Vertex> vertices,
-        VkCommandPool commandPool
+        const std::vector<Vertex> vertices
 ) :
     device(device)
 {
@@ -25,7 +24,7 @@ VertexBufferManager::VertexBufferManager(
     bufferManager.allocateBufferMemory(this->vertexBuffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, this->vertexBufferMemory);
     vkBindBufferMemory(device, this->vertexBuffer, this->vertexBufferMemory, 0);
 
-    bufferManager.copyBuffer(stagingBuffer, this->vertexBuffer, bufferSize, commandPool);
+    bufferManager.copyBuffer(stagingBuffer, this->vertexBuffer, bufferSize);
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);

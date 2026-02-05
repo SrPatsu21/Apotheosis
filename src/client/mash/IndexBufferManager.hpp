@@ -40,8 +40,7 @@ public:
     IndexBufferManager(
         VkDevice device,
         BufferManager& bufferManager,
-        const std::vector<uint32_t> indices,
-        VkCommandPool commandPool
+        const std::vector<uint32_t> indices
     );
 
     /*

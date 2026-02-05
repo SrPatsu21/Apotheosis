@@ -3,8 +3,7 @@
 IndexBufferManager::IndexBufferManager(
     VkDevice device,
     BufferManager& bufferManager,
-    const std::vector<uint32_t> indices,
-    VkCommandPool commandPool
+    const std::vector<uint32_t> indices
 ) :
     device(device)
 {
@@ -26,7 +25,7 @@ IndexBufferManager::IndexBufferManager(
     bufferManager.allocateBufferMemory(this->indexBuffer, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, this->indexBufferMemory);
     vkBindBufferMemory(device, this->indexBuffer, this->indexBufferMemory, 0);
 
-    bufferManager.copyBuffer(stagingBuffer, this->indexBuffer, bufferSize, commandPool);
+    bufferManager.copyBuffer(stagingBuffer, this->indexBuffer, bufferSize);
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);

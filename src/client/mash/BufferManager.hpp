@@ -8,26 +8,46 @@ private:
     VkDevice device;
     VkPhysicalDevice physicalDevice;
     VkQueue graphicsQueue;
+
+    struct ImmediateSubmitContext {
+        VkCommandPool pool;
+        VkCommandBuffer cmd;
+        VkFence fence;
+    };
+    ImmediateSubmitContext immediate;
+    void initImmediateContext(
+        uint32_t graphicsQueueFamily
+    );
+    void destroyImmediateContext();
 public:
     BufferManager(
         VkPhysicalDevice physicalDevice,
         VkDevice device,
-        VkQueue graphicsQueue
+        VkQueue graphicsQueue,
+        uint32_t graphicsQueueFamily
     );
-    void createBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags usage, VkBuffer& buffer);
-    void allocateBufferMemory(VkBuffer buffer, VkMemoryPropertyFlags properties, VkDeviceMemory& bufferMemory);
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool commandPool);
+    void createBuffer(
+        VkDeviceSize bufferSize,
+        VkBufferUsageFlags usage,
+        VkBuffer& buffer
+    );
+    void allocateBufferMemory(
+        VkBuffer buffer,
+        VkMemoryPropertyFlags properties,
+        VkDeviceMemory& bufferMemory
+    );
+    VkCommandBuffer beginImmediate();
+    void endImmediate();
+    void copyBuffer(
+        VkBuffer srcBuffer,
+        VkBuffer dstBuffer,
+        VkDeviceSize size
+    );
     void copyBufferToImage(
-        VkCommandPool commandPool,
         VkBuffer buffer,
         VkImage image,
         uint32_t width,
         uint32_t height
     );
-    void endSingleTimeCommands(
-        VkCommandPool commandPool,
-        VkCommandBuffer commandBuffer
-    );
-    VkCommandBuffer beginSingleTimeCommands(VkCommandPool commandPool);
     ~BufferManager();
 };

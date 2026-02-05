@@ -81,7 +81,6 @@ VkImageView createImageView(
 void generateMipmaps(
     VkPhysicalDevice physicalDevice,
     BufferManager* bufferManager,
-    VkCommandPool commandPool,
     VkImage image,
     VkFormat imageFormat,
     int32_t texWidth,
@@ -95,7 +94,7 @@ void generateMipmaps(
         throw std::runtime_error("texture image format does not support linear blitting!");
     }
 
-    VkCommandBuffer commandBuffer = bufferManager->beginSingleTimeCommands(commandPool);
+    VkCommandBuffer commandBuffer = bufferManager->beginImmediate();
 
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -199,5 +198,5 @@ void generateMipmaps(
         &barrier
     );
 
-    bufferManager->endSingleTimeCommands(commandPool, commandBuffer);
+    bufferManager->endImmediate();
 }

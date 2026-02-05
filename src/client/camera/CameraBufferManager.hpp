@@ -42,7 +42,11 @@ public:
 
     @throws std::runtime_error if buffer creation or memory allocation fails.
     */
-    CameraBufferManager(VkDevice device, BufferManager* bufferManager, int max_frames_in_flight);
+    CameraBufferManager(
+        VkDevice device,
+        BufferManager* bufferManager,
+        int max_frames_in_flight
+    );
 
     /*
     @brief Destructor for CameraBufferManager.

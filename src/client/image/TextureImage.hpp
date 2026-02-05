@@ -83,8 +83,7 @@ private:
     void createTextureImage(
         VkPhysicalDevice physicalDevice,
         const char* path,
-        BufferManager* bufferManager,
-        VkCommandPool commandPool
+        BufferManager* bufferManager
     );
     void createTextureImageView();
     void createTextureSampler(VkPhysicalDevice physicalDevice);
@@ -94,8 +93,7 @@ public:
         VkPhysicalDevice physicalDevice,
         VkDevice device,
         const char* path,
-        BufferManager* bufferManager,
-        VkCommandPool commandPool
+        BufferManager* bufferManager
     );
     void loadImageFromFile(
         const char* path,
@@ -109,7 +107,6 @@ public:
     );
     static void transitionImageLayout(
         BufferManager* bufferManager,
-        VkCommandPool commandPool,
         VkImage image,
         VkFormat format,
         VkImageLayout oldLayout,

@@ -50,7 +50,6 @@ VkImageView createImageView(
 void generateMipmaps(
     VkPhysicalDevice physicalDevice,
     BufferManager* bufferManager,
-    VkCommandPool commandPool,
     VkImage image,
     VkFormat imageFormat,
     int32_t texWidth,
