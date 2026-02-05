@@ -1,0 +1,23 @@
+* @SrPatsu21
+
+# RH
+/docs/TRADEMARK.md
+/docs/SERVER_POLICY.md
+/docs/MODDING.md
+README.md
+LICENSE
+NOTICE
+/src/client/assets/ASSETS_LICENSE.txt
+
+# DEV manager
+/src
+/scripts
+/.gitignore
+/docs/SETUP.md
+/docker-compose.yml
+/toolchain-mingw.cmake
+/CMakeLists.txt
+
+# Software Engineer
+/uml
+/docs/WhatNeedToBeDone.md
