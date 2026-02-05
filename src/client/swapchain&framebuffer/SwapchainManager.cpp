@@ -8,7 +8,8 @@ SwapchainManager::SwapchainManager(
         const QueueFamilyIndices& queueFamilies,
         const SwapchainSupportDetails& swapchainSupportDetails,
         VkSurfaceKHR surface,
-        GLFWwindow* window
+        GLFWwindow* window,
+        const std::vector<ISwapchainConfigProvider*>& swapchainProviders
 ) :
     device(device)
 {
@@ -19,12 +20,21 @@ SwapchainManager::SwapchainManager(
     this->swapchainImageFormat = surfaceFormat.format;
     this->swapchainExtent = extent;
 
-    createSwapchainInternal(surface, queueFamilies, surfaceFormat, presentMode, extent, swapchainSupportDetails);
+    createSwapchainInternal(surface, queueFamilies, surfaceFormat, presentMode, extent, swapchainSupportDetails, swapchainProviders, VK_NULL_HANDLE);
     createImageViews();
 }
 
 SwapchainManager::~SwapchainManager() {
-    safeDestroySwapchain();
+    if (!this->swapchainImageViews.empty()) {
+        for (auto view : swapchainImageViews) {
+            vkDestroyImageView(device, view, nullptr);
+        }
+        swapchainImageViews.clear();
+    }
+    if (this->swapchain != VK_NULL_HANDLE) {
+        vkDestroySwapchainKHR(device, this->swapchain, nullptr);
+        this->swapchain = VK_NULL_HANDLE; // reset
+    }
 }
 
 VkSurfaceFormatKHR SwapchainManager::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
@@ -77,19 +87,14 @@ void SwapchainManager::createSwapchainInternal(
         VkSurfaceFormatKHR surfaceFormat,
         VkPresentModeKHR presentMode,
         VkExtent2D extent,
-        const SwapchainSupportDetails& swapChainSupport
+        const SwapchainSupportDetails& swapChainSupport,
+        const std::vector<ISwapchainConfigProvider*>& swapchainProviders,
+        VkSwapchainKHR oldSwapchain
 ) {
-    // how many images we would like to have in the swap chain
-    uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-
-    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
-        imageCount = swapChainSupport.capabilities.maxImageCount;
-    }
-
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = surface;
-    createInfo.minImageCount = imageCount;
+    createInfo.minImageCount = swapChainSupport.capabilities.minImageCount + 1;
     createInfo.imageFormat = surfaceFormat.format;
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
     createInfo.imageExtent = extent;
@@ -112,18 +117,48 @@ void SwapchainManager::createSwapchainInternal(
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = VK_NULL_HANDLE; //TODO remake the swapchain
+    createInfo.oldSwapchain = oldSwapchain;
 
+    // mods
+    for (auto* p : swapchainProviders)
+        p->contribute(createInfo, swapChainSupport);
+
+    // fix invalid minImageCount
+    uint32_t minImgCount = swapChainSupport.capabilities.minImageCount;
+    uint32_t maxImgCount = swapChainSupport.capabilities.maxImageCount;
+
+    if (createInfo.minImageCount < minImgCount) {
+        createInfo.minImageCount = minImgCount;
+    }
+    if (maxImgCount > 0 && createInfo.minImageCount > maxImgCount) {
+        createInfo.minImageCount = maxImgCount;
+    }
+
+    // fix invalid imageUsage
+    createInfo.imageUsage &= swapChainSupport.capabilities.supportedUsageFlags;
+
+    // invalid compositeAlpha
+    auto supported = swapChainSupport.capabilities.supportedCompositeAlpha;
+    if (!(supported & createInfo.compositeAlpha)) {
+        createInfo.compositeAlpha = static_cast<VkCompositeAlphaFlagBitsKHR>(supported & -supported);
+    }
+
+    // create
     if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &this->swapchain) != VK_SUCCESS) {
         throw std::runtime_error("failed to create swap chain!");
     }
 
+    // if old delete
+    if (oldSwapchain != VK_NULL_HANDLE) {
+        vkDestroySwapchainKHR(device, oldSwapchain, nullptr);
+    }
+
+    // resize and get swapchain image
     uint32_t count;
     vkGetSwapchainImagesKHR(device, this->swapchain, &count, nullptr);
     this->swapchainImages.resize(count);
     vkGetSwapchainImagesKHR(device, this->swapchain, &count, this->swapchainImages.data());
 }
-
 
 void SwapchainManager::createImageViews() {
     this->swapchainImageViews.resize(this->swapchainImages.size());
@@ -132,29 +167,19 @@ void SwapchainManager::createImageViews() {
         swapchainImageViews[i] = createImageView(device, swapchainImages[i], swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
     }
 }
-
-void SwapchainManager::safeDestroySwapchain(){
-    if (!this->swapchainImageViews.empty()) {
-        for (auto view : swapchainImageViews) {
-            vkDestroyImageView(device, view, nullptr);
-        }
-        swapchainImageViews.clear();
-    }
-    if (this->swapchain != VK_NULL_HANDLE) {
-        vkDestroySwapchainKHR(device, this->swapchain, nullptr);
-        this->swapchain = VK_NULL_HANDLE; // reset
-    }
-}
-
 void SwapchainManager::recreate(
     const QueueFamilyIndices& queueFamilies,
     const SwapchainSupportDetails& swapchainSupportDetails,
     VkSurfaceKHR surface,
-    GLFWwindow* window
+    GLFWwindow* window,
+    const  std::vector<ISwapchainConfigProvider*>& swapchainProviders
 ) {
+    // destroy ImageViews
+    for (auto view : swapchainImageViews) {
+        vkDestroyImageView(device, view, nullptr);
+    }
+    swapchainImageViews.clear();
 
-    //TODO optimise
-    safeDestroySwapchain();
     // details
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapchainSupportDetails.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapchainSupportDetails.presentModes);
@@ -163,8 +188,9 @@ void SwapchainManager::recreate(
     this->swapchainExtent = extent;
     this->swapchainImageFormat = surfaceFormat.format;
 
-    // create a new one
-    createSwapchainInternal(surface, queueFamilies, surfaceFormat, presentMode, extent, swapchainSupportDetails);
+    // create new
+    createSwapchainInternal(surface, queueFamilies, surfaceFormat, presentMode, extent, swapchainSupportDetails, swapchainProviders, swapchain);
+
 
     // recreate imageViews
     createImageViews();

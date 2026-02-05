@@ -83,7 +83,8 @@ void Render::initVulkan(){
         coreVulkan->getGraphicsQueueFamilyIndices(),
         coreVulkan->getSwapchainSupportDetails(),
         coreVulkan->getSurface(),
-        window
+        window,
+        {}
     );
 
     // Create render pass
@@ -377,9 +378,6 @@ void Render::cleanupSwapChain() {
     if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
     if (this->ui) { vkDeviceWaitIdle(coreVulkan->getDevice()); ImGui_ImplVulkan_Shutdown(); }
     if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
-
-    // Swapchain itself
-    this->swapchainManager->safeDestroySwapchain();
 }
 
 void Render::recreateSwapChain() {
@@ -401,7 +399,9 @@ void Render::recreateSwapChain() {
     this->swapchainManager->recreate(
         coreVulkan->getGraphicsQueueFamilyIndices(),
         coreVulkan->getSwapchainSupportDetails(),
-        coreVulkan->getSurface(), this->window
+        coreVulkan->getSurface(),
+        this->window,
+        {}
     );
 
     // 3. Recreate render pass (might depend on swapchain format)
