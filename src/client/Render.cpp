@@ -378,9 +378,6 @@ void Render::cleanupSwapChain() {
     if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
     if (this->ui) { vkDeviceWaitIdle(coreVulkan->getDevice()); ImGui_ImplVulkan_Shutdown(); }
     if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
-
-    // Swapchain itself
-    this->swapchainManager->safeDestroySwapchain();
 }
 
 void Render::recreateSwapChain() {

@@ -31,7 +31,8 @@ private:
         VkPresentModeKHR presentMode,
         VkExtent2D extent,
         const SwapchainSupportDetails& swapChainSupport,
-        const std::vector<ISwapchainConfigProvider*>& swapchainProviders
+        const std::vector<ISwapchainConfigProvider*>& swapchainProviders,
+        VkSwapchainKHR oldSwapchain
     );
     void createImageViews();
 
@@ -46,7 +47,6 @@ public:
     );
     ~SwapchainManager();
 
-    void safeDestroySwapchain();
     void recreate(
         const QueueFamilyIndices& queueFamilies,
         const SwapchainSupportDetails& swapchainSupportDetails,
