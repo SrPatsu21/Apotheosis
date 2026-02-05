@@ -83,7 +83,8 @@ void Render::initVulkan(){
         coreVulkan->getGraphicsQueueFamilyIndices(),
         coreVulkan->getSwapchainSupportDetails(),
         coreVulkan->getSurface(),
-        window
+        window,
+        {}
     );
 
     // Create render pass
@@ -401,7 +402,9 @@ void Render::recreateSwapChain() {
     this->swapchainManager->recreate(
         coreVulkan->getGraphicsQueueFamilyIndices(),
         coreVulkan->getSwapchainSupportDetails(),
-        coreVulkan->getSurface(), this->window
+        coreVulkan->getSurface(),
+        this->window,
+        {}
     );
 
     // 3. Recreate render pass (might depend on swapchain format)

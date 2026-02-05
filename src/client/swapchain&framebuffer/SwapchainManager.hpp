@@ -8,21 +8,30 @@ class SwapchainManager
 private:
     VkDevice device;
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;;
+    VkExtent2D swapchainExtent;
     std::vector<VkImage> swapchainImages;
     VkFormat swapchainImageFormat;
-    VkExtent2D swapchainExtent;
     std::vector<VkImageView> swapchainImageViews;
 
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR&, GLFWwindow*);
+
+    struct ISwapchainConfigProvider {
+        virtual void contribute(
+            VkSwapchainCreateInfoKHR& info,
+            const SwapchainSupportDetails& support
+        ) = 0;
+    };
+
     void createSwapchainInternal(
         VkSurfaceKHR surface,
         const QueueFamilyIndices& queueFamilies,
         VkSurfaceFormatKHR surfaceFormat,
         VkPresentModeKHR presentMode,
         VkExtent2D extent,
-        const SwapchainSupportDetails& swapChainSupport
+        const SwapchainSupportDetails& swapChainSupport,
+        const std::vector<ISwapchainConfigProvider*>& swapchainProviders
     );
     void createImageViews();
 
@@ -32,7 +41,8 @@ public:
         const QueueFamilyIndices& queueFamilies,
         const SwapchainSupportDetails& swapchainSupportDetails,
         VkSurfaceKHR surface,
-        GLFWwindow* window
+        GLFWwindow* window,
+        const std::vector<ISwapchainConfigProvider*>& swapchainProviders
     );
     ~SwapchainManager();
 
@@ -41,7 +51,8 @@ public:
         const QueueFamilyIndices& queueFamilies,
         const SwapchainSupportDetails& swapchainSupportDetails,
         VkSurfaceKHR surface,
-        GLFWwindow* window
+        GLFWwindow* window,
+        const std::vector<ISwapchainConfigProvider*>& swapchainProviders
     );
 
     VkSwapchainKHR getSwapchain() const { return this->swapchain; }
