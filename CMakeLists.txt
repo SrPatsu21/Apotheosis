@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 # ============================================================
 # Project
 # ============================================================
-set(PROJECT_NAME "ProjectD")
+set(PROJECT_NAME "Apotheosis")
 project(${PROJECT_NAME} LANGUAGES CXX)
 
 # ============================================================

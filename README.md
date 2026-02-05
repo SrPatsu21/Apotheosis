@@ -1,4 +1,4 @@
-# ProjectD
+# Apotheosis
 
 Official builds are distributed by the project maintainers. \
 Third-party builds are not official and are not endorsed.
@@ -17,7 +17,7 @@ Attribution and license notices for these components are provided in the [NOTICE
 
 ## Trademark Notice
 
-The name "ProjectD", the project name, logo, and all associated branding are trademarks of SrPatsu21. \
+The name "Apotheosis", the project name, logo, and all associated branding are trademarks of SrPatsu21. \
 
 This project is open source, but the trademark is not licensed.
 

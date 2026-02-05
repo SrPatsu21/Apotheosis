@@ -38,7 +38,7 @@ void Render::initWindow(){
     // block resize
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     // screen config
-    this->window = glfwCreateWindow(this->width, this->height, "ProjectD", nullptr, nullptr);
+    this->window = glfwCreateWindow(this->width, this->height, "Apotheosis", nullptr, nullptr);
     glfwSetWindowUserPointer(this->window, this);
     glfwSetFramebufferSizeCallback(this->window, framebufferResizeCallback);
 };

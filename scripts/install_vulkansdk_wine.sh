@@ -78,5 +78,5 @@ echo
 echo "Run:"
 echo "  cd build-windows"
 echo "  source ./wine-vulkan-env.sh"
-echo "  wine ProjectD_client.exe"
+echo "  wine Apotheosis_client.exe"
 echo "===================================="
