@@ -12,83 +12,315 @@
 #include <optional>
 #include "./swapchain&framebuffer/SwapchainSupportDetails.hpp"
 
+/// Vulkan validation layers enabled in debug builds.
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
-#ifdef DISABLE_VALIDATION_LAYERS
-        const bool enableValidationLayers = false;
-#else
-        const bool enableValidationLayers = true;
-#endif
 
+/**
+ * @brief Holds queue family indices required by the engine.
+ *
+ * This struct represents the queue families needed for rendering and presentation.
+ * A Vulkan device is considered usable only if all required queue families are present.
+ *
+ * This structure is part of the public API and may be used by external systems
+ * (e.g. render modules or engine extensions) to query queue compatibility.
+ */
 struct QueueFamilyIndices {
+    /// Queue family supporting graphics commands.
     std::optional<uint32_t> graphicsFamily;
+
+    /// Queue family supporting presentation to a surface.
     std::optional<uint32_t> presentFamily;
 
+    /**
+     * @brief Checks whether all required queue families were found.
+     * @return True if both graphics and present queue families are available.
+     */
     bool isComplete() const {
         return graphicsFamily.has_value() && presentFamily.has_value();
     }
 };
 
-
+/**
+ * @brief Core Vulkan initialization and device management class.
+ *
+ * This class owns and manages the Vulkan instance, physical device selection,
+ * logical device creation, queues, surface, and related capabilities.
+ *
+ * It is designed to be extensible through provider and selector interfaces,
+ * allowing engine subsystems and mods to influence Vulkan configuration
+ * without tightly coupling to the core.
+ */
 class CoreVulkan
 {
+//* vars
 protected:
     VkInstance instance;
     VkSurfaceKHR surface;
     QueueFamilyIndices graphicsQueueFamilyIndices;
     VkPhysicalDevice physicalDevice;
-    SwapchainSupportDetails swapchainDetails;
+    SwapchainSupportDetails swapchainSupportDetails;
     VkSampleCountFlagBits msaaSamples;
     VkDevice device;
     VkQueue presentQueue;
     VkQueue graphicsQueue;
     VkFormat depthFormat;
-    std::vector<const char*> deviceExtensions;
-
-//* functions
-private:
-    bool checkValidationLayerSupport();
-    void createInstance();
-    void createSurface(GLFWwindow* window);
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice);
-    SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice physicalDevice);
-    bool isDeviceSuitable(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
-    int rateDeviceSuitability(VkPhysicalDevice physicalDevice, const std::vector<const char*>& deviceExtensions);
-    VkSampleCountFlagBits findMaxLimitedUsableSampleCount(VkSampleCountFlagBits maxDesiredSamples, VkPhysicalDevice physicalDevice);
-    void pickPhysicalDevice();
-    bool IsDeviceExtensionSupported(VkPhysicalDevice physicalDevice, const char* extensionName);
-    void createLogicalDevice();
-    void cleanup();
+    /// Device extensions required by the engine.
+    const std::vector<const char*> DEVICE_EXTENSIONS = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,  // * Enables swapchain functionality for presenting images to the screen
+        VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, // * Allows binding descriptors with dynamic indexing to improve resource management
+        VK_EXT_MEMORY_BUDGET_EXTENSION_NAME, // * Provides information about memory budgets, allowing applications to make better memory usage decisions
+        // VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME, // * Allows querying performance-related metrics to help optimize graphics performance
+        // VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME, // * Provides a mechanism for high-precision timestamps for better timing and synchronization in applications
+        // VK_KHR_MULTIVIEW_EXTENSION_NAME, // * Enables rendering to multiple views within a single pass, useful for VR and stereoscopic rendering
+    };
 public:
-    VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+    /**
+     * @brief Configuration data used during Vulkan instance creation.
+     *
+     * Providers may append extensions, layers, or override the API version.
+     * This struct is intentionally simple and additive.
+     */
+    struct InstanceConfig {
+        uint32_t apiVersion = VK_API_VERSION_1_3;
+        std::vector<const char*> extensions;
+        std::vector<const char*> layers;
+    };
+
+    /**
+     * @brief Interface for systems that want to contribute to instance creation.
+     *
+     * Implementations may add extensions, layers, or modify the instance config.
+     * Called before the Vulkan instance is created.
+     */
+    struct IInstanceConfigProvider {
+        virtual ~IInstanceConfigProvider() = default;
+
+        /**
+         * @param config Mutable instance configuration.
+         */
+        virtual void contribute(
+            InstanceConfig& config
+        ) = 0;
+    };
+
+    /**
+     * @brief Required capabilities for a physical device.
+     *
+     * Used during device selection to ensure mandatory extensions and features
+     * are supported before a device is considered usable.
+     */
+    struct PhysicalDeviceRequirements {
+        std::vector<const char*> requiredExtensions;
+        VkPhysicalDeviceFeatures requiredFeatures{};
+    };
+
+    /**
+     * @brief Interface used to validate and score physical devices.
+     *
+     * Selectors allow engine modules or mods to influence GPU selection logic.
+     */
+    struct IPhysicalDeviceSelector {
+        virtual ~IPhysicalDeviceSelector() = default;
+
+        /**
+         * @brief Checks whether a physical device is compatible.
+         */
+        virtual bool isDeviceCompatible(
+            VkPhysicalDevice device,
+            const PhysicalDeviceRequirements& requirements
+        ) = 0;
+
+        /**
+         * @brief Adds a score contribution to a compatible device.
+         */
+        virtual void scoreDevice(
+            VkPhysicalDevice device,
+            int& score
+        ) = 0;
+    };
+
+    /**
+     * @brief Configuration for logical device creation.
+     *
+     * Required features must be supported by the device.
+     * Optional features are enabled when available.
+     */
+    struct DeviceConfig {
+        std::vector<const char*> extensions;
+        VkPhysicalDeviceFeatures requiredFeatures{};
+        VkPhysicalDeviceFeatures optionalFeatures{};
+    };
+
+    /**
+     * @brief Interface for contributing to logical device configuration.
+     */
+    struct IDeviceConfigProvider {
+        virtual ~IDeviceConfigProvider() = default;
+        virtual void contribute(DeviceConfig& config) = 0;
+    };
+
+    /**
+     * @brief Requirements used when selecting a depth buffer format.
+     */
+    struct DepthFormatRequirements {
+        bool requireStencil = false;
+        bool preferHighPrecision = false;
+    };
+
+    /**
+     * @brief Interface for systems that influence depth format selection.
+     */
+    struct IDepthFormatProvider {
+        virtual void contribute(DepthFormatRequirements&) = 0;
+    };
+
+private:
+    /// Checks whether requested validation layers are supported by the system.
+    bool checkValidationLayerSupport();
+
+    /// Creates the Vulkan instance using contributions from providers.
+    void createInstance(
+        const std::vector<IInstanceConfigProvider*>& providers
+    );
+
+    /// Creates the Vulkan surface from a GLFW window.
+    void createSurface(
+        GLFWwindow* window
+    );
+
+    /// Finds queue families supported by a physical device.
+    QueueFamilyIndices findQueueFamilies(
+        VkPhysicalDevice physicalDevice
+    );
+
+    /// Queries swapchain capabilities for a physical device.
+    SwapchainSupportDetails querySwapchainSupport(
+        VkPhysicalDevice physicalDevice
+    );
+
+    /// Validates whether a physical device meets all requirements.
+    bool isDeviceSuitable(
+        VkPhysicalDevice physicalDevice,
+        const PhysicalDeviceRequirements& reqs,
+        const std::vector<IPhysicalDeviceSelector*>& selectors
+    );
+
+    /// Assigns a suitability score to a physical device.
+    int rateDeviceSuitability(
+        VkPhysicalDevice physicalDevice,
+        const PhysicalDeviceRequirements& reqs,
+        const std::vector<IPhysicalDeviceSelector*>& selectors
+    );
+
+    /// Determines the maximum usable MSAA sample count.
+    VkSampleCountFlagBits findMaxLimitedUsableSampleCount(
+        VkSampleCountFlagBits maxDesiredSamples,
+        VkPhysicalDevice physicalDevice
+    );
+
+    /// Selects the best physical device available.
+    void pickPhysicalDevice(
+        const std::vector<IPhysicalDeviceSelector*>& selectors
+    );
+
+    /// Creates the Vulkan logical device.
+    void createLogicalDevice(
+        const std::vector<IDeviceConfigProvider*>& providers
+    );
+
+    /// Releases all Vulkan resources owned by this instance.
+    void cleanup();
+
+public:
+    /**
+     * @brief Finds a supported image format from a list of candidates.
+     *
+     * @param candidates List of acceptable formats.
+     * @param tiling Required image tiling mode.
+     * @param features Required format feature flags.
+     *
+     * @return A format that satisfies all requirements.
+     *
+     * @throws std::runtime_error if no suitable format is found.
+     */
+    VkFormat findSupportedFormat(
+        const std::vector<VkFormat>& candidates,
+        VkImageTiling tiling,
+        VkFormatFeatureFlags features
+    );
+
+    /// Re-queries and updates swapchain support details.
     void updateSwapchainDetails();
 
-    explicit CoreVulkan();
+    /**
+     * @brief Constructs and fully initializes the Vulkan core.
+     *
+     * This constructor performs:
+     * - Instance creation
+     * - Surface creation
+     * - Physical device selection
+     * - Logical device creation
+     * - Queue retrieval
+     * - Depth format selection
+     *
+     * @param window GLFW window used to create the Vulkan surface.
+     * @param instanceProviders Contributors to instance configuration.
+     * @param PhysicalDeviceSelector Device compatibility and scoring logic.
+     * @param DeviceProviders Contributors to logical device configuration.
+     * @param depthProviders Contributors to depth format selection.
+     */
+    explicit CoreVulkan(
+        GLFWwindow* window,
+        const std::vector<IInstanceConfigProvider*>& instanceProviders,
+        const std::vector<IPhysicalDeviceSelector*>& PhysicalDeviceSelector,
+        const std::vector<IDeviceConfigProvider*>& DeviceProviders,
+        const std::vector<IDepthFormatProvider*>& depthProviders
+    );
 
+    /// Destroys all Vulkan resources owned by this instance.
     ~CoreVulkan();
+
     // Deleting the copy constructor and copy assignment to prevent copies
+
     CoreVulkan(const CoreVulkan& obj) = delete;
     CoreVulkan& operator=(const CoreVulkan& other) = delete;
 
     // move constructor and move assignment
+
     CoreVulkan(CoreVulkan&& other) noexcept;
     CoreVulkan& operator=(CoreVulkan&& other) noexcept;
 
-    static uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags required, VkMemoryPropertyFlags preferred);
-
-    virtual void init(GLFWwindow* window);
+    /**
+     * @brief Finds a suitable memory type for buffer or image allocation.
+     *
+     * @param physicalDevice Physical device used for memory queries.
+     * @param typeFilter Bitmask of allowed memory types.
+     * @param required Required memory property flags.
+     * @param preferred Preferred (but optional) memory property flags.
+     *
+     * @return Index of a compatible memory type.
+     *
+     * @throws std::runtime_error if no suitable memory type is found.
+     */
+    static uint32_t findMemoryType(
+        VkPhysicalDevice physicalDevice,
+        uint32_t typeFilter,
+        VkMemoryPropertyFlags required,
+        VkMemoryPropertyFlags preferred
+    );
 
 //* get
     const VkInstance& getInstance() const { return instance; }
     const VkSurfaceKHR& getSurface() const { return surface; }
     const QueueFamilyIndices& getGraphicsQueueFamilyIndices() const { return graphicsQueueFamilyIndices; }
     const VkPhysicalDevice& getPhysicalDevice() const { return physicalDevice; }
-    const SwapchainSupportDetails& getSwapchainDetails() const { return swapchainDetails; }
+    const SwapchainSupportDetails& getSwapchainSupportDetails() const { return swapchainSupportDetails; }
     const VkSampleCountFlagBits& getMsaaSamples() const { return msaaSamples; }
     const VkDevice& getDevice() const { return device; }
     const VkQueue& getGraphicsQueue() const { return graphicsQueue; }
     const VkQueue& getPresentQueue() const { return presentQueue; }
     const VkFormat& getDepthFormat() const { return depthFormat; }
-    const std::vector<const char*>& getDeviceExtensions() const { return deviceExtensions; }
+    const std::vector<const char*>& getDeviceExtensions() const { return DEVICE_EXTENSIONS; }
 };

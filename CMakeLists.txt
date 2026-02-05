@@ -227,7 +227,6 @@ target_compile_definitions(${PROJECT_NAME}_client PRIVATE
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_definitions(${PROJECT_NAME}_client PRIVATE
         NDEBUG
-        DISABLE_VALIDATION_LAYERS
     )
 endif()
 

@@ -68,8 +68,11 @@ void CameraBufferManager::updateUniformBuffer(
     memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 }
 
-
-CameraBufferManager::CameraBufferManager(VkDevice device, BufferManager* bufferManager, int max_frames_in_flight)
+CameraBufferManager::CameraBufferManager(
+    VkDevice device,
+    BufferManager* bufferManager,
+    int max_frames_in_flight
+)
 : device(device)
 {
     createUniformBuffer(bufferManager, max_frames_in_flight);

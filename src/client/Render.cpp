@@ -62,20 +62,26 @@ void Render::initVulkan(){
     //TODO better description
     //* Core Vulkan
     //Create Vulkan
-    coreVulkan = new CoreVulkan();
-    coreVulkan->init(window);
+    coreVulkan = new CoreVulkan(
+        window,
+        {},
+        {},
+        {},
+        {}
+    );
 
     BufferManager bufferManager = BufferManager(
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
-        coreVulkan->getGraphicsQueue()
+        coreVulkan->getGraphicsQueue(),
+        coreVulkan->getGraphicsQueueFamilyIndices().graphicsFamily.value()
     );
 
     // Create swapchain
     swapchainManager = new SwapchainManager(
         coreVulkan->getDevice(),
         coreVulkan->getGraphicsQueueFamilyIndices(),
-        coreVulkan->getSwapchainDetails(),
+        coreVulkan->getSwapchainSupportDetails(),
         coreVulkan->getSurface(),
         window
     );
@@ -138,8 +144,7 @@ void Render::initVulkan(){
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
         "./textures/viking_room.png",
-        &bufferManager,
-        commandManager->getCommandPool()
+        &bufferManager
     );
 
     // Create descript
@@ -167,8 +172,18 @@ void Render::initVulkan(){
     this->meshLoader = new MeshLoader("./models/viking_room.obj");
 
     // Create vertex buffer
-    this->vertexBufferManager = new VertexBufferManager(coreVulkan->getDevice(), bufferManager, meshLoader->getVertices(), this->commandManager->getCommandPool());
-    this->indexBufferManager = new IndexBufferManager(coreVulkan->getDevice(), bufferManager, meshLoader->getIndices(), this->commandManager->getCommandPool());
+    vertexBufferManager = new VertexBufferManager(
+        coreVulkan->getDevice(),
+        bufferManager,
+        meshLoader->getVertices()
+    );
+    indexBufferManager = new IndexBufferManager(
+        coreVulkan->getDevice(),
+        bufferManager,
+        meshLoader->getIndices()
+    );
+
+    vkDeviceWaitIdle(coreVulkan->getDevice());
 };
 
 void Render::drawFrame(){
@@ -385,7 +400,7 @@ void Render::recreateSwapChain() {
 
     this->swapchainManager->recreate(
         coreVulkan->getGraphicsQueueFamilyIndices(),
-        coreVulkan->getSwapchainDetails(),
+        coreVulkan->getSwapchainSupportDetails(),
         coreVulkan->getSurface(), this->window
     );
 

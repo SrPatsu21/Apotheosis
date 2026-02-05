@@ -45,14 +45,13 @@ void TextureImage::createStagingBuffer(
 
 void TextureImage::transitionImageLayout(
     BufferManager* bufferManager,
-    VkCommandPool commandPool,
     VkImage image,
     VkFormat format,
     VkImageLayout oldLayout,
     VkImageLayout newLayout,
     uint32_t mipLevels
 ) {
-    VkCommandBuffer commandBuffer = bufferManager->beginSingleTimeCommands(commandPool);
+    VkCommandBuffer commandBuffer = bufferManager->beginImmediate();
 
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -107,7 +106,7 @@ void TextureImage::transitionImageLayout(
         1, &barrier
     );
 
-    bufferManager->endSingleTimeCommands(commandPool, commandBuffer);
+    bufferManager->endImmediate();
 }
 
 void TextureImage::createTextureImageView(){
@@ -150,8 +149,7 @@ void TextureImage::createTextureSampler(
 void TextureImage::createTextureImage(
     VkPhysicalDevice physicalDevice,
     const char* path,
-    BufferManager* bufferManager,
-    VkCommandPool commandPool
+    BufferManager* bufferManager
 ) {
     LoadedImage img{};
     loadImageFromFile(
@@ -183,7 +181,6 @@ void TextureImage::createTextureImage(
     // uploadToGpu
     transitionImageLayout(
         bufferManager,
-        commandPool,
         textureImage,
         VK_FORMAT_R8G8B8A8_SRGB,
         VK_IMAGE_LAYOUT_UNDEFINED,
@@ -192,7 +189,6 @@ void TextureImage::createTextureImage(
     );
 
     bufferManager->copyBufferToImage(
-        commandPool,
         staging.buffer,
         textureImage,
         img.width,
@@ -204,7 +200,6 @@ void TextureImage::createTextureImage(
     generateMipmaps(
         physicalDevice,
         bufferManager,
-        commandPool,
         textureImage,
         VK_FORMAT_R8G8B8A8_SRGB,
         img.width,
@@ -217,12 +212,11 @@ TextureImage::TextureImage(
     VkPhysicalDevice physicalDevice,
     VkDevice device,
     const char* path,
-    BufferManager* bufferManager,
-    VkCommandPool commandPool
+    BufferManager* bufferManager
 ) :
     device(device)
 {
-    createTextureImage(physicalDevice, path, bufferManager, commandPool);
+    createTextureImage(physicalDevice, path, bufferManager);
     createTextureImageView();
     createTextureSampler(physicalDevice);
 }

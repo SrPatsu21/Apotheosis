@@ -45,8 +45,7 @@ public:
     VertexBufferManager(
         VkDevice device,
         BufferManager& bufferManager,
-        const std::vector<Vertex> vertices,
-        VkCommandPool commandPool
+        const std::vector<Vertex> vertices
     );
     /*
     @brief Destructor. Cleans up the vertex buffer and its allocated memory.
