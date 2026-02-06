@@ -2,8 +2,22 @@
 #include <array>
 #include <stdexcept>
 
-//todo verify duplications
-//todo verify compatibility
+RenderPass::AttachmentDesc::AttachmentDesc(
+    VkFormat format,
+    VkSampleCountFlagBits samples,
+    VkAttachmentLoadOp loadOp,
+    VkAttachmentStoreOp storeOp,
+    VkImageLayout initialLayout,
+    VkImageLayout finalLayout
+):
+    format(format),
+    samples(samples),
+    loadOp(loadOp),
+    storeOp(storeOp),
+    initialLayout(initialLayout),
+    finalLayout(finalLayout)
+{}
+
 RenderPass::RenderPass(
     VkDevice device,
     VkFormat swapchainImageFormat,
