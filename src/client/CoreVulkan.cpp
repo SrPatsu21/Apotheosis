@@ -461,6 +461,7 @@ void CoreVulkan::createLogicalDevice(
 
     config.requiredFeatures.samplerAnisotropy = VK_TRUE;
     config.optionalFeatures.sampleRateShading = VK_TRUE;
+    config.optionalFeatures.wideLines = VK_TRUE;
 
     // mods
     for (auto* p : providers) {
@@ -491,6 +492,11 @@ void CoreVulkan::createLogicalDevice(
         config.optionalFeatures.sampleRateShading,
         supported.sampleRateShading,
         enabled.sampleRateShading
+    );
+    enableIfSupported(
+        config.optionalFeatures.wideLines,
+        supported.wideLines,
+        enabled.wideLines
     );
 
     // create info
