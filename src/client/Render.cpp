@@ -43,21 +43,6 @@ void Render::initWindow(){
     glfwSetFramebufferSizeCallback(this->window, framebufferResizeCallback);
 };
 
-void Render::initImGui(){
-    this->ui = new UI;
-    this->ui->init(
-        this->window,
-        coreVulkan->getInstance(),
-        coreVulkan->getPhysicalDevice(),
-        coreVulkan->getDevice(),
-        coreVulkan->getGraphicsQueueFamilyIndices(),
-        coreVulkan->getGraphicsQueue(),
-        this->renderPass->get(),
-        this->swapchainManager->getImages().size(),
-        coreVulkan->getMsaaSamples()
-    );
-}
-
 void Render::initVulkan(){
     //TODO better description
     //* Core Vulkan
@@ -92,7 +77,8 @@ void Render::initVulkan(){
         coreVulkan->getDevice(),
         swapchainManager->getImageFormat(),
         coreVulkan->getMsaaSamples(),
-        coreVulkan->getDepthFormat()
+        coreVulkan->getDepthFormat(),
+        {}
     );
 
     // Create camera buff with uniformBuffer
@@ -186,6 +172,21 @@ void Render::initVulkan(){
 
     vkDeviceWaitIdle(coreVulkan->getDevice());
 };
+
+void Render::initImGui(){
+    this->ui = new UI;
+    this->ui->init(
+        this->window,
+        coreVulkan->getInstance(),
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        coreVulkan->getGraphicsQueueFamilyIndices(),
+        coreVulkan->getGraphicsQueue(),
+        this->renderPass->get(),
+        this->swapchainManager->getImages().size(),
+        coreVulkan->getMsaaSamples()
+    );
+}
 
 void Render::drawFrame(){
     float time = glfwGetTime();
@@ -409,7 +410,8 @@ void Render::recreateSwapChain() {
         coreVulkan->getDevice(),
         swapchainManager->getImageFormat(),
         coreVulkan->getMsaaSamples(),
-        coreVulkan->getDepthFormat()
+        coreVulkan->getDepthFormat(),
+        {}
     );
 
     // 4. Recreate pipeline (depends on render pass + extent)
