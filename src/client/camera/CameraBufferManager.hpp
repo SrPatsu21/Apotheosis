@@ -7,56 +7,115 @@
 #include <cstring>
 #include "../mash/BufferManager.hpp"
 
+/**
+ * @brief Manages per-frame camera uniform buffers.
+ *
+ * CameraBufferManager owns and updates a set of uniform buffers,
+ * typically one per frame-in-flight, used to store camera-related
+ * transformation matrices (model, view, projection).
+ *
+ * The buffers are:
+ * - Host-visible
+ * - Persistently mapped
+ * - Updated once per frame
+ *
+ * This class deliberately separates:
+ * - Buffer lifetime and memory management
+ * - Camera logic and matrix generation
+ */
 class CameraBufferManager
 {
 private:
     VkDevice device;
-    /*
-    A buffer that holds uniform data, such as camera matrices or scene parameters, that are the same for all vertices/fragments in a draw call.
-    */
+
+    // One uniform buffer per frame-in-flight
     std::vector<VkBuffer> uniformBuffers;
-    /*
-    The memory backing the uniformBuffer.
-    */
     std::vector<VkDeviceMemory> uniformBuffersMemory;
 
-
+    // Persistently mapped pointers for fast CPU updates
     std::vector<void*> uniformBuffersMapped;
-    /*
-    @brief Creates a Vulkan uniform buffer and allocates memory for it.
-
-    Sets up a GPU buffer with usage `VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT`,
-    allocates host-visible and host-coherent memory, and binds the memory to the buffer.
-
-    @throws std::runtime_error if creation, allocation, or memory binding fails.
-    */
-    void createUniformBuffer(BufferManager* bufferManager, int max_frames_in_flight);
 
 public:
-    /*
-    @brief Constructor for CameraBufferManager.
 
-    Initializes the Vulkan uniform buffer and allocates its memory.
-    This buffer is intended to store the camera's view/projection matrices or
-    other per-frame uniform data.
+    /**
+     * @brief Interface for camera data providers.
+     *
+     * Camera providers are responsible for filling a UniformBufferObject
+     * with view/projection (and optionally model) matrices.
+     *
+     * This abstraction allows:
+     * - Different camera behaviors (FPS, orbit, cinematic, debug)
+     * - Tooling or mod-driven camera overrides
+     * - Decoupling camera math from buffer management
+     */
+    struct ICameraProvider {
+        virtual ~ICameraProvider() = default;
 
-    @throws std::runtime_error if buffer creation or memory allocation fails.
-    */
+        /**
+         * @param ubo Output uniform buffer object to be filled.
+         * @param time Current time (typically seconds since start).
+         * @param extent Current swapchain extent (for aspect ratio).
+         */
+        virtual void fill(
+            UniformBufferObject& ubo,
+            float time,
+            const VkExtent2D& extent
+        ) = 0;
+    };
+
+    /**
+     * @brief Default camera implementation.
+     *
+     * Produces:
+     * - A rotating model matrix
+     * - A fixed look-at view matrix
+     * - A perspective projection matching the swapchain aspect ratio
+     *
+     * Intended as a reference implementation and sane default.
+     */
+    struct DefaultCameraProvider : ICameraProvider {
+        void fill(
+            UniformBufferObject& ubo,
+            float time,
+            const VkExtent2D& extent
+        ) override;
+    };
+
+    /**
+     * @brief Creates uniform buffers for all frames-in-flight.
+     *
+     * Allocates, binds and persistently maps one uniform buffer per frame.
+     *
+     * @param device Logical Vulkan device.
+     * @param bufferManager BufferManager used for buffer creation/allocation.
+     * @param max_frames_in_flight Number of concurrent frames.
+     */
     CameraBufferManager(
         VkDevice device,
         BufferManager* bufferManager,
         int max_frames_in_flight
     );
 
-    /*
-    @brief Destructor for CameraBufferManager.
-    Cleans up the Vulkan uniform buffer and frees its associated memory.
-    */
+    /**
+     * @brief Releases all uniform buffers and associated memory.
+     */
     ~CameraBufferManager();
 
-    void updateUniformBuffer(SwapchainManager* swapchainManager, uint32_t currentFrame, float time);
+    /**
+     * @brief Updates the uniform buffer for the given frame.
+     *
+     * Copies the provided UBO into the persistently mapped buffer
+     * associated with the current frame index.
+     *
+     * @param currentFrame Frame index (in-flight).
+     * @param ubo Uniform buffer data to upload.
+     */
+    void update(
+        uint32_t currentFrame,
+        const UniformBufferObject& ubo
+    );
 
     const std::vector<VkBuffer>& getUniformBuffers() const { return uniformBuffers; }
     std::vector<VkDeviceMemory> getUniformBufferMemorys() const { return uniformBuffersMemory; }
-    std::vector<void*> getUniformBuffersMapped() const {return uniformBuffersMapped; }
+    std::vector<void*> getUniformBuffersMapped() const { return uniformBuffersMapped; }
 };
