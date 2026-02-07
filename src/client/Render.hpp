@@ -56,6 +56,7 @@ private:
     CommandManager* commandManager;
     TextureImage* textureImage;
     MeshLoader* meshLoader;
+    CameraBufferManager::ICameraProvider* iCameraProvider;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
 

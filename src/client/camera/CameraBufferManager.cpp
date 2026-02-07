@@ -1,7 +1,40 @@
 #include "CameraBufferManager.hpp"
 #define GLM_FORCE_RADIANS
 
-void CameraBufferManager::createUniformBuffer(BufferManager* bufferManager, int max_frames_in_flight){
+void CameraBufferManager::DefaultCameraProvider::fill(
+    UniformBufferObject& ubo,
+    float time,
+    const VkExtent2D& extent
+) {
+    ubo.model = glm::rotate(
+        glm::mat4(1.0f),
+        time,
+        glm::vec3(-0.2f, 0.25f, 0.0f)
+    );
+
+    ubo.view = glm::lookAt(
+        glm::vec3(2.0f, 2.0f, 2.0f),
+        glm::vec3(0.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f)
+    );
+
+    float aspect = extent.width / float(extent.height);
+    ubo.proj = glm::perspective(
+        glm::radians(45.0f),
+        aspect,
+        0.1f,
+        10.0f
+    );
+    ubo.proj[1][1] *= -1;
+}
+
+CameraBufferManager::CameraBufferManager(
+    VkDevice device,
+    BufferManager* bufferManager,
+    int max_frames_in_flight
+)
+: device(device)
+{
     //constexpr force definition on compile time
     constexpr VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -33,50 +66,12 @@ void CameraBufferManager::createUniformBuffer(BufferManager* bufferManager, int 
     }
 }
 
-void CameraBufferManager::updateUniformBuffer(
-    SwapchainManager* swapchainManager,
+void CameraBufferManager::update(
     uint32_t currentFrame,
-    float time)
-{
-    UniformBufferObject ubo{};
-
-    ubo.model = glm::rotate(
-        glm::mat4(1.0f),
-        time,
-        glm::vec3(-0.2f, 0.25f, 0.0f)
-    );
-
-    ubo.view = glm::lookAt(
-        glm::vec3(2.0f, 2.0f, 2.0f),
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f)
-    );
-
-    const auto extent = swapchainManager->getExtent();
-    const float aspect =
-        extent.width / static_cast<float>(extent.height);
-
-    ubo.proj = glm::perspective(
-        glm::radians(45.0f),
-        aspect,
-        0.1f,
-        10.0f
-    );
-
-    ubo.proj[1][1] *= -1;
-
-    memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
+    const UniformBufferObject& ubo
+) {
+    memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(UniformBufferObject));
 }
-
-CameraBufferManager::CameraBufferManager(
-    VkDevice device,
-    BufferManager* bufferManager,
-    int max_frames_in_flight
-)
-: device(device)
-{
-    createUniformBuffer(bufferManager, max_frames_in_flight);
-};
 
 CameraBufferManager::~CameraBufferManager()
 {

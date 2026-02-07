@@ -82,6 +82,8 @@ void Render::initVulkan(){
     );
 
     // Create camera buff with uniformBuffer
+    iCameraProvider = new CameraBufferManager::DefaultCameraProvider();
+
     cameraBufferManager = new CameraBufferManager(
         coreVulkan->getDevice(),
         &bufferManager,
@@ -224,7 +226,13 @@ void Render::drawFrame(){
             this->descriptorManager->getSets()[currentFrame], [this](VkCommandBuffer cmd) { this->ui->render(cmd); });
 
     // Update UBOs for this frame
-    this->cameraBufferManager->updateUniformBuffer(this->swapchainManager, currentFrame, time);
+    UniformBufferObject ubo{};
+    iCameraProvider->fill(
+        ubo,
+        time,
+        swapchainManager->getExtent()
+    );
+    this->cameraBufferManager->update(currentFrame, ubo);
 
     // --- Submit work ---
     VkSemaphore waitSemaphores[] = { this->imageAvailableSemaphores[this->currentFrame] };
@@ -303,6 +311,7 @@ void Render::cleanup(){
         if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
         if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
         if (this->descriptorManager){ delete this->descriptorManager; this->descriptorManager = nullptr; }
+        if (this->iCameraProvider){ delete this->iCameraProvider; this->iCameraProvider = nullptr; }
         if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
         if (this->textureImage){ delete this->textureImage; this->textureImage = nullptr; }
         if (this->ui) { this->ui->cleanup(); delete this->ui; this->ui = nullptr; }
