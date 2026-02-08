@@ -105,7 +105,8 @@ void Render::initVulkan(){
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
         coreVulkan->getMsaaSamples(),
-        coreVulkan->getDepthFormat()
+        coreVulkan->getDepthFormat(),
+        VK_IMAGE_ASPECT_DEPTH_BIT
     );
 
     //Create framebuffers
@@ -447,7 +448,8 @@ void Render::recreateSwapChain() {
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
         coreVulkan->getMsaaSamples(),
-        coreVulkan->getDepthFormat()
+        coreVulkan->getDepthFormat(),
+        VK_IMAGE_ASPECT_DEPTH_BIT
     );
 
     // 7. Recreate framebuffers
