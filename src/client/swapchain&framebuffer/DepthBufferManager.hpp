@@ -2,61 +2,74 @@
 
 #include "../CoreVulkan.hpp"
 
+/**
+ * @brief Manages the depth (and optional stencil) attachment image.
+ *
+ * DepthBufferManager encapsulates the creation and lifetime of the
+ * depth/stencil image used by the render pass.
+ *
+ * The depth buffer:
+ * - Matches the swapchain extent
+ * - Supports optional MSAA
+ * - Is allocated in device-local memory
+ *
+ * This class intentionally hides Vulkan image creation details,
+ * exposing only the resources required for framebuffer construction.
+ */
 class DepthBufferManager
 {
 private:
     VkDevice device;
-    /*
-    A GPU image resource that stores the depth buffer for your render pass.
-    It is needed for proper depth testing in 3D scenes.
-    */
     VkImage depthImage;
-    /*
-    Memory backing the depthImage.
-    */
     VkDeviceMemory depthImageMemory;
-    /*
-    A view of the depthImage, which is used when attaching it to a framebuffer.
-    */
     VkImageView depthImageView;
 
 public:
     /**
-    @brief Constructs a DepthBufferManager, creating the GPU resources for depth testing.
+     * @brief Checks whether a depth format includes a stencil component.
+     *
+     * Used to automatically extend the image aspect mask when creating
+     * the depth image view.
+     *
+     * @param format Depth image format.
+     * @return true if the format includes a stencil component.
+     */
+    static bool hasStencilComponent(VkFormat format);
 
-    This constructor creates:
-    - a Vulkan depth image,
-    - allocates GPU memory for it,
-    - and creates an image view for use as a depth attachment.
-
-    The created resources are used as the depth buffer in a render pass.
-
-    @param swapchainExtent The extent (width & height) of the swapchain images, used for depth buffer size.
-
-    @throws std::runtime_error if image, memory, or image view creation fails.
-    */
+    /**
+     * @brief Creates the depth (and optional stencil) buffer.
+     *
+     * The image is created with:
+     * - The same extent as the swapchain
+     * - The specified MSAA sample count
+     * - VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+     *
+     * If the chosen depth format contains a stencil component,
+     * VK_IMAGE_ASPECT_STENCIL_BIT is automatically added to the
+     * image view aspect mask.
+     *
+     * @param physicalDevice Physical device used for memory selection.
+     * @param device Logical Vulkan device.
+     * @param swapchainExtent Resolution of the swapchain.
+     * @param msaaSamples Sample count for depth MSAA.
+     * @param depthFormat Depth (or depth-stencil) image format.
+     * @param aspect Initial aspect mask (typically DEPTH_BIT).
+     */
     DepthBufferManager(
         VkPhysicalDevice physicalDevice,
         VkDevice device,
         VkExtent2D swapchainExtent,
         VkSampleCountFlagBits msaaSamples,
-        VkFormat depthFormat
+        VkFormat depthFormat,
+        VkImageAspectFlags aspect
     );
-    /**
-    @brief Destructor, cleans up the Vulkan depth buffer resources.
 
-    Destroys the depth image view, the image itself, and frees the GPU memory allocated for it.
-    */
+    /**
+     * @brief Destroys the depth image, image view and frees memory.
+     */
     ~DepthBufferManager();
 
-
-    VkImage getDepthImage() const {
-        return depthImage;
-    }
-    VkDeviceMemory getDepthImageMemory() const {
-        return depthImageMemory;
-    }
-    VkImageView getDepthImageView() const {
-        return depthImageView;
-    }
+    VkImage getDepthImage() const { return depthImage; }
+    VkDeviceMemory getDepthImageMemory() const { return depthImageMemory; }
+    VkImageView getDepthImageView() const { return depthImageView; }
 };

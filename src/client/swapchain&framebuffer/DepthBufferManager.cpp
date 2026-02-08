@@ -6,13 +6,15 @@ DepthBufferManager::DepthBufferManager(
     VkDevice device,
     VkExtent2D swapchainExtent,
     VkSampleCountFlagBits msaaSamples,
-    VkFormat depthFormat
+    VkFormat depthFormat,
+    VkImageAspectFlags aspect
 ) :
-        device(device),
-        depthImage(VK_NULL_HANDLE),
-        depthImageMemory(VK_NULL_HANDLE),
-        depthImageView(VK_NULL_HANDLE)
+        device(device)
 {
+    if (hasStencilComponent(depthFormat)) {
+        aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
+
     createImage(
         physicalDevice,
         device,
@@ -32,7 +34,7 @@ DepthBufferManager::DepthBufferManager(
         device,
         depthImage,
         depthFormat,
-        VK_IMAGE_ASPECT_DEPTH_BIT,
+        aspect,
         1
     );
 }
@@ -52,3 +54,7 @@ DepthBufferManager::~DepthBufferManager()
         this->depthImageMemory = VK_NULL_HANDLE;
     }
 };
+
+bool DepthBufferManager::hasStencilComponent(VkFormat format) {
+    return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+}
