@@ -43,10 +43,22 @@ void CommandManager::allocateCommandbuffers(VkDevice device, const std::vector<V
     }
 }
 
-void CommandManager::recordCommandBuffer(size_t imageIndex, VkRenderPass renderPass, GraphicsPipeline* graphicsPipeline,
-    const std::vector<VkFramebuffer>& framebuffers, VkExtent2D extent, VkBuffer vertexBuffer, VkBuffer indexBuffer,
-    uint32_t indicesSize, VkDescriptorSet descriptorSet, std::function<void(VkCommandBuffer)> extraRecording)
-    {
+void CommandManager::recordCommandBuffer(
+    size_t imageIndex,
+    VkRenderPass renderPass,
+    GraphicsPipeline* graphicsPipeline,
+    const std::vector<VkFramebuffer>& framebuffers,
+    VkExtent2D extent,
+    VkBuffer vertexBuffer,
+    VkBuffer indexBuffer,
+    uint32_t indicesSize,
+    VkDescriptorSet descriptorSet,
+    std::function<void(VkCommandBuffer)> extraRecording
+) {
+    #ifndef NDEBUG
+        assert(imageIndex < commandBuffers.size());
+    #endif
+
     //* Command Buffer Begin
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -65,11 +77,12 @@ void CommandManager::recordCommandBuffer(size_t imageIndex, VkRenderPass renderP
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = extent;
 
-    VkClearValue clearValues[2];
+    std::vector<VkClearValue> clearValues;
+    clearValues.reserve(expectedCount);
     clearValues[0].color = {{0.4f, 1.0f, 1.0f, 1.0f}};
     clearValues[1].depthStencil = {1.0f, 0};
     renderPassInfo.clearValueCount = 2;
-    renderPassInfo.pClearValues = clearValues;
+    renderPassInfo.pClearValues = &clearValues[0];
 
     vkCmdBeginRenderPass(this->commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -101,4 +114,5 @@ void CommandManager::recordCommandBuffer(size_t imageIndex, VkRenderPass renderP
 
 CommandManager::~CommandManager() {
     vkDestroyCommandPool(device, this->commandPool, nullptr);
+    commandPool = VK_NULL_HANDLE;
 }
