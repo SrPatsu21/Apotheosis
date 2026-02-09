@@ -11,6 +11,9 @@
 #include <map>
 #include <optional>
 #include "./swapchain&framebuffer/SwapchainSupportDetails.hpp"
+#ifndef NDEBUG
+    #include <cassert>
+#endif
 
 /// Vulkan validation layers enabled in debug builds.
 const std::vector<const char*> validationLayers = {

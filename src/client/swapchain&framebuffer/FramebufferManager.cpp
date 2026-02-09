@@ -15,11 +15,17 @@ FramebufferManager::FramebufferManager(
 
     for (size_t i = 0; i < swapchainImageViews.size(); ++i) {
 
-        std::array<VkImageView, 3> attachments = {
-            colorImageView,
-            depthImageView,
-            swapchainImageViews[i]
-        };
+        std::array<VkImageView, 3> attachments;
+        attachments[0] = colorImageView;
+        attachments[1] = depthImageView;
+        attachments[2] = swapchainImageViews[i];
+
+        #ifndef NDEBUG
+            assert(renderPass != VK_NULL_HANDLE);
+            assert(colorImageView != VK_NULL_HANDLE);
+            assert(depthImageView != VK_NULL_HANDLE);
+            assert(!swapchainImageViews.empty());
+        #endif
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -39,5 +45,6 @@ FramebufferManager::FramebufferManager(
 FramebufferManager::~FramebufferManager() {
     for (auto framebuffer : this->swapchainFramebuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
+        framebuffer = VK_NULL_HANDLE;
     }
 }

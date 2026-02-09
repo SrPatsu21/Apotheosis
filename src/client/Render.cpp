@@ -121,7 +121,9 @@ void Render::initVulkan(){
 
     // create semaphore and fence
     createSyncObjects();
-    initImagesInFlight(this->swapchainManager->getImages().size());
+    initImagesInFlight(
+        this->swapchainManager->getImages().size()
+    );
 
     // Create command
     this->commandManager = new CommandManager(
