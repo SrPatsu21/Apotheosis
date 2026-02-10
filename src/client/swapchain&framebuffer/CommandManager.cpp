@@ -53,11 +53,17 @@ void CommandManager::recordCommandBuffer(
     VkBuffer indexBuffer,
     uint32_t indicesSize,
     VkDescriptorSet descriptorSet,
-    std::function<void(VkCommandBuffer)> extraRecording
+    const std::vector<IClearValueProvider*>& clearProviders,
+    const std::vector<IViewportProvider*>& viewportProviders,
+    const std::vector<IScissorProvider*>& scissorProviders,
+    const std::vector<ICommandBufferRecorder*>& extraRecorders
 ) {
-    #ifndef NDEBUG
-        assert(imageIndex < commandBuffers.size());
-    #endif
+#ifndef NDEBUG
+    assert(imageIndex < commandBuffers.size());
+    assert(imageIndex < framebuffers.size());
+#endif
+
+    VkCommandBuffer cmd = commandBuffers[imageIndex];
 
     //* Command Buffer Begin
     VkCommandBufferBeginInfo beginInfo{};
@@ -65,49 +71,91 @@ void CommandManager::recordCommandBuffer(
     beginInfo.flags = 0;
     beginInfo.pInheritanceInfo = nullptr;
 
-    if (vkBeginCommandBuffer(this->commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
+    if (vkBeginCommandBuffer(cmd, &beginInfo) != VK_SUCCESS) {
         throw std::runtime_error("failed to begin recording command buffer!");
     }
 
-    //* Starting a render pass
+    //* Clear values (mod)
+    std::vector<VkClearValue> clearValues;
+
+    for (auto* p : clearProviders) {
+        p->contribute(clearValues);
+    }
+
+    if (clearValues.empty()) {
+        clearValues.reserve(2);
+        VkClearValue color{};
+        color.color = {{0.4f, 1.0f, 1.0f, 1.0f}};
+        clearValues.emplace_back(color);
+
+        VkClearValue depth{};
+        depth.depthStencil = {1.0f, 0};
+        clearValues.emplace_back(depth);
+    }
+
+    //* Begin render pass
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = renderPass;
     renderPassInfo.framebuffer = framebuffers[imageIndex];
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = extent;
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassInfo.pClearValues = clearValues.data();
 
-    std::vector<VkClearValue> clearValues;
-    clearValues.reserve(expectedCount);
-    clearValues[0].color = {{0.4f, 1.0f, 1.0f, 1.0f}};
-    clearValues[1].depthStencil = {1.0f, 0};
-    renderPassInfo.clearValueCount = 2;
-    renderPassInfo.pClearValues = &clearValues[0];
+    vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBeginRenderPass(this->commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    //* Pipeline & draw
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->getPipeline());
 
-    //* Scene drawing commands
-    vkCmdBindPipeline(this->commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->getPipeline());
+    VkBuffer vertexBuffers[] = { vertexBuffer };
+    VkDeviceSize offsets[] = { 0 };
+    vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
 
-    VkBuffer vertexBuffers[] = {vertexBuffer};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(this->commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(this->commandBuffers[imageIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindDescriptorSets(this->commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->getLayout(), 0, 1, &descriptorSet, 0, nullptr);
+    vkCmdBindIndexBuffer(cmd, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-    vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &graphicsPipeline->getViewport());
-    vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &graphicsPipeline->getScissor());
+    vkCmdBindDescriptorSets(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        graphicsPipeline->getLayout(),
+        0,
+        1,
+        &descriptorSet,
+        0,
+        nullptr
+    );
 
-    vkCmdDrawIndexed(this->commandBuffers[imageIndex], indicesSize, 1, 0, 0, 0);
+    // Viewport
+    VkViewport viewport = graphicsPipeline->getViewport();
+    for (auto* p : viewportProviders) {
+        if (p->overrideViewport(viewport)) {
+            break;
+        }
+    }
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
 
-    //* Extra recording (e.g. ImGui)
-    if (extraRecording) {
-        extraRecording(this->commandBuffers[imageIndex]);
+    // Scissor
+    VkRect2D scissor = graphicsPipeline->getScissor();
+    for (auto* p : scissorProviders) {
+        if (p->overrideScissor(scissor)) {
+            break;
+        }
+    }
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+    //draw
+    vkCmdDrawIndexed(cmd, indicesSize, 1, 0, 0, 0);
+
+    //* Extra recording (mods, ImGui, debug, etc)
+    for (auto* r : extraRecorders) {
+        r->record(cmd);
     }
 
-    vkCmdEndRenderPass(this->commandBuffers[imageIndex]);
 
-    if (vkEndCommandBuffer(this->commandBuffers[imageIndex]) != VK_SUCCESS) {
+    vkCmdEndRenderPass(cmd);
+
+    //* End command buffer
+    if (vkEndCommandBuffer(cmd) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
 }

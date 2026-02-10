@@ -14,13 +14,24 @@ private:
 
 public:
     struct ICommandBufferRecorder {
+        virtual ~ICommandBufferRecorder() = default;
         virtual void record(VkCommandBuffer cmd) = 0;
     };
 
     struct IClearValueProvider {
-        virtual void getClearValues(std::vector<VkClearValue>& out) = 0;
+        virtual ~IClearValueProvider() = default;
+        virtual void contribute(std::vector<VkClearValue>& clearValues) = 0;
     };
 
+    struct IViewportProvider {
+        virtual ~IViewportProvider() = default;
+        virtual bool overrideViewport(VkViewport& viewport) = 0;
+    };
+
+    struct IScissorProvider {
+        virtual ~IScissorProvider() = default;
+        virtual bool overrideScissor(VkRect2D& scissor) = 0;
+    };
 
     void allocateCommandbuffers(VkDevice device, const std::vector<VkFramebuffer>& framebuffers);
 
@@ -42,7 +53,10 @@ public:
         VkBuffer indexBuffer,
         uint32_t indicesSize,
         VkDescriptorSet descriptorSet,
-        std::function<void(VkCommandBuffer)> extraRecording
+        const std::vector<IClearValueProvider*>& clearProviders,
+        const std::vector<IViewportProvider*>& viewportProviders,
+        const std::vector<IScissorProvider*>& scissorProviders,
+        const std::vector<ICommandBufferRecorder*>& extraRecorders
     );
 
     VkCommandPool getCommandPool() const { return commandPool; }

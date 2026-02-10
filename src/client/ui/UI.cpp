@@ -114,11 +114,6 @@ void UI::build() {
     ImGui::End();
 }
 
-void UI::render(VkCommandBuffer cmd) {
-    ImGui::Render();
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
-}
-
 void UI::cleanup() {
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
