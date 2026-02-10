@@ -4,6 +4,7 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "../CoreVulkan.hpp"
+#include "../swapchain&framebuffer/CommandManager.hpp"
 
 class UI {
 private:
@@ -12,6 +13,8 @@ private:
     VkDescriptorPool descriptorPool;
 
 public:
+    class ImGuiCommandBufferRecorder;
+
     UI();
     ~UI();
 
@@ -39,6 +42,23 @@ public:
 
     void newFrame(); // start UI frame
     void build(); // build your UI widgets
-    void render(VkCommandBuffer cmd); // record into Vulkan command buffer
     void cleanup();
 };
+
+class UI::ImGuiCommandBufferRecorder final
+        : public CommandManager::ICommandBufferRecorder
+    {
+    public:
+        static ImGuiCommandBufferRecorder& instance() {
+            static ImGuiCommandBufferRecorder recorder;
+            return recorder;
+        }
+
+        void record(VkCommandBuffer cmd) override {
+            ImGui::Render();
+            ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+        }
+
+    private:
+        ImGuiCommandBufferRecorder() = default;
+    };

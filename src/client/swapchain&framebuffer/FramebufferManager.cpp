@@ -7,7 +7,7 @@ FramebufferManager::FramebufferManager(
     std::vector<VkImageView> swapchainImageViews,
     const VkImageView colorImageView,
     const VkImageView depthImageView,
-    VkExtent2D swapChainExtent
+    const VkExtent2D swapChainExtent
 ) :
     device(device)
 {
@@ -15,11 +15,17 @@ FramebufferManager::FramebufferManager(
 
     for (size_t i = 0; i < swapchainImageViews.size(); ++i) {
 
-        std::array<VkImageView, 3> attachments = {
-            colorImageView,
-            depthImageView,
-            swapchainImageViews[i]
-        };
+        std::array<VkImageView, 3> attachments;
+        attachments[0] = colorImageView; // MSAA color
+        attachments[1] = depthImageView; // depth/stencil
+        attachments[2] = swapchainImageViews[i]; // resolve / present
+
+        #ifndef NDEBUG
+            assert(renderPass != VK_NULL_HANDLE);
+            assert(colorImageView != VK_NULL_HANDLE);
+            assert(depthImageView != VK_NULL_HANDLE);
+            assert(!swapchainImageViews.empty());
+        #endif
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -37,7 +43,9 @@ FramebufferManager::FramebufferManager(
 }
 
 FramebufferManager::~FramebufferManager() {
-    for (auto framebuffer : this->swapchainFramebuffers) {
+    for (VkFramebuffer& framebuffer : this->swapchainFramebuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
+        framebuffer = VK_NULL_HANDLE;
     }
+    swapchainFramebuffers.clear();
 }

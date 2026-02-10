@@ -121,7 +121,9 @@ void Render::initVulkan(){
 
     // create semaphore and fence
     createSyncObjects();
-    initImagesInFlight(this->swapchainManager->getImages().size());
+    initImagesInFlight(
+        this->swapchainManager->getImages().size()
+    );
 
     // Create command
     this->commandManager = new CommandManager(
@@ -221,10 +223,21 @@ void Render::drawFrame(){
     // Reset + record only the command buffer for this swapchain image
     VkCommandBuffer cmd = this->commandManager->getCommandBuffers()[imageIndex];
     vkResetCommandBuffer(cmd, 0);
-    this->commandManager->recordCommandBuffer(imageIndex, this->renderPass->get(), this->graphicsPipeline,
-            this->framebufferManager->getFramebuffers(), this->swapchainManager->getExtent(),
-            this->vertexBufferManager->getVertexBuffer(), this->indexBufferManager->getIndexBuffer(), static_cast<uint32_t>(meshLoader->getIndices().size()),
-            this->descriptorManager->getSets()[currentFrame], [this](VkCommandBuffer cmd) { this->ui->render(cmd); });
+    this->commandManager->recordCommandBuffer(
+        imageIndex,
+        this->renderPass->get(),
+        this->graphicsPipeline,
+        this->framebufferManager->getFramebuffers(),
+        this->swapchainManager->getExtent(),
+        this->vertexBufferManager->getVertexBuffer(),
+        this->indexBufferManager->getIndexBuffer(),
+        static_cast<uint32_t>(meshLoader->getIndices().size()),
+        this->descriptorManager->getSets()[currentFrame],
+        {},
+        {},
+        {},
+        {&UI::ImGuiCommandBufferRecorder::instance()}
+    );
 
     // Update UBOs for this frame
     UniformBufferObject ubo{};

@@ -6,32 +6,41 @@
 #include <cstring>
 
 /**
- * @class FramebufferManager
- * @brief Manages the Vulkan framebuffers for the swapchain images.
+ * @brief Manages framebuffer creation for each swapchain image.
  *
- * This class creates and destroys a set of framebuffers, each corresponding
- * to a swapchain image combined with the depth buffer image view.
+ * FramebufferManager creates one VkFramebuffer per swapchain image,
+ * binding together:
+ * - The multisampled color attachment
+ * - The depth (and optional stencil) attachment
+ * - The resolve / presentation swapchain image
+ *
+ * The framebuffer configuration must exactly match the attachments
+ * declared in the associated render pass.
+ *
+ * This class owns all created framebuffers and is responsible for
+ * their lifetime.
  */
 class FramebufferManager
 {
 private:
     VkDevice device;
-    /*
-    A list of framebuffers — one for each swapchain image.
-    A framebuffer is what your render pass writes into. It combines attachments:
-    color (the swapchain image) and optionally depth/stencil.
-    You need one framebuffer per swapchain image.
-    */
     std::vector<VkFramebuffer> swapchainFramebuffers;
 
 public:
     /**
-     * @brief Constructs a FramebufferManager and creates all framebuffers.
+     * @brief Creates a framebuffer for each swapchain image.
      *
-     * @param device The Vulkan logical device.
-     * @param renderPass The render pass these framebuffers are compatible with.
-     * @param swapchainManager Reference to the SwapchainManager for image views and extent.
-     * @param depthBufferManager Reference to the DepthBufferManager for depth image view.
+     * Attachment order must match the render pass attachment order:
+     * 0 - Multisampled color attachment
+     * 1 - Depth (or depth-stencil) attachment
+     * 2 - Resolve / swapchain image
+     *
+     * @param device Logical Vulkan device.
+     * @param renderPass Render pass compatible with the attachments.
+     * @param swapchainImageViews Image views of the swapchain images.
+     * @param colorImageView Multisampled color image view.
+     * @param depthImageView Depth (or depth-stencil) image view.
+     * @param swapChainExtent Framebuffer dimensions.
      */
     FramebufferManager(
         VkDevice device,
@@ -39,11 +48,11 @@ public:
         std::vector<VkImageView> swapchainImageViews,
         const VkImageView colorImageView,
         const VkImageView depthImageView,
-        VkExtent2D swapChainExtent
+        const VkExtent2D swapChainExtent
     );
 
     /**
-     * @brief Destroys all Vulkan framebuffers.
+     * @brief Destroys all framebuffers.
      */
     ~FramebufferManager();
 
