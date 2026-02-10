@@ -588,3 +588,7 @@ uint32_t CoreVulkan::findMemoryType(
     if (fallback != UINT32_MAX) return fallback;
     throw std::runtime_error("no suitable memory type found");
 }
+
+bool CoreVulkan::hasStencilComponent(VkFormat format) {
+    return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+}

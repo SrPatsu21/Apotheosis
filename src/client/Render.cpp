@@ -126,17 +126,20 @@ void Render::initVulkan(){
     );
 
     // Create command
-    this->commandManager = new CommandManager(
+    commandManager = new CommandManager(
         coreVulkan->getDevice(),
         coreVulkan->getGraphicsQueueFamilyIndices().graphicsFamily.value(),
         this->framebufferManager->getFramebuffers()
     );
 
+
     textureImage = new TextureImage(
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
         "./textures/viking_room.png",
-        &bufferManager
+        &bufferManager,
+        {},
+        {&TextureImage::DefaultImageTransitionPolicy::instance()}
     );
 
     // Create descript
@@ -156,10 +159,12 @@ void Render::initVulkan(){
         coreVulkan->getMsaaSamples()
     );
 
-    // VkPhysicalDeviceProperties deviceProperties;
-    // vkGetPhysicalDeviceProperties(CoreVulkan::getPhysicalDevice(), &deviceProperties);
+    #ifndef NDEBUG
+        // VkPhysicalDeviceProperties deviceProperties;
+        // vkGetPhysicalDeviceProperties(CoreVulkan::getPhysicalDevice(), &deviceProperties);
 
-    // std::cout << "Push Constant Max Size: " << deviceProperties.limits.maxPushConstantsSize << " bytes\n";
+        // std::cout << "Push Constant Max Size: " << deviceProperties.limits.maxPushConstantsSize << " bytes\n";
+    #endif
 
     this->meshLoader = new MeshLoader("./models/viking_room.obj");
 

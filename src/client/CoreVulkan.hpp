@@ -314,6 +314,17 @@ public:
         VkMemoryPropertyFlags preferred
     );
 
+    /**
+     * @brief Checks whether a depth format includes a stencil component.
+     *
+     * Used to automatically extend the image aspect mask when creating
+     * the depth image view.
+     *
+     * @param format Depth image format.
+     * @return true if the format includes a stencil component.
+     */
+    static bool hasStencilComponent(VkFormat format);
+
 //* get
     const VkInstance& getInstance() const { return instance; }
     const VkSurfaceKHR& getSurface() const { return surface; }

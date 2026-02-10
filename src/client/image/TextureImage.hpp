@@ -6,7 +6,52 @@
 
 class TextureImage
 {
-private:
+public:
+
+    struct TextureImageDesc {
+        VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
+        VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+            VK_IMAGE_USAGE_SAMPLED_BIT;
+        VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
+        bool generateMipmaps = true;
+    };
+
+    class IImageTransitionPolicy {
+    public:
+        virtual ~IImageTransitionPolicy() = default;
+
+        virtual void transition(
+            BufferManager* bufferManager,
+            VkImage image,
+            VkFormat format,
+            VkImageLayout oldLayout,
+            VkImageLayout newLayout,
+            uint32_t mipLevels
+        ) = 0;
+    };
+
+    class DefaultImageTransitionPolicy : public IImageTransitionPolicy{
+    public:
+        static DefaultImageTransitionPolicy& instance() {
+            static DefaultImageTransitionPolicy policy;
+            return policy;
+        }
+
+        void transition(
+            BufferManager* bufferManager,
+            VkImage image,
+            VkFormat format,
+            VkImageLayout oldLayout,
+            VkImageLayout newLayout,
+            uint32_t mipLevels
+        ) override;
+
+    private:
+        DefaultImageTransitionPolicy() = default;
+    };
+
+protected:
     VkDevice device;
     uint32_t mipLevels;
     VkImage textureImage;
@@ -83,21 +128,13 @@ private:
     void createTextureImage(
         VkPhysicalDevice physicalDevice,
         const char* path,
-        BufferManager* bufferManager
+        BufferManager* bufferManager,
+        const TextureImageDesc& desc,
+        IImageTransitionPolicy* transitionPolicy
     );
     void createTextureImageView();
-    void createTextureSampler(VkPhysicalDevice physicalDevice);
-public:
-
-    TextureImage(
-        VkPhysicalDevice physicalDevice,
-        VkDevice device,
-        const char* path,
-        BufferManager* bufferManager
-    );
-    void loadImageFromFile(
-        const char* path,
-        LoadedImage& img
+    void createTextureSampler(
+        VkPhysicalDevice physicalDevice
     );
     void createStagingBuffer(
         BufferManager* bufferManager,
@@ -105,18 +142,24 @@ public:
         VkBuffer& buffer,
         VkDeviceMemory& memory
     );
-    static void transitionImageLayout(
+    void loadImageFromFile(
+        const char* path,
+        LoadedImage& img
+    );
+
+public:
+    TextureImage(
+        VkPhysicalDevice physicalDevice,
+        VkDevice device,
+        const char* path,
         BufferManager* bufferManager,
-        VkImage image,
-        VkFormat format,
-        VkImageLayout oldLayout,
-        VkImageLayout newLayout,
-        uint32_t mipLevels
+        const TextureImageDesc& desc,
+        IImageTransitionPolicy* transitionPolicy
     );
     ~TextureImage();
 
-const VkImage& getTextureImage() const { return textureImage; }
-const VkDeviceMemory& getTextureImageMemory() const { return textureImageMemory; }
-const VkImageView& getTextureImageView() const { return textureImageView; }
-const VkSampler& getTextureSampler() const { return textureSampler; }
+    const VkImage& getTextureImage() const { return textureImage; }
+    const VkDeviceMemory& getTextureImageMemory() const { return textureImageMemory; }
+    const VkImageView& getTextureImageView() const { return textureImageView; }
+    const VkSampler& getTextureSampler() const { return textureSampler; }
 };
