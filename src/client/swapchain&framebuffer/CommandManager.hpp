@@ -5,13 +5,6 @@
 #include "../graphics_pipeline/GraphicsPipeline.hpp"
 
 class CommandManager {
-private:
-    VkDevice device;
-    VkCommandPool commandPool;
-    std::vector<VkCommandBuffer> commandBuffers;
-
-    void createCommandPool(uint32_t graphicsQueueFamily);
-
 public:
     struct ICommandBufferRecorder {
         virtual ~ICommandBufferRecorder() = default;
@@ -32,6 +25,43 @@ public:
         virtual ~IScissorProvider() = default;
         virtual bool overrideScissor(VkRect2D& scissor) = 0;
     };
+private:
+    VkDevice device;
+    VkCommandPool commandPool;
+    std::vector<VkCommandBuffer> commandBuffers;
+
+    void createCommandPool(uint32_t graphicsQueueFamily);
+
+    void beginCommandBuffer(VkCommandBuffer cmd);
+    void buildClearValues (
+        const std::vector<IClearValueProvider*>& providers,
+        std::vector<VkClearValue>& clearValues
+    );
+
+    void beginRenderPass(
+        VkCommandBuffer cmd,
+        VkRenderPass renderPass,
+        VkFramebuffer framebuffer,
+        VkExtent2D extent,
+        const std::vector<VkClearValue>& clearValues
+    );
+
+    void bindPipelineAndResources(
+        VkCommandBuffer cmd,
+        GraphicsPipeline* graphicsPipeline,
+        VkBuffer vertexBuffer,
+        VkBuffer indexBuffer,
+        VkDescriptorSet descriptorSet
+    );
+
+    void setViewportAndScissor(
+        VkCommandBuffer cmd,
+        GraphicsPipeline* graphicsPipeline,
+        const std::vector<IViewportProvider*>& viewportProviders,
+        const std::vector<IScissorProvider*>& scissorProviders
+    );
+
+public:
 
     void allocateCommandbuffers(VkDevice device, const std::vector<VkFramebuffer>& framebuffers);
 

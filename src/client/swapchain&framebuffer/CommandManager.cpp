@@ -43,6 +43,123 @@ void CommandManager::allocateCommandbuffers(VkDevice device, const std::vector<V
     }
 }
 
+void CommandManager::beginCommandBuffer(
+    VkCommandBuffer cmd
+) {
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = 0;
+    beginInfo.pInheritanceInfo = nullptr;
+
+    if (vkBeginCommandBuffer(cmd, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("failed to begin recording command buffer!");
+    }
+}
+
+void CommandManager::buildClearValues(
+    const std::vector<IClearValueProvider*>& providers,
+    std::vector<VkClearValue>& clearValues
+) {
+    for (auto* p : providers) {
+        p->contribute(clearValues);
+    }
+
+    if (clearValues.empty()) {
+        clearValues.reserve(2);
+        VkClearValue color{};
+        color.color = {{0.4f, 1.0f, 1.0f, 1.0f}};
+        clearValues.emplace_back(color);
+
+        VkClearValue depth{};
+        depth.depthStencil = {1.0f, 0};
+        clearValues.emplace_back(depth);
+    }
+}
+
+void CommandManager::beginRenderPass(
+    VkCommandBuffer cmd,
+    VkRenderPass renderPass,
+    VkFramebuffer framebuffer,
+    VkExtent2D extent,
+    const std::vector<VkClearValue>& clearValues
+) {
+    VkRenderPassBeginInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    info.renderPass = renderPass;
+    info.framebuffer = framebuffer;
+    info.renderArea.extent = extent;
+    info.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    info.pClearValues = clearValues.data();
+
+    vkCmdBeginRenderPass(cmd, &info, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void CommandManager::bindPipelineAndResources(
+    VkCommandBuffer cmd,
+    GraphicsPipeline* graphicsPipeline,
+    VkBuffer vertexBuffer,
+    VkBuffer indexBuffer,
+    VkDescriptorSet descriptorSet
+) {
+    vkCmdBindPipeline(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        graphicsPipeline->getPipeline()
+    );
+
+    VkDeviceSize offsets[] = { 0 };
+    vkCmdBindVertexBuffers(
+        cmd,
+        0,
+        1,
+        &vertexBuffer,
+        offsets
+    );
+
+    vkCmdBindIndexBuffer(
+        cmd,
+        indexBuffer,
+        0,
+        VK_INDEX_TYPE_UINT32
+    );
+
+    vkCmdBindDescriptorSets(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        graphicsPipeline->getLayout(),
+        0,
+        1,
+        &descriptorSet,
+        0,
+        nullptr
+    );
+}
+
+void CommandManager::setViewportAndScissor(
+    VkCommandBuffer cmd,
+    GraphicsPipeline* graphicsPipeline,
+    const std::vector<IViewportProvider*>& viewportProviders,
+    const std::vector<IScissorProvider*>& scissorProviders
+) {
+    // Viewport
+    VkViewport viewport = graphicsPipeline->getViewport();
+    for (auto* p : viewportProviders) {
+        if (p->overrideViewport(viewport)) {
+            break;
+        }
+    }
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+    // Scissor
+    VkRect2D scissor = graphicsPipeline->getScissor();
+    for (auto* p : scissorProviders) {
+        if (p->overrideScissor(scissor)) {
+            break;
+        }
+    }
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+}
+
 void CommandManager::recordCommandBuffer(
     size_t imageIndex,
     VkRenderPass renderPass,
@@ -64,86 +181,38 @@ void CommandManager::recordCommandBuffer(
 #endif
 
     VkCommandBuffer cmd = commandBuffers[imageIndex];
+    beginCommandBuffer(cmd);
 
-    //* Command Buffer Begin
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = 0;
-    beginInfo.pInheritanceInfo = nullptr;
-
-    if (vkBeginCommandBuffer(cmd, &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("failed to begin recording command buffer!");
-    }
-
-    //* Clear values (mod)
     std::vector<VkClearValue> clearValues;
-
-    for (auto* p : clearProviders) {
-        p->contribute(clearValues);
-    }
-
-    if (clearValues.empty()) {
-        clearValues.reserve(2);
-        VkClearValue color{};
-        color.color = {{0.4f, 1.0f, 1.0f, 1.0f}};
-        clearValues.emplace_back(color);
-
-        VkClearValue depth{};
-        depth.depthStencil = {1.0f, 0};
-        clearValues.emplace_back(depth);
-    }
-
-    //* Begin render pass
-    VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = framebuffers[imageIndex];
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = extent;
-    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    renderPassInfo.pClearValues = clearValues.data();
-
-    vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    //* Pipeline & draw
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->getPipeline());
-
-    VkBuffer vertexBuffers[] = { vertexBuffer };
-    VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
-
-    vkCmdBindIndexBuffer(cmd, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-    vkCmdBindDescriptorSets(
-        cmd,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        graphicsPipeline->getLayout(),
-        0,
-        1,
-        &descriptorSet,
-        0,
-        nullptr
+    buildClearValues(
+        clearProviders,
+        clearValues
     );
 
-    // Viewport
-    VkViewport viewport = graphicsPipeline->getViewport();
-    for (auto* p : viewportProviders) {
-        if (p->overrideViewport(viewport)) {
-            break;
-        }
-    }
-    vkCmdSetViewport(cmd, 0, 1, &viewport);
+    beginRenderPass(
+        cmd,
+        renderPass,
+        framebuffers[imageIndex],
+        extent,
+        clearValues
+    );
 
-    // Scissor
-    VkRect2D scissor = graphicsPipeline->getScissor();
-    for (auto* p : scissorProviders) {
-        if (p->overrideScissor(scissor)) {
-            break;
-        }
-    }
-    vkCmdSetScissor(cmd, 0, 1, &scissor);
+    bindPipelineAndResources(
+        cmd,
+        graphicsPipeline,
+        vertexBuffer,
+        indexBuffer,
+        descriptorSet
+    );
 
-    //draw
+    setViewportAndScissor(
+        cmd,
+        graphicsPipeline,
+        viewportProviders,
+        scissorProviders
+    );
+
+    // draw
     vkCmdDrawIndexed(cmd, indicesSize, 1, 0, 0, 0);
 
     //* Extra recording (mods, ImGui, debug, etc)
@@ -151,10 +220,9 @@ void CommandManager::recordCommandBuffer(
         r->record(cmd);
     }
 
-
     vkCmdEndRenderPass(cmd);
 
-    //* End command buffer
+    // End command buffer
     if (vkEndCommandBuffer(cmd) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
