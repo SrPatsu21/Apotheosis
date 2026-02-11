@@ -218,9 +218,8 @@ void TextureImage::createTextureImage(
         img.width,
         img.height
     );
+
     //transitioned to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL while generating mipmaps
-
-
     generateMipmaps(
         physicalDevice,
         bufferManager,
