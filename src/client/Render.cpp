@@ -132,7 +132,6 @@ void Render::initVulkan(){
         this->framebufferManager->getFramebuffers()
     );
 
-
     textureImage = new TextureImage(
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
