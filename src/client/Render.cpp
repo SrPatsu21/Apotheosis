@@ -165,19 +165,11 @@ void Render::initVulkan(){
         // std::cout << "Push Constant Max Size: " << deviceProperties.limits.maxPushConstantsSize << " bytes\n";
     #endif
 
-    this->meshLoader = new MeshLoader("./models/viking_room.obj");
-
-    // Create vertex buffer
-    vertexBufferManager = new VertexBufferManager(
+    mesh = std::make_shared<Mesh>(
+        "./models/viking_room.obj",
         coreVulkan->getDevice(),
-        bufferManager,
-        meshLoader->getVertices()
-    );
-    indexBufferManager = new IndexBufferManager(
-        coreVulkan->getDevice(),
-        bufferManager,
-        meshLoader->getIndices()
-    );
+        bufferManager
+    )
 
     vkDeviceWaitIdle(coreVulkan->getDevice());
 };
@@ -233,9 +225,9 @@ void Render::drawFrame(){
         this->graphicsPipeline,
         this->framebufferManager->getFramebuffers(),
         this->swapchainManager->getExtent(),
-        this->vertexBufferManager->getVertexBuffer(),
-        this->indexBufferManager->getIndexBuffer(),
-        static_cast<uint32_t>(meshLoader->getIndices().size()),
+        mesh.get()->getVertexBuffer(),
+        mesh.get()->getIndexBuffer(),
+        mesh.get()->getIndexCount(),
         this->descriptorManager->getSets()[currentFrame],
         {},
         {},
@@ -321,9 +313,6 @@ void Render::cleanup(){
         //    (Everything that depends on the swapchain must go BEFORE swapchain.)
         //    Delete pointers and null them to avoid accidental double free later.
         if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
-        if (this->meshLoader){delete this->meshLoader; this->meshLoader = nullptr; }
-        if (this->vertexBufferManager){ delete this->vertexBufferManager; this->vertexBufferManager = nullptr; }
-        if (this->indexBufferManager){ delete this->indexBufferManager; this->indexBufferManager = nullptr; }
         if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
         if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
         if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }

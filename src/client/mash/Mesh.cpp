@@ -1,6 +1,10 @@
-#include "MeshLoader.hpp"
+#include "Mesh.hpp"
 
-void MeshLoader::load(const std::string& path) {
+void Mesh::load(
+    const std::string& path,
+    std::vector<Vertex>& vertices,
+    std::vector<uint32_t>& indices
+) {
     //import model
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(
@@ -58,4 +62,22 @@ void MeshLoader::load(const std::string& path) {
             indices.emplace_back(baseVertex + face.mIndices[2]);
         }
     }
+}
+
+Mesh::Mesh(
+    const std::string& path,
+    VkDevice device,
+    BufferManager& bufferManager
+) {
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
+    load(
+        path,
+        vertices,
+        indices
+    );
+
+    vertexBufferManager = std::make_unique<VertexBufferManager>(device, bufferManager, vertices);
+    indexCount = indices.size();
+    indexBufferManager = std::make_unique<IndexBufferManager>(device, bufferManager, indices);
 }

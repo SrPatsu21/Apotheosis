@@ -26,19 +26,9 @@ class DescriptorManager
 {
 private:
     VkDevice device;
-    /*
-    Defines the layout of resources (uniforms, samplers, etc.) that shaders will access.
-    Specifies what kinds of descriptors are expected and their bindings.
-    */
+
     VkDescriptorSetLayout descriptorSetLayout;
-    /*
-    A pool from which descriptor sets are allocated.
-    Descriptors are lightweight GPU-side handles to resources like uniform buffers or textures.
-    */
     VkDescriptorPool descriptorPool;
-    /*
-    A descriptor set, allocated from descriptorPool, which binds your actual resources to shader binding points as defined by descriptorSetLayout.
-    */
     std::vector<VkDescriptorSet> descriptorSets;
 public:
     /**

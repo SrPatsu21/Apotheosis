@@ -10,10 +10,11 @@
 #include "graphics_pipeline/GraphicsPipeline.hpp"
 #include "swapchain&framebuffer/DepthBufferManager.hpp"
 #include "swapchain&framebuffer/FramebufferManager.hpp"
+//todo fix mash name :)
 #include "mash/VertexBufferManager.hpp"
 #include "mash/IndexBufferManager.hpp"
 #include "mash/BufferManager.hpp"
-#include "mash/MeshLoader.hpp"
+#include "mash/Mesh.hpp"
 #include "swapchain&framebuffer/CommandManager.hpp"
 #include "camera/UniformBufferObject.hpp"
 #include "image/TextureImage.hpp"
@@ -51,11 +52,9 @@ private:
     ImageColor* imageColor;
     DepthBufferManager* depthBufferManager;
     FramebufferManager* framebufferManager;
-    VertexBufferManager* vertexBufferManager;
-    IndexBufferManager* indexBufferManager;
     CommandManager* commandManager;
     TextureImage* textureImage;
-    MeshLoader* meshLoader;
+    std::shared_ptr<Mesh> mesh;
     CameraBufferManager::ICameraProvider* iCameraProvider;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
