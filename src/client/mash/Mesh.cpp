@@ -78,6 +78,6 @@ Mesh::Mesh(
     );
 
     vertexBufferManager = std::make_unique<VertexBufferManager>(device, bufferManager, vertices);
-    indexCount = indices.size();
+    indexCount = static_cast<uint32_t>(indices.size());
     indexBufferManager = std::make_unique<IndexBufferManager>(device, bufferManager, indices);
 }
