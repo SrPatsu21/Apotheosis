@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 
+//TODO see about maxMaterials
 MaterialDescriptorManager::MaterialDescriptorManager(
     VkDevice device,
     uint32_t maxMaterials

@@ -8,11 +8,14 @@
 
 class RenderInstance
 {
-private:
-    PushConstantObject modelMatrix;
-public:
+    private:
+    friend class RenderBatchManager::RenderBatch;
+    friend class RenderBatchManager;
     RenderBatchManager::RenderBatch* ownerBatch = nullptr;
     size_t indexInBatch = 0;
+
+    PushConstantObject modelMatrix;
+public:
 
     glm::vec3 position;
     glm::vec3 rotation; // Euler (radians)

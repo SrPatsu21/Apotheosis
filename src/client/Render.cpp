@@ -144,27 +144,6 @@ void Render::initVulkan(){
         100
     );
 
-    std::shared_ptr<RenderInstance> instance = std::make_shared<RenderInstance>();
-    // renderBatchManager
-    resourceManager = std::make_shared<ResourceManager>(
-        coreVulkan->getPhysicalDevice(),
-        coreVulkan->getDevice(),
-        bufferManager,
-        materialDescriptorManager.get()->getDescriptorPool(),
-        materialDescriptorManager.get()->getLayout()
-    );
-    std::cout << "segment 1.1" << std::endl;
-
-    renderBatchManager = std::make_shared<RenderBatchManager>(
-        resourceManager
-    );
-
-    renderBatchManager->addInstance(
-        renderBatchManager.get()->findBatchKey("./models/viking_room.obj", "./textures/viking_room.png"),
-        instance
-    );
-    // material
-
     // Create graphics pipeline
     graphicsPipeline = new GraphicsPipeline(
         coreVulkan->getDevice(),
@@ -175,6 +154,25 @@ void Render::initVulkan(){
             materialDescriptorManager->getLayout()
         },
         coreVulkan->getMsaaSamples()
+    );
+
+    // batch manager
+    renderInstance = new RenderInstance();
+    resourceManager = std::make_shared<ResourceManager>(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        bufferManager,
+        materialDescriptorManager.get()->getDescriptorPool(),
+        materialDescriptorManager.get()->getLayout()
+    );
+
+    renderBatchManager = std::make_shared<RenderBatchManager>(
+        resourceManager
+    );
+
+    renderBatchManager->addInstance(
+        renderBatchManager.get()->findBatchKey("./models/viking_room.obj", "./textures/viking_room.png"),
+        renderInstance
     );
 
     #ifndef NDEBUG
@@ -229,6 +227,21 @@ void Render::drawFrame(){
     // Reset the fence for the current frame
     vkResetFences(coreVulkan->getDevice(), 1, &this->inFlightFences[this->currentFrame]);
 
+    // Update UBOs for this frame
+    UniformBufferGlobal ubg{};
+    iCameraProvider->fill(
+        ubg,
+        time,
+        swapchainManager->getExtent()
+    );
+    this->cameraBufferManager->update(currentFrame, ubg);
+    renderInstance->rotation = glm::vec3(
+        0.15* time,
+        0.3,
+        0.6
+    );
+    renderInstance->updateModelMatrix();
+
     // Reset + record only the command buffer for this swapchain image
     VkCommandBuffer cmd = this->commandManager->getCommandBuffers()[imageIndex];
     vkResetCommandBuffer(cmd, 0);
@@ -245,15 +258,6 @@ void Render::drawFrame(){
         {},
         {&UI::ImGuiCommandBufferRecorder::instance()}
     );
-
-    // Update UBOs for this frame
-    UniformBufferGlobal ubg{};
-    iCameraProvider->fill(
-        ubg,
-        time,
-        swapchainManager->getExtent()
-    );
-    this->cameraBufferManager->update(currentFrame, ubg);
 
     // --- Submit work ---
     VkSemaphore waitSemaphores[] = { this->imageAvailableSemaphores[this->currentFrame] };
@@ -323,6 +327,7 @@ void Render::cleanup(){
         // 3) Managers: destroy in strict reverse-creation order.
         //    (Everything that depends on the swapchain must go BEFORE swapchain.)
         //    Delete pointers and null them to avoid accidental double free later.
+        if (renderInstance){ delete renderInstance; renderInstance = nullptr; }
         if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
         if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
         if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }

@@ -60,6 +60,7 @@ private:
     std::vector<VkFence> imagesInFlight;
     std::shared_ptr<RenderBatchManager> renderBatchManager;
     std::shared_ptr<ResourceManager> resourceManager;
+    RenderInstance *renderInstance;
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 

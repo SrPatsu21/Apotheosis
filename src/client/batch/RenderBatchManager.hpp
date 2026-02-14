@@ -33,7 +33,7 @@ public:
     class RenderBatch {
     private:
         BatchKey batchKey;
-        std::vector<std::shared_ptr<RenderInstance>> instances;
+        std::vector<RenderInstance*> instances;
     public:
         explicit RenderBatch(
             BatchKey batchKey
@@ -48,11 +48,11 @@ public:
         RenderBatch& operator=(RenderBatch&& other) noexcept;
 
         void addInstance(
-            const std::shared_ptr<RenderInstance>& instance
+            RenderInstance* instance
         );
 
         void removeInstance(
-            const std::shared_ptr<RenderInstance>& instance
+            RenderInstance* instance
         );
 
         bool empty();
@@ -64,7 +64,7 @@ public:
             const std::shared_ptr<Material>& material
         ) const;
 
-        const std::vector<std::shared_ptr<RenderInstance>>& getInstances() const{ return instances; }
+        const std::vector<RenderInstance*>& getInstances() const{ return instances; }
     };
 
 private:
@@ -75,16 +75,16 @@ private:
 public:
     void addInstance(
         const BatchKey& batchKey,
-        std::shared_ptr<RenderInstance>& instance
+        RenderInstance* instance
     );
 
     bool removeInstance(
-        std::shared_ptr<RenderInstance>& instance
+        RenderInstance* instance
     );
 
     bool moveInstance(
         const BatchKey& newBatchKey,
-        std::shared_ptr<RenderInstance>& instance
+        RenderInstance* instance
     );
 
     RenderBatchManager::BatchKey findBatchKey(

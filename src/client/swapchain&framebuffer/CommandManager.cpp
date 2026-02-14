@@ -261,7 +261,7 @@ void CommandManager::recordCommandBuffer(
 
             uint32_t indexCount = mesh->getIndexCount();
 
-            for (const std::shared_ptr<RenderInstance>& instance : batch.getInstances())
+            for (const RenderInstance* instance : batch.getInstances())
             {
                 vkCmdPushConstants(
                     cmd,
@@ -269,7 +269,7 @@ void CommandManager::recordCommandBuffer(
                     VK_SHADER_STAGE_VERTEX_BIT,
                     0,
                     sizeof(PushConstantObject),
-                    &instance.get()->getModelMatrix()
+                    &instance->getModelMatrix()
                 );
 
                 vkCmdDrawIndexed(

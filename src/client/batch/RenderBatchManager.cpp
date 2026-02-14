@@ -42,7 +42,7 @@ bool RenderBatchManager::RenderBatch::isEquivalent(
 }
 
 void RenderBatchManager::RenderBatch::addInstance(
-    const std::shared_ptr<RenderInstance>& instance
+    RenderInstance* instance
 ) {
 
     instance->ownerBatch = this;
@@ -51,7 +51,7 @@ void RenderBatchManager::RenderBatch::addInstance(
     instances.push_back(instance);
 }
 
-void RenderBatchManager::RenderBatch::removeInstance(const std::shared_ptr<RenderInstance>& instance)
+void RenderBatchManager::RenderBatch::removeInstance(RenderInstance* instance)
 {
     size_t index = instance->indexInBatch;
     size_t lastIndex = instances.size() - 1;
@@ -97,7 +97,7 @@ RenderBatchManager::BatchKey RenderBatchManager::findBatchKey(
 }
 void RenderBatchManager::addInstance(
     const BatchKey& key,
-    std::shared_ptr<RenderInstance>& instance
+    RenderInstance* instance
 ) {
     auto it = batches.find(key);
 
@@ -115,7 +115,7 @@ void RenderBatchManager::addInstance(
 }
 
 bool RenderBatchManager::removeInstance(
-    std::shared_ptr<RenderInstance>& instance
+    RenderInstance* instance
 ) {
     RenderBatch* batch = instance->ownerBatch;
 
@@ -133,7 +133,7 @@ bool RenderBatchManager::removeInstance(
 
 bool RenderBatchManager::moveInstance(
     const BatchKey& newKey,
-    std::shared_ptr<RenderInstance>& instance
+    RenderInstance* instance
 ) {
     if (removeInstance(instance))
     {
