@@ -153,7 +153,11 @@ void Render::initVulkan(){
         materialDescriptorManager.get()->getDescriptorPool(),
         materialDescriptorManager.get()->getLayout()
     );
-    renderBatchManager = std::make_shared<RenderBatchManager>();
+    std::cout << "segment 1.1" << std::endl;
+
+    renderBatchManager = std::make_shared<RenderBatchManager>(
+        resourceManager
+    );
 
     renderBatchManager->addInstance(
         renderBatchManager.get()->findBatchKey("./models/viking_room.obj", "./textures/viking_room.png"),

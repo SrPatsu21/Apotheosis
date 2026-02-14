@@ -70,7 +70,7 @@ public:
 private:
 
     std::unordered_map<BatchKey, std::unique_ptr<RenderBatch>, BatchKeyHasher> batches;
-    std::unique_ptr<ResourceManager> resourceManager;
+    std::shared_ptr<ResourceManager> resourceManager;
 
 public:
     void addInstance(
@@ -105,8 +105,7 @@ public:
             func(*batch);
         }
     }
-public:
 
-    RenderBatchManager() = default;
+    RenderBatchManager(std::shared_ptr<ResourceManager> resourceManager);
     ~RenderBatchManager() = default;
 };

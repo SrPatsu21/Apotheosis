@@ -143,3 +143,11 @@ bool RenderBatchManager::moveInstance(
 
     return false;
 }
+
+RenderBatchManager::RenderBatchManager(
+    std::shared_ptr<ResourceManager> resourceManager
+) :
+    resourceManager(resourceManager)
+{
+
+};
