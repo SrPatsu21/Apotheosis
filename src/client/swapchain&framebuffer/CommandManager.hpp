@@ -3,6 +3,8 @@
 #include <bits/stdc++.h>
 #include "../CoreVulkan.hpp"
 #include "../graphics_pipeline/GraphicsPipeline.hpp"
+#include "../batch/instance/PushConstantObject.hpp"
+#include "../batch/RenderBatchManager.hpp"
 
 /**
  * @brief Manages Vulkan command buffers and their recording lifecycle.
@@ -152,7 +154,8 @@ private:
         GraphicsPipeline* graphicsPipeline,
         VkBuffer vertexBuffer,
         VkBuffer indexBuffer,
-        VkDescriptorSet descriptorSet
+        VkDescriptorSet globalDescriptorSet,
+        VkDescriptorSet materialDescriptorSet
     );
 
     /**
@@ -235,7 +238,8 @@ public:
         VkBuffer vertexBuffer,
         VkBuffer indexBuffer,
         uint32_t indicesSize,
-        VkDescriptorSet descriptorSet,
+        VkDescriptorSet globalDescriptorSet,
+        VkDescriptorSet materialDescriptorSet,
         const std::vector<IClearValueProvider*>& clearProviders,
         const std::vector<IViewportProvider*>& viewportProviders,
         const std::vector<IScissorProvider*>& scissorProviders,

@@ -1,8 +1,7 @@
 #include <cmath>
 
-#include "../CoreVulkan.hpp"
 #include "TextureImage.hpp"
-#include "VulkanImageUtils.hpp"
+#include "../../image/VulkanImageUtils.hpp"
 
 void TextureImage::DefaultImageTransitionPolicy::transition(
     BufferManager* bufferManager,

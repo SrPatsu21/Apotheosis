@@ -2,30 +2,25 @@
 #define GLM_FORCE_RADIANS
 
 void CameraBufferManager::DefaultCameraProvider::fill(
-    UniformBufferObject& ubo,
+    UniformBufferGlobal& ubg,
     float time,
     const VkExtent2D& extent
 ) {
-    ubo.model = glm::rotate(
-        glm::mat4(1.0f),
-        time,
-        glm::vec3(-0.2f, 0.25f, 0.0f)
-    );
 
-    ubo.view = glm::lookAt(
+    ubg.view = glm::lookAt(
         glm::vec3(2.0f, 2.0f, 2.0f),
         glm::vec3(0.0f),
         glm::vec3(0.0f, 0.0f, 1.0f)
     );
 
     float aspect = extent.width / float(extent.height);
-    ubo.proj = glm::perspective(
+    ubg.proj = glm::perspective(
         glm::radians(45.0f),
         aspect,
         0.1f,
         10.0f
     );
-    ubo.proj[1][1] *= -1;
+    ubg.proj[1][1] *= -1;
 }
 
 CameraBufferManager::CameraBufferManager(
@@ -36,7 +31,7 @@ CameraBufferManager::CameraBufferManager(
 : device(device)
 {
     //constexpr force definition on compile time
-    constexpr VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+    constexpr VkDeviceSize bufferSize = sizeof(UniformBufferGlobal);
 
     uniformBuffers.resize(max_frames_in_flight);
     uniformBuffersMemory.resize(max_frames_in_flight);
@@ -68,9 +63,9 @@ CameraBufferManager::CameraBufferManager(
 
 void CameraBufferManager::update(
     uint32_t currentFrame,
-    const UniformBufferObject& ubo
+    const UniformBufferGlobal& ubg
 ) {
-    memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(UniformBufferObject));
+    memcpy(uniformBuffersMapped[currentFrame], &ubg, sizeof(UniformBufferGlobal));
 }
 
 CameraBufferManager::~CameraBufferManager()

@@ -3,7 +3,7 @@
 VertexBufferManager::VertexBufferManager(
         VkDevice device,
         BufferManager& bufferManager,
-        const std::vector<Vertex> vertices
+        const std::vector<Vertex>& vertices
 ) :
     device(device)
 {

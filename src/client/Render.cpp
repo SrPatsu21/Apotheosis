@@ -132,21 +132,34 @@ void Render::initVulkan(){
         this->framebufferManager->getFramebuffers()
     );
 
-    textureImage = new TextureImage(
+    // Create descript
+    this->globalDescriptorManager = new GlobalDescriptorManager(
+        coreVulkan->getDevice(),
+        this->cameraBufferManager,
+        Render::MAX_FRAMES_IN_FLIGHT
+    );
+
+    materialDescriptorManager = std::make_shared<MaterialDescriptorManager>(
+        coreVulkan->getDevice(),
+        100
+    );
+
+    // material
+    TextureImage::TextureImageDesc textureImageDesc = TextureImage::TextureImageDesc();
+    textureImage = std::make_shared<TextureImage>(
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
         "./textures/viking_room.png",
         &bufferManager,
-        {},
-        {&TextureImage::DefaultImageTransitionPolicy::instance()}
+        textureImageDesc,
+        &TextureImage::DefaultImageTransitionPolicy::instance()
     );
 
-    // Create descript
-    this->descriptorManager = new DescriptorManager(
+    material = std::make_shared<Material>(
         coreVulkan->getDevice(),
-        this->cameraBufferManager,
-        textureImage,
-        Render::MAX_FRAMES_IN_FLIGHT
+        materialDescriptorManager->getDescriptorPool(),
+        materialDescriptorManager->getLayout(),
+        textureImage
     );
 
     // Create graphics pipeline
@@ -154,7 +167,10 @@ void Render::initVulkan(){
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
         renderPass->get(),
-        descriptorManager->getLayout(),
+        {
+            globalDescriptorManager->getLayout(),
+            materialDescriptorManager->getLayout()
+        },
         coreVulkan->getMsaaSamples()
     );
 
@@ -169,7 +185,9 @@ void Render::initVulkan(){
         "./models/viking_room.obj",
         coreVulkan->getDevice(),
         bufferManager
-    )
+    );
+
+
 
     vkDeviceWaitIdle(coreVulkan->getDevice());
 };
@@ -228,7 +246,8 @@ void Render::drawFrame(){
         mesh.get()->getVertexBuffer(),
         mesh.get()->getIndexBuffer(),
         mesh.get()->getIndexCount(),
-        this->descriptorManager->getSets()[currentFrame],
+        this->globalDescriptorManager->getDescriptorSets()[currentFrame],
+        material.get()->getDescriptorSet(),
         {},
         {},
         {},
@@ -236,13 +255,13 @@ void Render::drawFrame(){
     );
 
     // Update UBOs for this frame
-    UniformBufferObject ubo{};
+    UniformBufferGlobal ubg{};
     iCameraProvider->fill(
-        ubo,
+        ubg,
         time,
         swapchainManager->getExtent()
     );
-    this->cameraBufferManager->update(currentFrame, ubo);
+    this->cameraBufferManager->update(currentFrame, ubg);
 
     // --- Submit work ---
     VkSemaphore waitSemaphores[] = { this->imageAvailableSemaphores[this->currentFrame] };
@@ -317,10 +336,8 @@ void Render::cleanup(){
         if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
         if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
         if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
-        if (this->descriptorManager){ delete this->descriptorManager; this->descriptorManager = nullptr; }
         if (this->iCameraProvider){ delete this->iCameraProvider; this->iCameraProvider = nullptr; }
         if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
-        if (this->textureImage){ delete this->textureImage; this->textureImage = nullptr; }
         if (this->ui) { this->ui->cleanup(); delete this->ui; this->ui = nullptr; }
         if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
 
@@ -435,7 +452,10 @@ void Render::recreateSwapChain() {
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
         renderPass->get(),
-        descriptorManager->getLayout(),
+        {
+            globalDescriptorManager->getLayout(),
+            materialDescriptorManager->getLayout()
+        },
         coreVulkan->getMsaaSamples()
     );
 

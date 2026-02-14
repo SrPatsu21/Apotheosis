@@ -1,8 +1,8 @@
 #pragma once
 
 #include "stb_image.h"
-#include "../CoreVulkan.hpp"
-#include "../mash/BufferManager.hpp"
+#include "../../CoreVulkan.hpp"
+#include "../../BufferManager.hpp"
 
 /**
  * @brief Represents a GPU texture loaded from an image file.

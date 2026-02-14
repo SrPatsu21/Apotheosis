@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../CoreVulkan.hpp"
-#include "../mash/BufferManager.hpp"
+#include "../BufferManager.hpp"
 
 /**
  * @brief Creates a 2D Vulkan image and allocates & binds its memory.

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../CoreVulkan.hpp"
+#include "../../CoreVulkan.hpp"
 #include "Vertex.hpp"
-#include "BufferManager.hpp"
+#include "../../BufferManager.hpp"
 
 #include <cstring>
 

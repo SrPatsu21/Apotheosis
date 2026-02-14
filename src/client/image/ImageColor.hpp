@@ -2,7 +2,7 @@
 
 #include "../CoreVulkan.hpp"
 #include "VulkanImageUtils.hpp"
-#include "../mash/BufferManager.hpp"
+#include "../BufferManager.hpp"
 
 /**
  * @brief Manages an MSAA color attachment image.

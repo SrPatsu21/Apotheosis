@@ -1,8 +1,9 @@
 #pragma once
 
 #include "../CoreVulkan.hpp"
-#include "../mash/Vertex.hpp"
 #include "ShaderLoader.hpp"
+#include "../batch/instance/PushConstantObject.hpp"
+#include "../batch/mesh/Vertex.hpp"
 #include <array>
 
 /**
@@ -152,7 +153,7 @@ public:
         VkDevice device,
         VkExtent2D swapchainExtent,
         VkRenderPass renderPass,
-        VkDescriptorSetLayout descriptorSetLayout,
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts,
         VkSampleCountFlagBits msaaSamples
     );
 

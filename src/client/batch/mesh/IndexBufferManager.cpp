@@ -3,7 +3,7 @@
 IndexBufferManager::IndexBufferManager(
     VkDevice device,
     BufferManager& bufferManager,
-    const std::vector<uint32_t> indices
+    const std::vector<uint32_t>& indices
 ) :
     device(device)
 {

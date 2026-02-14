@@ -5,7 +5,7 @@
 #include "ui/UI.hpp"
 #include "swapchain&framebuffer/SwapchainManager.hpp"
 #include "graphics_pipeline/RenderPass.hpp"
-#include "graphics_pipeline/DescriptorManager.hpp"
+#include "graphics_pipeline/GlobalDescriptorManager.hpp"
 #include "camera/CameraBufferManager.hpp"
 #include "graphics_pipeline/GraphicsPipeline.hpp"
 #include "swapchain&framebuffer/DepthBufferManager.hpp"
@@ -16,9 +16,11 @@
 #include "mash/BufferManager.hpp"
 #include "mash/Mesh.hpp"
 #include "swapchain&framebuffer/CommandManager.hpp"
-#include "camera/UniformBufferObject.hpp"
+#include "camera/UniformBufferGlobal.hpp"
 #include "image/TextureImage.hpp"
 #include "image/ImageColor.hpp"
+#include "object/Material.hpp"
+#include "graphics_pipeline/MaterialDescriptorManager.hpp"
 
 class Render {
 public:
@@ -47,14 +49,16 @@ private:
 
     RenderPass* renderPass;
     CameraBufferManager* cameraBufferManager;
-    DescriptorManager* descriptorManager;
+    GlobalDescriptorManager* globalDescriptorManager;
+    std::shared_ptr<MaterialDescriptorManager> materialDescriptorManager;
     GraphicsPipeline* graphicsPipeline;
     ImageColor* imageColor;
     DepthBufferManager* depthBufferManager;
     FramebufferManager* framebufferManager;
     CommandManager* commandManager;
-    TextureImage* textureImage;
+    std::shared_ptr<TextureImage> textureImage;
     std::shared_ptr<Mesh> mesh;
+    std::shared_ptr<Material> material;
     CameraBufferManager::ICameraProvider* iCameraProvider;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;

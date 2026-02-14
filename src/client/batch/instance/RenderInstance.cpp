@@ -1,24 +1,21 @@
-#include "RenderObject.hpp"
+#include "RenderInstance.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
 
-RenderObject::RenderObject(
-    std::shared_ptr<Mesh> mesh,
-    std::shared_ptr<Material> material,
+RenderInstance::RenderInstance(
     const glm::vec3& position,
     const glm::vec3& rotation,
     const glm::vec3& scale
-)
-    : mesh(std::move(mesh))
-    , material(std::move(material))
-    , position(position)
-    , rotation(rotation)
-    , scale(scale)
+) :
+    modelMatrix(),
+    position(position),
+    rotation(rotation),
+    scale(scale)
 {
     updateModelMatrix();
 }
 
-void RenderObject::updateModelMatrix()
+void RenderInstance::updateModelMatrix()
 {
     glm::mat4 model(1.0f);
 

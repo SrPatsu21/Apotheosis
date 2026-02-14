@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../CoreVulkan.hpp"
-#include "BufferManager.hpp"
+#include "../../CoreVulkan.hpp"
+#include "../../BufferManager.hpp"
 
 #include <cstring>
 

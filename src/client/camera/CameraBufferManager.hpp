@@ -1,11 +1,11 @@
 #pragma once
 #include "../CoreVulkan.hpp"
 #include "../swapchain&framebuffer/SwapchainManager.hpp"
-#include "UniformBufferObject.hpp"
+#include "UniformBufferGlobal.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <cstring>
-#include "../mash/BufferManager.hpp"
+#include "../BufferManager.hpp"
 
 /**
  * @brief Manages per-frame camera uniform buffers.
@@ -40,7 +40,7 @@ public:
     /**
      * @brief Interface for camera data providers.
      *
-     * Camera providers are responsible for filling a UniformBufferObject
+     * Camera providers are responsible for filling a UniformBufferGlobal
      * with view/projection (and optionally model) matrices.
      *
      * This abstraction allows:
@@ -52,12 +52,12 @@ public:
         virtual ~ICameraProvider() = default;
 
         /**
-         * @param ubo Output uniform buffer object to be filled.
+         * @param ubg Output UniformBufferGlobal to be filled.
          * @param time Current time (typically seconds since start).
          * @param extent Current swapchain extent (for aspect ratio).
          */
         virtual void fill(
-            UniformBufferObject& ubo,
+            UniformBufferGlobal& ubg,
             float time,
             const VkExtent2D& extent
         ) = 0;
@@ -75,7 +75,7 @@ public:
      */
     struct DefaultCameraProvider : ICameraProvider {
         void fill(
-            UniformBufferObject& ubo,
+            UniformBufferGlobal& ubg,
             float time,
             const VkExtent2D& extent
         ) override;
@@ -112,7 +112,7 @@ public:
      */
     void update(
         uint32_t currentFrame,
-        const UniformBufferObject& ubo
+        const UniformBufferGlobal& ubg
     );
 
     const std::vector<VkBuffer>& getUniformBuffers() const { return uniformBuffers; }

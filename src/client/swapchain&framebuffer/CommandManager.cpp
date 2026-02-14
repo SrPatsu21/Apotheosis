@@ -1,5 +1,4 @@
 #include "CommandManager.hpp"
-#include "../camera/UniformBufferObject.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -99,7 +98,8 @@ void CommandManager::bindPipelineAndResources(
     GraphicsPipeline* graphicsPipeline,
     VkBuffer vertexBuffer,
     VkBuffer indexBuffer,
-    VkDescriptorSet descriptorSet
+    VkDescriptorSet globalDescriptorSet,
+    VkDescriptorSet materialDescriptorSet
 ) {
     vkCmdBindPipeline(
         cmd,
@@ -129,7 +129,18 @@ void CommandManager::bindPipelineAndResources(
         graphicsPipeline->getLayout(),
         0,
         1,
-        &descriptorSet,
+        &globalDescriptorSet,
+        0,
+        nullptr
+    );
+
+    vkCmdBindDescriptorSets(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        graphicsPipeline->getLayout(),
+        1,
+        1,
+        &materialDescriptorSet,
         0,
         nullptr
     );
@@ -169,7 +180,8 @@ void CommandManager::recordCommandBuffer(
     VkBuffer vertexBuffer,
     VkBuffer indexBuffer,
     uint32_t indicesSize,
-    VkDescriptorSet descriptorSet,
+    VkDescriptorSet globalDescriptorSet,
+    VkDescriptorSet materialDescriptorSet,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
     const std::vector<IScissorProvider*>& scissorProviders,
@@ -202,7 +214,8 @@ void CommandManager::recordCommandBuffer(
         graphicsPipeline,
         vertexBuffer,
         indexBuffer,
-        descriptorSet
+        globalDescriptorSet,
+        materialDescriptorSet
     );
 
     setViewportAndScissor(
@@ -211,6 +224,43 @@ void CommandManager::recordCommandBuffer(
         viewportProviders,
         scissorProviders
     );
+
+// change this
+    vkCmdPushConstants(
+        cmd,
+        graphicsPipeline->getLayout(),
+        VK_SHADER_STAGE_VERTEX_BIT,
+        0,
+        sizeof(PushConstantObject),
+        &model
+    );
+// to this
+renderBatchManager.forEachBatch(
+    [&](RenderBatch& batch)
+    {
+        // Aqui você pode pegar mesh/material do batch
+        const BatchKey& key = batch.getKey();
+
+        // bind material específico aqui
+        // bind vertex/index buffers da mesh
+
+        for (auto& instance : batch.getInstances())
+        {
+            PushConstantObject model = instance->getModelMatrix();
+
+            vkCmdPushConstants(
+                cmd,
+                graphicsPipeline->getLayout(),
+                VK_SHADER_STAGE_VERTEX_BIT,
+                0,
+                sizeof(PushConstantObject),
+                &model
+            );
+
+            vkCmdDrawIndexed(cmd, indicesSize, 1, 0, 0, 0);
+        }
+    }
+);
 
     // draw
     vkCmdDrawIndexed(cmd, indicesSize, 1, 0, 0, 0);
