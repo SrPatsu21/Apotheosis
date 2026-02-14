@@ -144,26 +144,25 @@ void Render::initVulkan(){
         100
     );
 
-    // material
-    TextureImage::TextureImageDesc textureImageDesc = TextureImage::TextureImageDesc();
-    textureImage = std::make_shared<TextureImage>(
+    std::shared_ptr<RenderInstance> instance = std::make_shared<RenderInstance>();
+    // renderBatchManager
+    resourceManager = std::make_shared<ResourceManager>(
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
-        "./textures/viking_room.png",
-        &bufferManager,
-        textureImageDesc,
-        &TextureImage::DefaultImageTransitionPolicy::instance()
+        bufferManager,
+        materialDescriptorManager.get()->getDescriptorPool(),
+        materialDescriptorManager.get()->getLayout()
     );
+    renderBatchManager = std::make_shared<RenderBatchManager>();
 
-    material = std::make_shared<Material>(
-        coreVulkan->getDevice(),
-        materialDescriptorManager->getDescriptorPool(),
-        materialDescriptorManager->getLayout(),
-        textureImage
+    renderBatchManager->addInstance(
+        renderBatchManager.get()->findBatchKey("./models/viking_room.obj", "./textures/viking_room.png"),
+        instance
     );
+    // material
 
     // Create graphics pipeline
-    this->graphicsPipeline = new GraphicsPipeline(
+    graphicsPipeline = new GraphicsPipeline(
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
         renderPass->get(),
@@ -180,14 +179,6 @@ void Render::initVulkan(){
 
         // std::cout << "Push Constant Max Size: " << deviceProperties.limits.maxPushConstantsSize << " bytes\n";
     #endif
-
-    mesh = std::make_shared<Mesh>(
-        "./models/viking_room.obj",
-        coreVulkan->getDevice(),
-        bufferManager
-    );
-
-
 
     vkDeviceWaitIdle(coreVulkan->getDevice());
 };
@@ -243,11 +234,8 @@ void Render::drawFrame(){
         this->graphicsPipeline,
         this->framebufferManager->getFramebuffers(),
         this->swapchainManager->getExtent(),
-        mesh.get()->getVertexBuffer(),
-        mesh.get()->getIndexBuffer(),
-        mesh.get()->getIndexCount(),
         this->globalDescriptorManager->getDescriptorSets()[currentFrame],
-        material.get()->getDescriptorSet(),
+        renderBatchManager,
         {},
         {},
         {},

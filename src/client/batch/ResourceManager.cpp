@@ -52,6 +52,7 @@ std::shared_ptr<Material> ResourceManager::getMaterial(
     TextureImage::TextureImageDesc textureImageDesc = TextureImage::TextureImageDesc();
     std::shared_ptr<TextureImage> texture = std::make_shared<TextureImage>(
         physicalDevice,
+        device,
         texturePath,
         bufferManager,
         textureImageDesc,

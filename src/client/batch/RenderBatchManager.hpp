@@ -72,6 +72,7 @@ private:
     std::unordered_map<BatchKey, std::unique_ptr<RenderBatch>, BatchKeyHasher> batches;
     std::unique_ptr<ResourceManager> resourceManager;
 
+public:
     void addInstance(
         const BatchKey& batchKey,
         std::shared_ptr<RenderInstance>& instance
@@ -92,10 +93,18 @@ private:
         BatchKey& key
     );
 
-    template<typename Func> void forEachBatch(
-        Func&& func
+    RenderBatchManager::BatchKey findBatchKey(
+        const std::string& meshPath,
+        const std::string& texturePath
     );
 
+    template<typename Func> void forEachBatch(Func&& func)
+    {
+        for (auto& [key, batch] : batches)
+        {
+            func(*batch);
+        }
+    }
 public:
 
     RenderBatchManager() = default;

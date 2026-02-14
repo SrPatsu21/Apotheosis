@@ -1,6 +1,7 @@
 #include "CommandManager.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "../batch/instance/RenderInstance.hpp"
 
 CommandManager::CommandManager(
     VkDevice device,
@@ -177,11 +178,8 @@ void CommandManager::recordCommandBuffer(
     GraphicsPipeline* graphicsPipeline,
     const std::vector<VkFramebuffer>& framebuffers,
     VkExtent2D extent,
-    VkBuffer vertexBuffer,
-    VkBuffer indexBuffer,
-    uint32_t indicesSize,
     VkDescriptorSet globalDescriptorSet,
-    VkDescriptorSet materialDescriptorSet,
+    std::shared_ptr<RenderBatchManager> renderBatchManager,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
     const std::vector<IScissorProvider*>& scissorProviders,
@@ -209,13 +207,11 @@ void CommandManager::recordCommandBuffer(
         clearValues
     );
 
-    bindPipelineAndResources(
+    // Bind pipeline uma vez (assumindo pipeline único)
+    vkCmdBindPipeline(
         cmd,
-        graphicsPipeline,
-        vertexBuffer,
-        indexBuffer,
-        globalDescriptorSet,
-        materialDescriptorSet
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        graphicsPipeline->getPipeline()
     );
 
     setViewportAndScissor(
@@ -225,45 +221,68 @@ void CommandManager::recordCommandBuffer(
         scissorProviders
     );
 
-// change this
-    vkCmdPushConstants(
-        cmd,
-        graphicsPipeline->getLayout(),
-        VK_SHADER_STAGE_VERTEX_BIT,
-        0,
-        sizeof(PushConstantObject),
-        &model
-    );
-// to this
-renderBatchManager.forEachBatch(
-    [&](RenderBatch& batch)
-    {
-        // Aqui você pode pegar mesh/material do batch
-        const BatchKey& key = batch.getKey();
-
-        // bind material específico aqui
-        // bind vertex/index buffers da mesh
-
-        for (auto& instance : batch.getInstances())
+    // browse batches
+    renderBatchManager.get()->forEachBatch(
+        [&](const RenderBatchManager::RenderBatch& batch)
         {
-            PushConstantObject model = instance->getModelMatrix();
+            const RenderBatchManager::BatchKey& key = batch.getKey();
+            const auto& mesh = key.mesh;
+            const auto& material = key.material;
 
-            vkCmdPushConstants(
+            // Bind vertex buffer
+            VkBuffer vertexBuffer = mesh->getVertexBuffer();
+            VkDeviceSize offsets[] = { 0 };
+            vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBuffer, offsets);
+
+            // Bind index buffer
+            vkCmdBindIndexBuffer(
                 cmd,
-                graphicsPipeline->getLayout(),
-                VK_SHADER_STAGE_VERTEX_BIT,
+                mesh->getIndexBuffer(),
                 0,
-                sizeof(PushConstantObject),
-                &model
+                VK_INDEX_TYPE_UINT32
             );
 
-            vkCmdDrawIndexed(cmd, indicesSize, 1, 0, 0, 0);
-        }
-    }
-);
+            // Bind descriptor sets (global + material)
+            VkDescriptorSet descriptorSets[] = {
+                globalDescriptorSet,
+                material->getDescriptorSet()
+            };
 
-    // draw
-    vkCmdDrawIndexed(cmd, indicesSize, 1, 0, 0, 0);
+            vkCmdBindDescriptorSets(
+                cmd,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                graphicsPipeline->getLayout(),
+                0,
+                2,
+                descriptorSets,
+                0,
+                nullptr
+            );
+
+            uint32_t indexCount = mesh->getIndexCount();
+
+            for (const std::shared_ptr<RenderInstance>& instance : batch.getInstances())
+            {
+                vkCmdPushConstants(
+                    cmd,
+                    graphicsPipeline->getLayout(),
+                    VK_SHADER_STAGE_VERTEX_BIT,
+                    0,
+                    sizeof(PushConstantObject),
+                    &instance.get()->getModelMatrix()
+                );
+
+                vkCmdDrawIndexed(
+                    cmd,
+                    indexCount,
+                    1,
+                    0,
+                    0,
+                    0
+                );
+            }
+        }
+    );
 
     //* Extra recording (mods, ImGui, debug, etc)
     for (auto* r : extraRecorders) {

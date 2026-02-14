@@ -11,16 +11,13 @@
 #include "swapchain&framebuffer/DepthBufferManager.hpp"
 #include "swapchain&framebuffer/FramebufferManager.hpp"
 //todo fix mash name :)
-#include "mash/VertexBufferManager.hpp"
-#include "mash/IndexBufferManager.hpp"
-#include "mash/BufferManager.hpp"
-#include "mash/Mesh.hpp"
 #include "swapchain&framebuffer/CommandManager.hpp"
 #include "camera/UniformBufferGlobal.hpp"
-#include "image/TextureImage.hpp"
 #include "image/ImageColor.hpp"
-#include "object/Material.hpp"
-#include "graphics_pipeline/MaterialDescriptorManager.hpp"
+#include "batch/material/MaterialDescriptorManager.hpp"
+#include "batch/RenderBatchManager.hpp"
+#include "batch/ResourceManager.hpp"
+#include "batch/instance/RenderInstance.hpp"
 
 class Render {
 public:
@@ -56,18 +53,13 @@ private:
     DepthBufferManager* depthBufferManager;
     FramebufferManager* framebufferManager;
     CommandManager* commandManager;
-    std::shared_ptr<TextureImage> textureImage;
-    std::shared_ptr<Mesh> mesh;
-    std::shared_ptr<Material> material;
     CameraBufferManager::ICameraProvider* iCameraProvider;
-
     std::vector<VkSemaphore> imageAvailableSemaphores;
-
     std::vector<VkSemaphore> renderFinishedSemaphores;
-
     std::vector<VkFence> inFlightFences;
-
     std::vector<VkFence> imagesInFlight;
+    std::shared_ptr<RenderBatchManager> renderBatchManager;
+    std::shared_ptr<ResourceManager> resourceManager;
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 

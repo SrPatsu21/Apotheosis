@@ -65,7 +65,7 @@ public:
          * @param mipLevels Number of mip levels affected.
          */
         virtual void transition(
-            BufferManager* bufferManager,
+            BufferManager& bufferManager,
             VkImage image,
             VkFormat format,
             VkImageLayout oldLayout,
@@ -92,7 +92,7 @@ public:
         }
 
         void transition(
-            BufferManager* bufferManager,
+            BufferManager& bufferManager,
             VkImage image,
             VkFormat format,
             VkImageLayout oldLayout,
@@ -199,7 +199,7 @@ protected:
      * @param img Output loaded image.
      */
     void loadImageFromFile(
-        const char* path,
+        const std::string& path,
         LoadedImage& img
     );
 
@@ -212,7 +212,7 @@ protected:
      * @param memory Output staging memory.
      */
     void createStagingBuffer(
-        BufferManager* bufferManager,
+        BufferManager& bufferManager,
         const LoadedImage& img,
         VkBuffer& buffer,
         VkDeviceMemory& memory
@@ -230,8 +230,8 @@ protected:
      */
     void createTextureImage(
         VkPhysicalDevice physicalDevice,
-        const char* path,
-        BufferManager* bufferManager,
+        const std::string& path,
+        BufferManager& bufferManager,
         const TextureImageDesc& desc,
         IImageTransitionPolicy* transitionPolicy
     );
@@ -262,8 +262,8 @@ public:
     TextureImage(
         VkPhysicalDevice physicalDevice,
         VkDevice device,
-        const char* path,
-        BufferManager* bufferManager,
+        const std::string& path,
+        BufferManager& bufferManager,
         const TextureImageDesc& desc,
         IImageTransitionPolicy* transitionPolicy
     );

@@ -86,6 +86,15 @@ RenderBatchManager::BatchKey RenderBatchManager::findBatchKey(
     return key;
 }
 
+RenderBatchManager::BatchKey RenderBatchManager::findBatchKey(
+    const std::string& meshPath,
+    const std::string& texturePath
+) {
+    BatchKey key;
+    key.mesh = resourceManager->getMesh(meshPath);
+    key.material = resourceManager->getMaterial(texturePath);
+    return key;
+}
 void RenderBatchManager::addInstance(
     const BatchKey& key,
     std::shared_ptr<RenderInstance>& instance
@@ -133,13 +142,4 @@ bool RenderBatchManager::moveInstance(
     }
 
     return false;
-}
-
-template<typename Func>
-void RenderBatchManager::forEachBatch(Func&& func)
-{
-    for (auto& [key, batch] : batches)
-    {
-        func(*batch);
-    }
 }
