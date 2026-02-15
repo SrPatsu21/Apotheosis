@@ -135,13 +135,13 @@ void Render::initVulkan(){
     );
 
     // Create descript
-    this->globalDescriptorManager = new GlobalDescriptorManager(
+    globalDescriptorManager = new GlobalDescriptorManager(
         coreVulkan->getDevice(),
         this->cameraBufferManager,
         Render::MAX_FRAMES_IN_FLIGHT
     );
 
-    materialDescriptorManager = std::make_shared<MaterialDescriptorManager>(
+    materialDescriptorManager = new MaterialDescriptorManager(
         coreVulkan->getDevice(),
         100
     );
@@ -184,22 +184,22 @@ void Render::initImGui(){
 }
 
 void Render::initInstances(){
-    resourceManager = std::make_shared<ResourceManager>(
+    resourceManager = new ResourceManager(
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
         bufferManager,
-        materialDescriptorManager.get()->getDescriptorPool(),
-        materialDescriptorManager.get()->getLayout()
+        materialDescriptorManager->getDescriptorPool(),
+        materialDescriptorManager->getLayout()
     );
 
-    renderBatchManager = std::make_shared<RenderBatchManager>(
+    renderBatchManager = new RenderBatchManager(
         resourceManager
     );
 
     // viking room
     renderInstance = new RenderInstance();
     renderBatchManager->addInstance(
-        renderBatchManager.get()->findBatchKey("./models/viking_room.obj", "./textures/viking_room.png"),
+        renderBatchManager->findBatchKey("./models/viking_room.obj", "./textures/viking_room.png"),
         renderInstance
     );
 
@@ -332,16 +332,21 @@ void Render::cleanup(){
         // 3) Managers: destroy in strict reverse-creation order.
         //    (Everything that depends on the swapchain must go BEFORE swapchain.)
         //    Delete pointers and null them to avoid accidental double free later.
-        if (renderInstance){ delete renderInstance; renderInstance = nullptr; }
+        if (renderInstance ){ delete renderInstance; renderInstance = nullptr; }
+        if ( renderBatchManager ){ delete renderBatchManager; renderBatchManager = nullptr; }
+        if ( resourceManager ){ delete resourceManager; resourceManager = nullptr; }
         if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
         if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
         if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
         if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
         if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
-        if (this->iCameraProvider){ delete this->iCameraProvider; this->iCameraProvider = nullptr; }
+        if (globalDescriptorManager){ delete globalDescriptorManager; globalDescriptorManager = nullptr; }
+        if (materialDescriptorManager){ delete materialDescriptorManager; materialDescriptorManager = nullptr; }
+        if (iCameraProvider){ delete iCameraProvider; iCameraProvider = nullptr; }
         if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
         if (this->ui) { this->ui->cleanup(); delete this->ui; this->ui = nullptr; }
         if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
+        if ( bufferManager ){ delete bufferManager; bufferManager = nullptr; }
 
         // Swapchain and resources that own VkSwapchainKHR should be last among managers.
         if (this->swapchainManager)

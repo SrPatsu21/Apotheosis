@@ -79,6 +79,12 @@ GlobalDescriptorManager::GlobalDescriptorManager(
 
 GlobalDescriptorManager::~GlobalDescriptorManager()
 {
-    if (descriptorPool) vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-    if (descriptorSetLayout) vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+    if (descriptorPool)
+    {
+        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+    }
+    if (descriptorSetLayout) 
+    {
+        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+    }
 }

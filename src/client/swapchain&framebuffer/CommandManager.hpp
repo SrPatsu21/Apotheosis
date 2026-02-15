@@ -244,7 +244,7 @@ public:
         const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent,
         VkDescriptorSet globalDescriptorSet,
-        std::shared_ptr<RenderBatchManager> renderBatchManager,
+        RenderBatchManager* renderBatchManager,
         const std::vector<IClearValueProvider*>& clearProviders,
         const std::vector<IViewportProvider*>& viewportProviders,
         const std::vector<IScissorProvider*>& scissorProviders,

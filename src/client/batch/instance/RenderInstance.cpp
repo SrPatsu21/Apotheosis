@@ -29,3 +29,8 @@ void RenderInstance::updateModelMatrix()
 
     modelMatrix = model;
 }
+
+RenderInstance::~RenderInstance()
+{
+    ownerBatch->removeInstance(this);
+}

@@ -47,7 +47,7 @@ private:
     RenderPass* renderPass;
     CameraBufferManager* cameraBufferManager;
     GlobalDescriptorManager* globalDescriptorManager;
-    std::shared_ptr<MaterialDescriptorManager> materialDescriptorManager;
+    MaterialDescriptorManager* materialDescriptorManager;
     GraphicsPipeline* graphicsPipeline;
     ImageColor* imageColor;
     DepthBufferManager* depthBufferManager;
@@ -58,8 +58,8 @@ private:
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
-    std::shared_ptr<RenderBatchManager> renderBatchManager;
-    std::shared_ptr<ResourceManager> resourceManager;
+    RenderBatchManager* renderBatchManager;
+    ResourceManager* resourceManager;
     RenderInstance* renderInstance;
     BufferManager* bufferManager;
 

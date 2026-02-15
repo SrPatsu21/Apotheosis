@@ -43,8 +43,12 @@ MaterialDescriptorManager::MaterialDescriptorManager(
 MaterialDescriptorManager::~MaterialDescriptorManager()
 {
     if (descriptorPool)
+    {
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+    }
 
     if (descriptorSetLayout)
+    {
         vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+    }
 }

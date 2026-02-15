@@ -27,7 +27,7 @@ public:
         const glm::vec3& scale    = glm::vec3(1.0f)
     );
 
-    ~RenderInstance() = default;
+    ~RenderInstance();
 
     RenderInstance(const RenderInstance&) = default;
     RenderInstance& operator=(const RenderInstance&) = default;
