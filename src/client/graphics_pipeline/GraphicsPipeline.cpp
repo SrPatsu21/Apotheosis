@@ -5,7 +5,7 @@ GraphicsPipeline::GraphicsPipeline(
     VkDevice device,
     VkExtent2D swapchainExtent,
     VkRenderPass renderPass,
-    VkDescriptorSetLayout descriptorSetLayout,
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts,
     VkSampleCountFlagBits msaaSamples
 ) :
     device(device)
@@ -32,15 +32,15 @@ GraphicsPipeline::GraphicsPipeline(
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(glm::mat4);
+    pushConstantRange.size = sizeof(PushConstantObject);
 
     // Pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.pushConstantRangeCount = 1;
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+    pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &this->pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");

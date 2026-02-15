@@ -11,7 +11,7 @@ DepthBufferManager::DepthBufferManager(
 ) :
         device(device)
 {
-    if (hasStencilComponent(depthFormat)) {
+    if (CoreVulkan::hasStencilComponent(depthFormat)) {
         aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
     }
 
@@ -54,7 +54,3 @@ DepthBufferManager::~DepthBufferManager()
         this->depthImageMemory = VK_NULL_HANDLE;
     }
 };
-
-bool DepthBufferManager::hasStencilComponent(VkFormat format) {
-    return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
-}

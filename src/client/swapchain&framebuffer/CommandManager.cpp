@@ -1,7 +1,7 @@
 #include "CommandManager.hpp"
-#include "../camera/UniformBufferObject.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "../batch/instance/RenderInstance.hpp"
 
 CommandManager::CommandManager(
     VkDevice device,
@@ -99,7 +99,8 @@ void CommandManager::bindPipelineAndResources(
     GraphicsPipeline* graphicsPipeline,
     VkBuffer vertexBuffer,
     VkBuffer indexBuffer,
-    VkDescriptorSet descriptorSet
+    VkDescriptorSet globalDescriptorSet,
+    VkDescriptorSet materialDescriptorSet
 ) {
     vkCmdBindPipeline(
         cmd,
@@ -129,7 +130,18 @@ void CommandManager::bindPipelineAndResources(
         graphicsPipeline->getLayout(),
         0,
         1,
-        &descriptorSet,
+        &globalDescriptorSet,
+        0,
+        nullptr
+    );
+
+    vkCmdBindDescriptorSets(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        graphicsPipeline->getLayout(),
+        1,
+        1,
+        &materialDescriptorSet,
         0,
         nullptr
     );
@@ -166,10 +178,8 @@ void CommandManager::recordCommandBuffer(
     GraphicsPipeline* graphicsPipeline,
     const std::vector<VkFramebuffer>& framebuffers,
     VkExtent2D extent,
-    VkBuffer vertexBuffer,
-    VkBuffer indexBuffer,
-    uint32_t indicesSize,
-    VkDescriptorSet descriptorSet,
+    VkDescriptorSet globalDescriptorSet,
+    RenderBatchManager* renderBatchManager,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
     const std::vector<IScissorProvider*>& scissorProviders,
@@ -197,12 +207,11 @@ void CommandManager::recordCommandBuffer(
         clearValues
     );
 
-    bindPipelineAndResources(
+    // Bind pipeline uma vez (assumindo pipeline único)
+    vkCmdBindPipeline(
         cmd,
-        graphicsPipeline,
-        vertexBuffer,
-        indexBuffer,
-        descriptorSet
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        graphicsPipeline->getPipeline()
     );
 
     setViewportAndScissor(
@@ -212,8 +221,68 @@ void CommandManager::recordCommandBuffer(
         scissorProviders
     );
 
-    // draw
-    vkCmdDrawIndexed(cmd, indicesSize, 1, 0, 0, 0);
+    // browse batches
+    renderBatchManager->forEachBatch(
+        [&](const RenderBatchManager::RenderBatch& batch)
+        {
+            const RenderBatchManager::BatchKey& key = batch.getKey();
+            const auto& mesh = key.mesh;
+            const auto& material = key.material;
+
+            // Bind vertex buffer
+            VkBuffer vertexBuffer = mesh->getVertexBuffer();
+            VkDeviceSize offsets[] = { 0 };
+            vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBuffer, offsets);
+
+            // Bind index buffer
+            vkCmdBindIndexBuffer(
+                cmd,
+                mesh->getIndexBuffer(),
+                0,
+                VK_INDEX_TYPE_UINT32
+            );
+
+            // Bind descriptor sets (global + material)
+            VkDescriptorSet descriptorSets[] = {
+                globalDescriptorSet,
+                material->getDescriptorSet()
+            };
+
+            vkCmdBindDescriptorSets(
+                cmd,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                graphicsPipeline->getLayout(),
+                0,
+                2,
+                descriptorSets,
+                0,
+                nullptr
+            );
+
+            uint32_t indexCount = mesh->getIndexCount();
+
+            for (const RenderInstance* instance : batch.getInstances())
+            {
+                vkCmdPushConstants(
+                    cmd,
+                    graphicsPipeline->getLayout(),
+                    VK_SHADER_STAGE_VERTEX_BIT,
+                    0,
+                    sizeof(PushConstantObject),
+                    &instance->getModelMatrix()
+                );
+
+                vkCmdDrawIndexed(
+                    cmd,
+                    indexCount,
+                    1,
+                    0,
+                    0,
+                    0
+                );
+            }
+        }
+    );
 
     //* Extra recording (mods, ImGui, debug, etc)
     for (auto* r : extraRecorders) {

@@ -12,6 +12,9 @@ int Render::run(){
     // The UI
     initImGui();
 
+    // The 3D objects
+    initInstances();
+
     //main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -44,7 +47,6 @@ void Render::initWindow(){
 };
 
 void Render::initVulkan(){
-    //TODO better description
     //* Core Vulkan
     //Create Vulkan
     coreVulkan = new CoreVulkan(
@@ -55,7 +57,7 @@ void Render::initVulkan(){
         {}
     );
 
-    BufferManager bufferManager = BufferManager(
+    bufferManager = new BufferManager(
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
         coreVulkan->getGraphicsQueue(),
@@ -86,7 +88,7 @@ void Render::initVulkan(){
 
     cameraBufferManager = new CameraBufferManager(
         coreVulkan->getDevice(),
-        &bufferManager,
+        bufferManager,
         Render::MAX_FRAMES_IN_FLIGHT
     );
 
@@ -126,54 +128,42 @@ void Render::initVulkan(){
     );
 
     // Create command
-    this->commandManager = new CommandManager(
+    commandManager = new CommandManager(
         coreVulkan->getDevice(),
         coreVulkan->getGraphicsQueueFamilyIndices().graphicsFamily.value(),
         this->framebufferManager->getFramebuffers()
     );
 
-    textureImage = new TextureImage(
-        coreVulkan->getPhysicalDevice(),
-        coreVulkan->getDevice(),
-        "./textures/viking_room.png",
-        &bufferManager
-    );
-
     // Create descript
-    this->descriptorManager = new DescriptorManager(
+    globalDescriptorManager = new GlobalDescriptorManager(
         coreVulkan->getDevice(),
         this->cameraBufferManager,
-        textureImage,
         Render::MAX_FRAMES_IN_FLIGHT
     );
 
+    materialDescriptorManager = new MaterialDescriptorManager(
+        coreVulkan->getDevice(),
+        100
+    );
+
     // Create graphics pipeline
-    this->graphicsPipeline = new GraphicsPipeline(
+    graphicsPipeline = new GraphicsPipeline(
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
         renderPass->get(),
-        descriptorManager->getLayout(),
+        {
+            globalDescriptorManager->getLayout(),
+            materialDescriptorManager->getLayout()
+        },
         coreVulkan->getMsaaSamples()
     );
 
-    // VkPhysicalDeviceProperties deviceProperties;
-    // vkGetPhysicalDeviceProperties(CoreVulkan::getPhysicalDevice(), &deviceProperties);
+    #ifndef NDEBUG
+        // VkPhysicalDeviceProperties deviceProperties;
+        // vkGetPhysicalDeviceProperties(CoreVulkan::getPhysicalDevice(), &deviceProperties);
 
-    // std::cout << "Push Constant Max Size: " << deviceProperties.limits.maxPushConstantsSize << " bytes\n";
-
-    this->meshLoader = new MeshLoader("./models/viking_room.obj");
-
-    // Create vertex buffer
-    vertexBufferManager = new VertexBufferManager(
-        coreVulkan->getDevice(),
-        bufferManager,
-        meshLoader->getVertices()
-    );
-    indexBufferManager = new IndexBufferManager(
-        coreVulkan->getDevice(),
-        bufferManager,
-        meshLoader->getIndices()
-    );
+        // std::cout << "Push Constant Max Size: " << deviceProperties.limits.maxPushConstantsSize << " bytes\n";
+    #endif
 
     vkDeviceWaitIdle(coreVulkan->getDevice());
 };
@@ -191,6 +181,28 @@ void Render::initImGui(){
         this->swapchainManager->getImages().size(),
         coreVulkan->getMsaaSamples()
     );
+}
+
+void Render::initInstances(){
+    resourceManager = new ResourceManager(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        bufferManager,
+        materialDescriptorManager->getDescriptorPool(),
+        materialDescriptorManager->getLayout()
+    );
+
+    renderBatchManager = new RenderBatchManager(
+        resourceManager
+    );
+
+    // viking room
+    renderInstance = new RenderInstance();
+    renderBatchManager->addInstance(
+        renderBatchManager->findBatchKey("./models/viking_room.obj", "./textures/viking_room.png"),
+        renderInstance
+    );
+
 }
 
 void Render::drawFrame(){
@@ -220,6 +232,21 @@ void Render::drawFrame(){
     // Reset the fence for the current frame
     vkResetFences(coreVulkan->getDevice(), 1, &this->inFlightFences[this->currentFrame]);
 
+    // Update UBOs for this frame
+    UniformBufferGlobal ubg{};
+    iCameraProvider->fill(
+        ubg,
+        time,
+        swapchainManager->getExtent()
+    );
+    this->cameraBufferManager->update(currentFrame, ubg);
+    renderInstance->rotation = glm::vec3(
+        0.15* time,
+        0.3,
+        0.6
+    );
+    renderInstance->updateModelMatrix();
+
     // Reset + record only the command buffer for this swapchain image
     VkCommandBuffer cmd = this->commandManager->getCommandBuffers()[imageIndex];
     vkResetCommandBuffer(cmd, 0);
@@ -229,24 +256,13 @@ void Render::drawFrame(){
         this->graphicsPipeline,
         this->framebufferManager->getFramebuffers(),
         this->swapchainManager->getExtent(),
-        this->vertexBufferManager->getVertexBuffer(),
-        this->indexBufferManager->getIndexBuffer(),
-        static_cast<uint32_t>(meshLoader->getIndices().size()),
-        this->descriptorManager->getSets()[currentFrame],
+        this->globalDescriptorManager->getDescriptorSets()[currentFrame],
+        renderBatchManager,
         {},
         {},
         {},
         {&UI::ImGuiCommandBufferRecorder::instance()}
     );
-
-    // Update UBOs for this frame
-    UniformBufferObject ubo{};
-    iCameraProvider->fill(
-        ubo,
-        time,
-        swapchainManager->getExtent()
-    );
-    this->cameraBufferManager->update(currentFrame, ubo);
 
     // --- Submit work ---
     VkSemaphore waitSemaphores[] = { this->imageAvailableSemaphores[this->currentFrame] };
@@ -316,20 +332,21 @@ void Render::cleanup(){
         // 3) Managers: destroy in strict reverse-creation order.
         //    (Everything that depends on the swapchain must go BEFORE swapchain.)
         //    Delete pointers and null them to avoid accidental double free later.
+        if (renderInstance ){ delete renderInstance; renderInstance = nullptr; }
+        if ( renderBatchManager ){ delete renderBatchManager; renderBatchManager = nullptr; }
+        if ( resourceManager ){ delete resourceManager; resourceManager = nullptr; }
         if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
-        if (this->meshLoader){delete this->meshLoader; this->meshLoader = nullptr; }
-        if (this->vertexBufferManager){ delete this->vertexBufferManager; this->vertexBufferManager = nullptr; }
-        if (this->indexBufferManager){ delete this->indexBufferManager; this->indexBufferManager = nullptr; }
         if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
         if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
         if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
         if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
-        if (this->descriptorManager){ delete this->descriptorManager; this->descriptorManager = nullptr; }
-        if (this->iCameraProvider){ delete this->iCameraProvider; this->iCameraProvider = nullptr; }
+        if (globalDescriptorManager){ delete globalDescriptorManager; globalDescriptorManager = nullptr; }
+        if (materialDescriptorManager){ delete materialDescriptorManager; materialDescriptorManager = nullptr; }
+        if (iCameraProvider){ delete iCameraProvider; iCameraProvider = nullptr; }
         if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
-        if (this->textureImage){ delete this->textureImage; this->textureImage = nullptr; }
         if (this->ui) { this->ui->cleanup(); delete this->ui; this->ui = nullptr; }
         if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
+        if ( bufferManager ){ delete bufferManager; bufferManager = nullptr; }
 
         // Swapchain and resources that own VkSwapchainKHR should be last among managers.
         if (this->swapchainManager)
@@ -442,7 +459,10 @@ void Render::recreateSwapChain() {
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
         renderPass->get(),
-        descriptorManager->getLayout(),
+        {
+            globalDescriptorManager->getLayout(),
+            materialDescriptorManager->getLayout()
+        },
         coreVulkan->getMsaaSamples()
     );
 

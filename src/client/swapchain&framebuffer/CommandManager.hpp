@@ -3,6 +3,8 @@
 #include <bits/stdc++.h>
 #include "../CoreVulkan.hpp"
 #include "../graphics_pipeline/GraphicsPipeline.hpp"
+#include "../batch/instance/PushConstantObject.hpp"
+#include "../batch/RenderBatchManager.hpp"
 
 /**
  * @brief Manages Vulkan command buffers and their recording lifecycle.
@@ -152,7 +154,8 @@ private:
         GraphicsPipeline* graphicsPipeline,
         VkBuffer vertexBuffer,
         VkBuffer indexBuffer,
-        VkDescriptorSet descriptorSet
+        VkDescriptorSet globalDescriptorSet,
+        VkDescriptorSet materialDescriptorSet
     );
 
     /**
@@ -202,29 +205,37 @@ public:
     ~CommandManager();
 
     /**
-     * @brief Records commands for a specific swapchain image.
+     * @brief Records rendering commands into a command buffer.
      *
-     * This function records:
-     * - Render pass begin
-     * - Pipeline and resource binding
-     * - Viewport and scissor setup
-     * - Indexed draw call
-     * - Optional extra command recorders
-     * - Render pass end
+     * Resets and records the primary command buffer corresponding to the
+     * specified swapchain image index. The recording process typically:
+     * - Begins the render pass
+     * - Configures dynamic viewport and scissor states
+     * - Binds the graphics pipeline and descriptor sets
+     * - Records draw calls via RenderBatchManager
+     * - Executes optional extra command recorders
+     * - Ends the render pass
      *
-     * @param imageIndex Index of the swapchain image.
-     * @param renderPass Render pass used for drawing.
-     * @param graphicsPipeline Graphics pipeline to bind.
-     * @param framebuffers Swapchain framebuffers.
-     * @param extent Render area extent.
-     * @param vertexBuffer Vertex buffer handle.
-     * @param indexBuffer Index buffer handle.
-     * @param indicesSize Number of indices to draw.
-     * @param descriptorSet Descriptor set to bind.
-     * @param clearProviders Clear value providers.
-     * @param viewportProviders Viewport override providers.
-     * @param scissorProviders Scissor override providers.
-     * @param extraRecorders Additional command buffer recorders.
+     * @param imageIndex Index of the swapchain image whose command buffer
+     *                   will be recorded.
+     * @param renderPass Render pass used to begin the rendering process.
+     * @param graphicsPipeline Pointer to the graphics pipeline used for drawing.
+     * @param framebuffers Swapchain framebuffers associated with each image.
+     * @param extent Current swapchain extent (width and height).
+     * @param globalDescriptorSet Descriptor set containing global resources
+     *                            (e.g., camera, lighting).
+     * @param renderBatchManager Manager responsible for issuing draw calls.
+     * @param clearProviders Providers that supply VkClearValue entries for
+     *                       the render pass attachments.
+     * @param viewportProviders Providers responsible for configuring dynamic
+     *                          VkViewport states.
+     * @param scissorProviders Providers responsible for configuring dynamic
+     *                         VkRect2D scissor states.
+     * @param extraRecorders Optional additional recorders that inject custom
+     *                       commands into the command buffer.
+     *
+     * @note Assumes that the command buffer was allocated as a primary buffer
+     *       and is compatible with the provided render pass.
      */
     void recordCommandBuffer(
         size_t imageIndex,
@@ -232,10 +243,8 @@ public:
         GraphicsPipeline* graphicsPipeline,
         const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent,
-        VkBuffer vertexBuffer,
-        VkBuffer indexBuffer,
-        uint32_t indicesSize,
-        VkDescriptorSet descriptorSet,
+        VkDescriptorSet globalDescriptorSet,
+        RenderBatchManager* renderBatchManager,
         const std::vector<IClearValueProvider*>& clearProviders,
         const std::vector<IViewportProvider*>& viewportProviders,
         const std::vector<IScissorProvider*>& scissorProviders,

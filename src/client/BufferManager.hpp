@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../CoreVulkan.hpp"
+#include "CoreVulkan.hpp"
 
 /**
  * @brief Utility class for Vulkan buffer creation and immediate GPU transfers.

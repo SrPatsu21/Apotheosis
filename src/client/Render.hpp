@@ -5,19 +5,19 @@
 #include "ui/UI.hpp"
 #include "swapchain&framebuffer/SwapchainManager.hpp"
 #include "graphics_pipeline/RenderPass.hpp"
-#include "graphics_pipeline/DescriptorManager.hpp"
+#include "graphics_pipeline/GlobalDescriptorManager.hpp"
 #include "camera/CameraBufferManager.hpp"
 #include "graphics_pipeline/GraphicsPipeline.hpp"
 #include "swapchain&framebuffer/DepthBufferManager.hpp"
 #include "swapchain&framebuffer/FramebufferManager.hpp"
-#include "mash/VertexBufferManager.hpp"
-#include "mash/IndexBufferManager.hpp"
-#include "mash/BufferManager.hpp"
-#include "mash/MeshLoader.hpp"
+//todo fix mash name :)
 #include "swapchain&framebuffer/CommandManager.hpp"
-#include "camera/UniformBufferObject.hpp"
-#include "image/TextureImage.hpp"
+#include "camera/UniformBufferGlobal.hpp"
 #include "image/ImageColor.hpp"
+#include "batch/material/MaterialDescriptorManager.hpp"
+#include "batch/RenderBatchManager.hpp"
+#include "batch/ResourceManager.hpp"
+#include "batch/instance/RenderInstance.hpp"
 
 class Render {
 public:
@@ -46,31 +46,29 @@ private:
 
     RenderPass* renderPass;
     CameraBufferManager* cameraBufferManager;
-    DescriptorManager* descriptorManager;
+    GlobalDescriptorManager* globalDescriptorManager;
+    MaterialDescriptorManager* materialDescriptorManager;
     GraphicsPipeline* graphicsPipeline;
     ImageColor* imageColor;
     DepthBufferManager* depthBufferManager;
     FramebufferManager* framebufferManager;
-    VertexBufferManager* vertexBufferManager;
-    IndexBufferManager* indexBufferManager;
     CommandManager* commandManager;
-    TextureImage* textureImage;
-    MeshLoader* meshLoader;
     CameraBufferManager::ICameraProvider* iCameraProvider;
-
     std::vector<VkSemaphore> imageAvailableSemaphores;
-
     std::vector<VkSemaphore> renderFinishedSemaphores;
-
     std::vector<VkFence> inFlightFences;
-
     std::vector<VkFence> imagesInFlight;
+    RenderBatchManager* renderBatchManager;
+    ResourceManager* resourceManager;
+    RenderInstance* renderInstance;
+    BufferManager* bufferManager;
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
     void initWindow();
     void initVulkan();
     void initImGui();
+    void initInstances();
     void drawFrame();
     void cleanup();
 

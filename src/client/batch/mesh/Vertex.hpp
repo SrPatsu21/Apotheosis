@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../CoreVulkan.hpp"
+#include "../../CoreVulkan.hpp"
 #include <glm/glm.hpp>
 #include <array>
 
