@@ -16,7 +16,7 @@ private:
 public:
     VertexBufferManager(
         VkDevice device,
-        BufferManager& bufferManager,
+        BufferManager* bufferManager,
         const std::vector<Vertex>& vertices
     );
 

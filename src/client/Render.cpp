@@ -12,6 +12,9 @@ int Render::run(){
     // The UI
     initImGui();
 
+    // The 3D objects
+    initInstances();
+
     //main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -44,7 +47,6 @@ void Render::initWindow(){
 };
 
 void Render::initVulkan(){
-    //TODO better description
     //* Core Vulkan
     //Create Vulkan
     coreVulkan = new CoreVulkan(
@@ -55,7 +57,7 @@ void Render::initVulkan(){
         {}
     );
 
-    BufferManager bufferManager = BufferManager(
+    bufferManager = new BufferManager(
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
         coreVulkan->getGraphicsQueue(),
@@ -86,7 +88,7 @@ void Render::initVulkan(){
 
     cameraBufferManager = new CameraBufferManager(
         coreVulkan->getDevice(),
-        &bufferManager,
+        bufferManager,
         Render::MAX_FRAMES_IN_FLIGHT
     );
 
@@ -156,25 +158,6 @@ void Render::initVulkan(){
         coreVulkan->getMsaaSamples()
     );
 
-    // batch manager
-    renderInstance = new RenderInstance();
-    resourceManager = std::make_shared<ResourceManager>(
-        coreVulkan->getPhysicalDevice(),
-        coreVulkan->getDevice(),
-        bufferManager,
-        materialDescriptorManager.get()->getDescriptorPool(),
-        materialDescriptorManager.get()->getLayout()
-    );
-
-    renderBatchManager = std::make_shared<RenderBatchManager>(
-        resourceManager
-    );
-
-    renderBatchManager->addInstance(
-        renderBatchManager.get()->findBatchKey("./models/viking_room.obj", "./textures/viking_room.png"),
-        renderInstance
-    );
-
     #ifndef NDEBUG
         // VkPhysicalDeviceProperties deviceProperties;
         // vkGetPhysicalDeviceProperties(CoreVulkan::getPhysicalDevice(), &deviceProperties);
@@ -198,6 +181,28 @@ void Render::initImGui(){
         this->swapchainManager->getImages().size(),
         coreVulkan->getMsaaSamples()
     );
+}
+
+void Render::initInstances(){
+    resourceManager = std::make_shared<ResourceManager>(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        bufferManager,
+        materialDescriptorManager.get()->getDescriptorPool(),
+        materialDescriptorManager.get()->getLayout()
+    );
+
+    renderBatchManager = std::make_shared<RenderBatchManager>(
+        resourceManager
+    );
+
+    // viking room
+    renderInstance = new RenderInstance();
+    renderBatchManager->addInstance(
+        renderBatchManager.get()->findBatchKey("./models/viking_room.obj", "./textures/viking_room.png"),
+        renderInstance
+    );
+
 }
 
 void Render::drawFrame(){

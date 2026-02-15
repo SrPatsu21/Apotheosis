@@ -60,13 +60,15 @@ private:
     std::vector<VkFence> imagesInFlight;
     std::shared_ptr<RenderBatchManager> renderBatchManager;
     std::shared_ptr<ResourceManager> resourceManager;
-    RenderInstance *renderInstance;
+    RenderInstance* renderInstance;
+    BufferManager* bufferManager;
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
     void initWindow();
     void initVulkan();
     void initImGui();
+    void initInstances();
     void drawFrame();
     void cleanup();
 

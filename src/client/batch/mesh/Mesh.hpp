@@ -28,7 +28,7 @@ public:
     explicit Mesh(
         const std::string& path,
         VkDevice device,
-        BufferManager& bufferManager
+        BufferManager* bufferManager
     );
     ~Mesh() = default;
 

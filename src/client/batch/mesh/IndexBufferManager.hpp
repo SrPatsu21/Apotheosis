@@ -15,7 +15,7 @@ private:
 public:
     IndexBufferManager(
         VkDevice device,
-        BufferManager& bufferManager,
+        BufferManager* bufferManager,
         const std::vector<uint32_t>& indices
     );
 

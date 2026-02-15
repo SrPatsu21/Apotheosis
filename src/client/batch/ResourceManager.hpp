@@ -12,7 +12,7 @@ class ResourceManager
 private:
     VkPhysicalDevice physicalDevice;
     VkDevice device;
-    BufferManager bufferManager;
+    BufferManager* bufferManager;
     VkDescriptorPool descriptorPool;
     VkDescriptorSetLayout layout;
 
@@ -22,7 +22,7 @@ public:
     ResourceManager(
         VkPhysicalDevice physicalDevice,
         VkDevice device,
-        BufferManager& bufferManager,
+        BufferManager* bufferManager,
         VkDescriptorPool descriptorPool,
         VkDescriptorSetLayout layout
     );

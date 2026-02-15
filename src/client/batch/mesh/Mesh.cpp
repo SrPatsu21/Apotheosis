@@ -67,7 +67,7 @@ void Mesh::load(
 Mesh::Mesh(
     const std::string& path,
     VkDevice device,
-    BufferManager& bufferManager
+    BufferManager* bufferManager
 ) {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;

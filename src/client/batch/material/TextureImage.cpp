@@ -4,14 +4,14 @@
 #include "../../image/VulkanImageUtils.hpp"
 
 void TextureImage::DefaultImageTransitionPolicy::transition(
-    BufferManager& bufferManager,
+    BufferManager* bufferManager,
     VkImage image,
     VkFormat format,
     VkImageLayout oldLayout,
     VkImageLayout newLayout,
     uint32_t mipLevels
 ) {
-    VkCommandBuffer commandBuffer = bufferManager.beginImmediate();
+    VkCommandBuffer commandBuffer = bufferManager->beginImmediate();
 
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -76,7 +76,7 @@ void TextureImage::DefaultImageTransitionPolicy::transition(
         &barrier
     );
 
-    bufferManager.endImmediate();
+    bufferManager->endImmediate();
 }
 
 void TextureImage::loadImageFromFile(
@@ -93,18 +93,18 @@ void TextureImage::loadImageFromFile(
 }
 
 void TextureImage::createStagingBuffer(
-    BufferManager& bufferManager,
+    BufferManager* bufferManager,
     const LoadedImage& img,
     VkBuffer& buffer,
     VkDeviceMemory& memory
 ) {
-    bufferManager.createBuffer(
+    bufferManager->createBuffer(
         img.size,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         buffer
     );
 
-    bufferManager.allocateBufferMemory(
+    bufferManager->allocateBufferMemory(
         buffer,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         memory
@@ -164,7 +164,7 @@ void TextureImage::createTextureSampler(
 void TextureImage::createTextureImage(
     VkPhysicalDevice physicalDevice,
     const std::string& path,
-    BufferManager& bufferManager,
+    BufferManager* bufferManager,
     const TextureImageDesc& desc,
     IImageTransitionPolicy* transitionPolicy
 ) {
@@ -211,7 +211,7 @@ void TextureImage::createTextureImage(
         mipLevels
     );
 
-    bufferManager.copyBufferToImage(
+    bufferManager->copyBufferToImage(
         staging.buffer,
         textureImage,
         img.width,
@@ -221,7 +221,7 @@ void TextureImage::createTextureImage(
     //transitioned to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL while generating mipmaps
     generateMipmaps(
         physicalDevice,
-        &bufferManager,
+        bufferManager,
         textureImage,
         VK_FORMAT_R8G8B8A8_SRGB,
         img.width,
@@ -234,7 +234,7 @@ TextureImage::TextureImage(
     VkPhysicalDevice physicalDevice,
     VkDevice device,
     const std::string& path,
-    BufferManager& bufferManager,
+    BufferManager* bufferManager,
     const TextureImageDesc& desc,
     IImageTransitionPolicy* transitionPolicy
 ) :
