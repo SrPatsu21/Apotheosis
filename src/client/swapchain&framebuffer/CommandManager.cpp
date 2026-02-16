@@ -173,12 +173,14 @@ void CommandManager::setViewportAndScissor(
 }
 
 void CommandManager::recordCommandBuffer(
-    size_t imageIndex,
+    uint32_t imageIndex,
+    uint32_t currentFrame,
     VkRenderPass renderPass,
     GraphicsPipeline* graphicsPipeline,
     const std::vector<VkFramebuffer>& framebuffers,
     VkExtent2D extent,
-    VkDescriptorSet globalDescriptorSet,
+    GlobalDescriptorManager* globalDescriptorManager,
+    InstanceDescriptorManager* instanceDescriptorManager,
     RenderBatchManager* renderBatchManager,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
@@ -207,7 +209,7 @@ void CommandManager::recordCommandBuffer(
         clearValues
     );
 
-    // Bind pipeline uma vez (assumindo pipeline único)
+    // Bind pipeline
     vkCmdBindPipeline(
         cmd,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -222,12 +224,16 @@ void CommandManager::recordCommandBuffer(
     );
 
     // browse batches
+    VkPipelineLayout layout = graphicsPipeline->getLayout();
     renderBatchManager->forEachBatch(
         [&](const RenderBatchManager::RenderBatch& batch)
         {
-            const RenderBatchManager::BatchKey& key = batch.getKey();
+            const auto& key = batch.getKey();
             const auto& mesh = key.mesh;
             const auto& material = key.material;
+            const auto& instances = batch.getInstances();
+
+            uint32_t instanceCount = static_cast<uint32_t>(instances.size());
 
             // Bind vertex buffer
             VkBuffer vertexBuffer = mesh->getVertexBuffer();
@@ -242,16 +248,16 @@ void CommandManager::recordCommandBuffer(
                 VK_INDEX_TYPE_UINT32
             );
 
-            // Bind descriptor sets (global + material)
+            // Bind descriptor sets (set 0 & 1)
             VkDescriptorSet descriptorSets[] = {
-                globalDescriptorSet,
+                globalDescriptorManager->getDescriptorSets()[currentFrame],
                 material->getDescriptorSet()
             };
 
             vkCmdBindDescriptorSets(
                 cmd,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
-                graphicsPipeline->getLayout(),
+                layout,
                 0,
                 2,
                 descriptorSets,
@@ -259,39 +265,54 @@ void CommandManager::recordCommandBuffer(
                 nullptr
             );
 
-            uint32_t indexCount = mesh->getIndexCount();
+            // Collect model matrices
+            std::vector<InstanceData> models;
+            models.reserve(instanceCount);
 
-            for (const RenderInstance* instance : batch.getInstances())
+            for (const RenderInstance* instance : instances)
             {
-                vkCmdPushConstants(
-                    cmd,
-                    graphicsPipeline->getLayout(),
-                    VK_SHADER_STAGE_VERTEX_BIT,
-                    0,
-                    sizeof(PushConstantObject),
-                    &instance->getModelMatrix()
-                );
-
-                vkCmdDrawIndexed(
-                    cmd,
-                    indexCount,
-                    1,
-                    0,
-                    0,
-                    0
-                );
+                models.push_back(instance->getModelMatrix());
             }
+
+            // Update storage buffer of the current frame.
+            instanceDescriptorManager->update(
+                currentFrame,
+                models
+            );
+
+            // Bind descriptor set 2 (instances)
+            VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
+
+            vkCmdBindDescriptorSets(
+                cmd,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                layout,
+                2, // set index
+                1,
+                &instanceSet,
+                0,
+                nullptr
+            );
+
+            // Draw instanciado
+            vkCmdDrawIndexed(
+                cmd,
+                mesh->getIndexCount(),
+                instanceCount,
+                0,
+                0,
+                0
+            );
         }
     );
 
-    //* Extra recording (mods, ImGui, debug, etc)
+    // Extra recorders (ImGui, debug, etc)
     for (auto* r : extraRecorders) {
         r->record(cmd);
     }
 
     vkCmdEndRenderPass(cmd);
 
-    // End command buffer
     if (vkEndCommandBuffer(cmd) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }

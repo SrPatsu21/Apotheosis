@@ -2,7 +2,7 @@
 
 #include "../CoreVulkan.hpp"
 #include "ShaderLoader.hpp"
-#include "../batch/instance/PushConstantObject.hpp"
+#include "../batch/instance/InstanceData.hpp"
 #include "../batch/mesh/Vertex.hpp"
 #include <array>
 

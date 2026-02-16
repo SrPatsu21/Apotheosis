@@ -32,7 +32,7 @@ GraphicsPipeline::GraphicsPipeline(
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(PushConstantObject);
+    pushConstantRange.size = sizeof(InstanceData);
 
     // Pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};

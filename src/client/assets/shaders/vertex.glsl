@@ -13,13 +13,13 @@ layout(std140, set = 0, binding = 0) uniform UniformBufferGlobal {
     mat4 proj;
 } ubo;
 
-// Push constant
-layout(push_constant) uniform PushConstantObject {
-    mat4 model;
-} push;
+layout(std430, set = 2, binding = 0) readonly buffer InstanceBuffer {
+    mat4 models[];
+} instanceData;
 
 void main() {
-    gl_Position = ubo.proj * ubo.view * push.model * vec4(inPosition, 1.0);
+    mat4 model = instanceData.models[gl_InstanceIndex];
+    gl_Position = ubo.proj * ubo.view * model * vec4(inPosition, 1.0);
     fragColor = inColor;
     fragTexCoord = inTexCoord;
 }

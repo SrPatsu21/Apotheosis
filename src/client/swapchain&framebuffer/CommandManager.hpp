@@ -3,8 +3,10 @@
 #include <bits/stdc++.h>
 #include "../CoreVulkan.hpp"
 #include "../graphics_pipeline/GraphicsPipeline.hpp"
-#include "../batch/instance/PushConstantObject.hpp"
+#include "../batch/instance/InstanceData.hpp"
 #include "../batch/RenderBatchManager.hpp"
+#include "../batch/instance/InstanceDescriptorManager.hpp"
+#include "../graphics_pipeline/GlobalDescriptorManager.hpp"
 
 /**
  * @brief Manages Vulkan command buffers and their recording lifecycle.
@@ -238,12 +240,14 @@ public:
      *       and is compatible with the provided render pass.
      */
     void recordCommandBuffer(
-        size_t imageIndex,
+        uint32_t imageIndex,
+        uint32_t currentFrame,
         VkRenderPass renderPass,
         GraphicsPipeline* graphicsPipeline,
         const std::vector<VkFramebuffer>& framebuffers,
         VkExtent2D extent,
-        VkDescriptorSet globalDescriptorSet,
+        GlobalDescriptorManager* globalDescriptorManager,
+        InstanceDescriptorManager* instanceDescriptorManager,
         RenderBatchManager* renderBatchManager,
         const std::vector<IClearValueProvider*>& clearProviders,
         const std::vector<IViewportProvider*>& viewportProviders,

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PushConstantObject.hpp"
+#include "InstanceData.hpp"
 #include "../RenderBatchManager.hpp"
 
 #include <memory>
@@ -14,7 +14,7 @@ class RenderInstance
     RenderBatchManager::RenderBatch* ownerBatch = nullptr;
     size_t indexInBatch = 0;
 
-    PushConstantObject modelMatrix;
+    InstanceData modelMatrix;
 public:
 
     glm::vec3 position;
@@ -41,5 +41,5 @@ public:
 
     void updateModelMatrix();
 
-    const PushConstantObject& getModelMatrix() const { return modelMatrix; }
+    const InstanceData& getModelMatrix() const { return modelMatrix; }
 };
