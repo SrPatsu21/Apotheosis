@@ -508,7 +508,7 @@ void Render::recreateSwapChain() {
     );
 
     // 8. Recreate command buffers
-    this->commandManager->allocateCommandbuffers(coreVulkan->getDevice(), framebufferManager->getFramebuffers());
+    this->commandManager->allocateCommandBuffers(framebufferManager->getFramebuffers());
 
     // 9. Resize imagesInFlight vector to match new swapchain image count
     initImagesInFlight(this->swapchainManager->getImages().size());

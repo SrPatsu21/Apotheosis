@@ -137,30 +137,6 @@ private:
     );
 
     /**
-     * @brief Binds the graphics pipeline and required GPU resources.
-     *
-     * This function binds:
-     * - The graphics pipeline
-     * - Vertex buffer
-     * - Index buffer
-     * - Descriptor set
-     *
-     * @param cmd Command buffer being recorded.
-     * @param graphicsPipeline Graphics pipeline to bind.
-     * @param vertexBuffer Vertex buffer handle.
-     * @param indexBuffer Index buffer handle.
-     * @param descriptorSet Descriptor set to bind.
-     */
-    void bindPipelineAndResources(
-        VkCommandBuffer cmd,
-        GraphicsPipeline* graphicsPipeline,
-        VkBuffer vertexBuffer,
-        VkBuffer indexBuffer,
-        VkDescriptorSet globalDescriptorSet,
-        VkDescriptorSet materialDescriptorSet
-    );
-
-    /**
      * @brief Sets the viewport and scissor rectangles for rendering.
      *
      * The default viewport and scissor are taken from the graphics pipeline.
@@ -183,8 +159,7 @@ public:
     /**
      * @brief Allocates one primary command buffer per framebuffer.
      */
-    void allocateCommandbuffers(
-        VkDevice device,
+    void allocateCommandBuffers(
         const std::vector<VkFramebuffer>& framebuffers
     );
 

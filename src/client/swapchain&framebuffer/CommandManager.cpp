@@ -14,7 +14,7 @@ CommandManager::CommandManager(
     createCommandPool(graphicsQueueFamily);
 
     // Allocate command buffers
-    allocateCommandbuffers(device, framebuffers);
+    allocateCommandBuffers(framebuffers);
 }
 
 void CommandManager::createCommandPool(uint32_t graphicsQueueFamily) {
@@ -29,7 +29,9 @@ void CommandManager::createCommandPool(uint32_t graphicsQueueFamily) {
     }
 }
 
-void CommandManager::allocateCommandbuffers(VkDevice device, const std::vector<VkFramebuffer>& framebuffers){
+void CommandManager::allocateCommandBuffers(
+    const std::vector<VkFramebuffer>& framebuffers
+){
     this->commandBuffers.resize(framebuffers.size());
 
     VkCommandBufferAllocateInfo allocInfo{};
@@ -88,63 +90,11 @@ void CommandManager::beginRenderPass(
     info.renderPass = renderPass;
     info.framebuffer = framebuffer;
     info.renderArea.extent = extent;
+    info.renderArea.offset = {0, 0};
     info.clearValueCount = static_cast<uint32_t>(clearValues.size());
     info.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(cmd, &info, VK_SUBPASS_CONTENTS_INLINE);
-}
-
-void CommandManager::bindPipelineAndResources(
-    VkCommandBuffer cmd,
-    GraphicsPipeline* graphicsPipeline,
-    VkBuffer vertexBuffer,
-    VkBuffer indexBuffer,
-    VkDescriptorSet globalDescriptorSet,
-    VkDescriptorSet materialDescriptorSet
-) {
-    vkCmdBindPipeline(
-        cmd,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        graphicsPipeline->getPipeline()
-    );
-
-    VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(
-        cmd,
-        0,
-        1,
-        &vertexBuffer,
-        offsets
-    );
-
-    vkCmdBindIndexBuffer(
-        cmd,
-        indexBuffer,
-        0,
-        VK_INDEX_TYPE_UINT32
-    );
-
-    vkCmdBindDescriptorSets(
-        cmd,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        graphicsPipeline->getLayout(),
-        0,
-        1,
-        &globalDescriptorSet,
-        0,
-        nullptr
-    );
-
-    vkCmdBindDescriptorSets(
-        cmd,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        graphicsPipeline->getLayout(),
-        1,
-        1,
-        &materialDescriptorSet,
-        0,
-        nullptr
-    );
 }
 
 void CommandManager::setViewportAndScissor(
