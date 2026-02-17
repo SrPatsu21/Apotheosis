@@ -225,64 +225,71 @@ void CommandManager::recordCommandBuffer(
 
     // browse batches
     VkPipelineLayout layout = graphicsPipeline->getLayout();
+    VkDescriptorSet globalSet = globalDescriptorManager->getDescriptorSets()[currentFrame];
+    VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
+    Mesh* lastMesh = nullptr;
+    Material* lastMaterial = nullptr;
     renderBatchManager->forEachBatch(
         [&](const RenderBatchManager::RenderBatch& batch)
         {
-            const auto& key = batch.getKey();
-            const auto& mesh = key.mesh;
-            const auto& material = key.material;
-            const auto& instances = batch.getInstances();
+            const RenderBatchManager::BatchKey& key = batch.getKey();
+            const std::shared_ptr<Mesh>&  mesh = key.mesh;
+            const std::shared_ptr<Material>& material = key.material;
+            const std::vector<InstanceData>& instancesData = batch.getinstancesData();
 
-            uint32_t instanceCount = static_cast<uint32_t>(instances.size());
+            uint32_t instanceCount = static_cast<uint32_t>(instancesData.size());
 
-            // Bind vertex buffer
-            VkBuffer vertexBuffer = mesh->getVertexBuffer();
-            VkDeviceSize offsets[] = { 0 };
-            vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBuffer, offsets);
+            // Bind mesh
+            if (mesh.get() != lastMesh)
+            {
+                lastMesh = mesh.get();
 
-            // Bind index buffer
-            vkCmdBindIndexBuffer(
-                cmd,
-                mesh->getIndexBuffer(),
-                0,
-                VK_INDEX_TYPE_UINT32
-            );
+                VkBuffer vertexBuffer = mesh->getVertexBuffer();
+                VkDeviceSize offsets[] = { 0 };
+                vkCmdBindVertexBuffers(
+                    cmd,
+                    0,
+                    1,
+                    &vertexBuffer,
+                    offsets
+                );
+
+                vkCmdBindIndexBuffer(
+                    cmd,
+                    mesh->getIndexBuffer(),
+                    0,
+                    VK_INDEX_TYPE_UINT32
+                );
+            }
 
             // Bind descriptor sets (set 0 & 1)
-            VkDescriptorSet descriptorSets[] = {
-                globalDescriptorManager->getDescriptorSets()[currentFrame],
-                material->getDescriptorSet()
-            };
-
-            vkCmdBindDescriptorSets(
-                cmd,
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                layout,
-                0,
-                2,
-                descriptorSets,
-                0,
-                nullptr
-            );
-
-            // Collect model matrices
-            std::vector<InstanceData> models;
-            models.reserve(instanceCount);
-
-            for (const RenderInstance* instance : instances)
+            if (material.get() != lastMaterial)
             {
-                models.push_back(instance->getModelMatrix());
+                lastMaterial = material.get();
+                VkDescriptorSet descriptorSets[] = {
+                    globalSet,
+                    material->getDescriptorSet()
+                };
+
+                vkCmdBindDescriptorSets(
+                    cmd,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    layout,
+                    0,
+                    2,
+                    descriptorSets,
+                    0,
+                    nullptr
+                );
             }
 
             // Update storage buffer of the current frame.
             instanceDescriptorManager->update(
                 currentFrame,
-                models
+                instancesData
             );
 
             // Bind descriptor set 2 (instances)
-            VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
-
             vkCmdBindDescriptorSets(
                 cmd,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,

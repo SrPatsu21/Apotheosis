@@ -7,13 +7,10 @@ RenderInstance::RenderInstance(
     const glm::vec3& rotation,
     const glm::vec3& scale
 ) :
-    modelMatrix(),
     position(position),
     rotation(rotation),
     scale(scale)
-{
-    updateModelMatrix();
-}
+{ }
 
 void RenderInstance::updateModelMatrix()
 {
@@ -27,10 +24,11 @@ void RenderInstance::updateModelMatrix()
 
     model = glm::scale(model, scale);
 
-    modelMatrix = model;
+    ownerBatch->getinstancesData()[indexInBatch] = model;
 }
 
 RenderInstance::~RenderInstance()
 {
-    ownerBatch->removeInstance(this);
+    if (ownerBatch)
+        ownerBatch->removeInstance(this);
 }

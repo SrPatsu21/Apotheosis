@@ -21,7 +21,8 @@ RenderBatchManager::RenderBatch::RenderBatch(
     RenderBatch&& other
 ) noexcept :
     batchKey(std::move(other.batchKey)),
-    instances(std::move(other.instances))
+    instances(std::move(other.instances)),
+    instancesData(std::move(other.instancesData))
 {}
 
 RenderBatchManager::RenderBatch& RenderBatchManager::RenderBatch::operator=(
@@ -30,6 +31,7 @@ RenderBatchManager::RenderBatch& RenderBatchManager::RenderBatch::operator=(
     if (this != &other) {
         batchKey = std::move(other.batchKey);
         instances = std::move(other.instances);
+        instancesData = std::move(other.instancesData);
     }
     return *this;
 }
@@ -46,9 +48,11 @@ void RenderBatchManager::RenderBatch::addInstance(
 ) {
 
     instance->ownerBatch = this;
-    instance->indexInBatch = instances.size();
+    instance->indexInBatch = instancesData.size();
 
     instances.push_back(instance);
+    instancesData.emplace_back();
+    instance->updateModelMatrix();
 }
 
 void RenderBatchManager::RenderBatch::removeInstance(RenderInstance* instance)
@@ -60,15 +64,17 @@ void RenderBatchManager::RenderBatch::removeInstance(RenderInstance* instance)
     {
         instances[index] = instances[lastIndex];
         instances[index]->indexInBatch = index;
+
+        instancesData[index] = instancesData[lastIndex];
     }
 
     instances.pop_back();
+    instancesData.pop_back();
 
     instance->ownerBatch = nullptr;
 }
 
 RenderBatchManager::RenderBatch::~RenderBatch() {
-    instances.clear();
 }
 
 bool RenderBatchManager::RenderBatch::empty() {
@@ -76,14 +82,13 @@ bool RenderBatchManager::RenderBatch::empty() {
 }
 
 //* RenderBatchManager
-RenderBatchManager::BatchKey RenderBatchManager::findBatchKey(
+void RenderBatchManager::findBatchKey(
     const std::string& meshPath,
     const std::string& texturePath,
     BatchKey& key
 ) {
     key.mesh = resourceManager->getMesh(meshPath);
     key.material = resourceManager->getMaterial(texturePath);
-    return key;
 }
 
 RenderBatchManager::BatchKey RenderBatchManager::findBatchKey(

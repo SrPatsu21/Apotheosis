@@ -14,7 +14,6 @@ class RenderInstance
     RenderBatchManager::RenderBatch* ownerBatch = nullptr;
     size_t indexInBatch = 0;
 
-    InstanceData modelMatrix;
 public:
 
     glm::vec3 position;
@@ -41,5 +40,5 @@ public:
 
     void updateModelMatrix();
 
-    const InstanceData& getModelMatrix() const { return modelMatrix; }
+    const InstanceData& getModelMatrix() const { return ownerBatch->getinstancesData()[indexInBatch]; }
 };
