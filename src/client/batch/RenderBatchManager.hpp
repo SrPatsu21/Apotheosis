@@ -19,6 +19,7 @@ public:
         std::shared_ptr<Material> material;
 
         bool operator==(const RenderBatchManager::BatchKey& other) const;
+        bool operator<(const RenderBatchManager::BatchKey& other) const;
     };
 
     struct BatchKeyHasher
@@ -73,7 +74,10 @@ public:
 
 private:
 
-    std::unordered_map<BatchKey, std::unique_ptr<RenderBatch>, BatchKeyHasher> batches;
+    std::unordered_map<BatchKey, std::unique_ptr<RenderBatch>, BatchKeyHasher> batches_map;
+    std::vector<RenderBatch*> batches_sorted;
+    bool batches_dirty = false;
+
     ResourceManager* resourceManager;
 
 public:
@@ -104,11 +108,16 @@ public:
 
     template<typename Func> void forEachBatch(Func&& func)
     {
-        for (auto& [key, batch] : batches)
+        rebuildSortedBatches();
+
+        for (auto* batch : batches_sorted)
         {
             func(*batch);
         }
     }
+
+
+    void rebuildSortedBatches();
 
     RenderBatchManager(ResourceManager* resourceManager);
     ~RenderBatchManager() = default;

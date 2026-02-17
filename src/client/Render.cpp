@@ -472,7 +472,8 @@ void Render::recreateSwapChain() {
         renderPass->get(),
         {
             globalDescriptorManager->getLayout(),
-            materialDescriptorManager->getLayout()
+            materialDescriptorManager->getLayout(),
+            instanceDescriptorManager->getLayout()
         },
         coreVulkan->getMsaaSamples()
     );

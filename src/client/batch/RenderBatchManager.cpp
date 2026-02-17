@@ -10,6 +10,15 @@ bool RenderBatchManager::BatchKey::operator==(
     return mesh == other.mesh && material == other.material;
 }
 
+bool RenderBatchManager::BatchKey::operator<(
+    const RenderBatchManager::BatchKey& other
+) const {
+    if (mesh.get() != other.mesh.get())
+        return mesh.get() < other.mesh.get();
+
+    return material.get() < other.material.get();
+}
+
 //* RenderBatch
 RenderBatchManager::RenderBatch::RenderBatch(
     BatchKey batchKey
@@ -100,13 +109,14 @@ RenderBatchManager::BatchKey RenderBatchManager::findBatchKey(
     key.material = resourceManager->getMaterial(texturePath);
     return key;
 }
+
 void RenderBatchManager::addInstance(
     const BatchKey& key,
     RenderInstance* instance
 ) {
-    auto it = batches.find(key);
+    auto it = batches_map.find(key);
 
-    if (it != batches.end())
+    if (it != batches_map.end())
     {
         it->second->addInstance(instance);
     }
@@ -114,8 +124,12 @@ void RenderBatchManager::addInstance(
     {
         auto batch = std::make_unique<RenderBatch>(key);
         auto* batchPtr = batch.get();
-        batches.emplace(key, std::move(batch));
+
+        batches_map.emplace(key, std::move(batch));
+
         batchPtr->addInstance(instance);
+
+        batches_dirty = true;
     }
 }
 
@@ -131,10 +145,34 @@ bool RenderBatchManager::removeInstance(
 
     if (batch->empty())
     {
-        batches.erase(batch->getKey());
+        batches_map.erase(batch->getKey());
+        batches_dirty = true;
     }
+
     return true;
 }
+
+void RenderBatchManager::rebuildSortedBatches()
+{
+    if (!batches_dirty)
+        return;
+
+    batches_sorted.clear();
+    batches_sorted.reserve(batches_map.size());
+
+    for (auto& [key, batch] : batches_map)
+        batches_sorted.push_back(batch.get());
+
+    std::sort(batches_sorted.begin(), batches_sorted.end(),
+        [](RenderBatch* a, RenderBatch* b)
+        {
+            // defina aqui sua ordenação real
+            return a->getKey() < b->getKey();
+        });
+
+    batches_dirty = false;
+}
+
 
 bool RenderBatchManager::moveInstance(
     const BatchKey& newKey,
