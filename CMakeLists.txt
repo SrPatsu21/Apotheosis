@@ -151,7 +151,7 @@ foreach(SHADER_NAME IN LISTS SHADERS)
 
     add_custom_command(
         OUTPUT ${SPV}
-        COMMAND ${GLSLANG_VALIDATOR} -V -S ${STAGE} ${SHADER} -o ${SPV}
+        COMMAND ${GLSLANG_VALIDATOR} -V --target-env vulkan1.3 -S ${STAGE} ${SHADER} -o ${SPV}
         DEPENDS ${SHADER}
     )
 

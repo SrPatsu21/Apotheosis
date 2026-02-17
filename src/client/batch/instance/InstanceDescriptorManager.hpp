@@ -27,6 +27,7 @@ public:
 
     void update(
         uint32_t frameIndex,
+        uint32_t baseInstance,
         const std::vector<InstanceData>& models
     );
 

@@ -126,13 +126,14 @@ InstanceDescriptorManager::InstanceDescriptorManager(
 
 void InstanceDescriptorManager::update(
     uint32_t frameIndex,
+    uint32_t baseInstance,
     const std::vector<InstanceData>& models
 ) {
-    if (models.size() > maxInstances)
-        throw std::runtime_error("Instance count exceeds maxInstances");
+    if (baseInstance + models.size() > maxInstances)
+        throw std::runtime_error("Instance buffer overflow");
 
     std::memcpy(
-        mapped[frameIndex],
+        static_cast<char*>(mapped[frameIndex]) + baseInstance * sizeof(InstanceData),
         models.data(),
         models.size() * sizeof(InstanceData)
     );

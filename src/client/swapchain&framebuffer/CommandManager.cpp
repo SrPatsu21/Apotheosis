@@ -179,6 +179,7 @@ void CommandManager::recordCommandBuffer(
     VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
     Mesh* lastMesh = nullptr;
     Material* lastMaterial = nullptr;
+    uint32_t currentOffset = 0;
     renderBatchManager->forEachBatch(
         [&](const RenderBatchManager::RenderBatch& batch)
         {
@@ -236,6 +237,7 @@ void CommandManager::recordCommandBuffer(
             // Update storage buffer of the current frame.
             instanceDescriptorManager->update(
                 currentFrame,
+                currentOffset,
                 instancesData
             );
 
@@ -258,8 +260,10 @@ void CommandManager::recordCommandBuffer(
                 instanceCount,
                 0,
                 0,
-                0
+                currentOffset
             );
+
+            currentOffset += instanceCount;
         }
     );
 
