@@ -143,7 +143,14 @@ void Render::initVulkan(){
 
     materialDescriptorManager = new MaterialDescriptorManager(
         coreVulkan->getDevice(),
-        100
+        maxInstances
+    );
+
+    instanceDescriptorManager = new InstanceDescriptorManager(
+        coreVulkan->getDevice(),
+        bufferManager,
+        Render::MAX_FRAMES_IN_FLIGHT,
+        maxInstances
     );
 
     // Create graphics pipeline
@@ -153,7 +160,8 @@ void Render::initVulkan(){
         renderPass->get(),
         {
             globalDescriptorManager->getLayout(),
-            materialDescriptorManager->getLayout()
+            materialDescriptorManager->getLayout(),
+            instanceDescriptorManager->getLayout()
         },
         coreVulkan->getMsaaSamples()
     );
@@ -252,11 +260,13 @@ void Render::drawFrame(){
     vkResetCommandBuffer(cmd, 0);
     this->commandManager->recordCommandBuffer(
         imageIndex,
+        currentFrame,
         this->renderPass->get(),
         this->graphicsPipeline,
         this->framebufferManager->getFramebuffers(),
         this->swapchainManager->getExtent(),
-        this->globalDescriptorManager->getDescriptorSets()[currentFrame],
+        globalDescriptorManager,
+        instanceDescriptorManager,
         renderBatchManager,
         {},
         {},
@@ -342,6 +352,7 @@ void Render::cleanup(){
         if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
         if (globalDescriptorManager){ delete globalDescriptorManager; globalDescriptorManager = nullptr; }
         if (materialDescriptorManager){ delete materialDescriptorManager; materialDescriptorManager = nullptr; }
+        if (instanceDescriptorManager){ delete instanceDescriptorManager; instanceDescriptorManager = nullptr; }
         if (iCameraProvider){ delete iCameraProvider; iCameraProvider = nullptr; }
         if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
         if (this->ui) { this->ui->cleanup(); delete this->ui; this->ui = nullptr; }
@@ -461,7 +472,8 @@ void Render::recreateSwapChain() {
         renderPass->get(),
         {
             globalDescriptorManager->getLayout(),
-            materialDescriptorManager->getLayout()
+            materialDescriptorManager->getLayout(),
+            instanceDescriptorManager->getLayout()
         },
         coreVulkan->getMsaaSamples()
     );
@@ -496,7 +508,7 @@ void Render::recreateSwapChain() {
     );
 
     // 8. Recreate command buffers
-    this->commandManager->allocateCommandbuffers(coreVulkan->getDevice(), framebufferManager->getFramebuffers());
+    this->commandManager->allocateCommandBuffers(framebufferManager->getFramebuffers());
 
     // 9. Resize imagesInFlight vector to match new swapchain image count
     initImagesInFlight(this->swapchainManager->getImages().size());

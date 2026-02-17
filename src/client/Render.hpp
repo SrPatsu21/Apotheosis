@@ -18,6 +18,7 @@
 #include "batch/RenderBatchManager.hpp"
 #include "batch/ResourceManager.hpp"
 #include "batch/instance/RenderInstance.hpp"
+#include "batch/instance/InstanceDescriptorManager.hpp"
 
 class Render {
 public:
@@ -62,6 +63,9 @@ private:
     ResourceManager* resourceManager;
     RenderInstance* renderInstance;
     BufferManager* bufferManager;
+    InstanceDescriptorManager* instanceDescriptorManager;
+
+    uint32_t maxInstances = 1000;
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 

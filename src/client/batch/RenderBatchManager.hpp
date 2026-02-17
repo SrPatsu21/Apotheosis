@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ResourceManager.hpp"
+#include "instance/InstanceData.hpp"
 
 #include <list>
 
@@ -18,6 +19,7 @@ public:
         std::shared_ptr<Material> material;
 
         bool operator==(const RenderBatchManager::BatchKey& other) const;
+        bool operator<(const RenderBatchManager::BatchKey& other) const;
     };
 
     struct BatchKeyHasher
@@ -34,6 +36,7 @@ public:
     private:
         BatchKey batchKey;
         std::vector<RenderInstance*> instances;
+        std::vector<InstanceData> instancesData;
     public:
         explicit RenderBatch(
             BatchKey batchKey
@@ -57,19 +60,24 @@ public:
 
         bool empty();
 
-        BatchKey getKey() const { return batchKey; }
+        const BatchKey& getKey() const { return batchKey; }
 
         bool isEquivalent(
             const std::shared_ptr<Mesh>& mesh,
             const std::shared_ptr<Material>& material
         ) const;
 
-        const std::vector<RenderInstance*>& getInstances() const{ return instances; }
+        const std::vector<RenderInstance*>& getRenderInstance() const{ return instances; }
+        std::vector<InstanceData>& getinstancesData() { return instancesData; }
+        const std::vector<InstanceData>& getinstancesData() const { return instancesData; }
     };
 
 private:
 
-    std::unordered_map<BatchKey, std::unique_ptr<RenderBatch>, BatchKeyHasher> batches;
+    std::unordered_map<BatchKey, std::unique_ptr<RenderBatch>, BatchKeyHasher> batches_map;
+    std::vector<RenderBatch*> batches_sorted;
+    bool batches_dirty = false;
+
     ResourceManager* resourceManager;
 
 public:
@@ -87,7 +95,7 @@ public:
         RenderInstance* instance
     );
 
-    RenderBatchManager::BatchKey findBatchKey(
+    void findBatchKey(
         const std::string& meshPath,
         const std::string& texturePath,
         BatchKey& key
@@ -100,11 +108,16 @@ public:
 
     template<typename Func> void forEachBatch(Func&& func)
     {
-        for (auto& [key, batch] : batches)
+        rebuildSortedBatches();
+
+        for (auto* batch : batches_sorted)
         {
             func(*batch);
         }
     }
+
+
+    void rebuildSortedBatches();
 
     RenderBatchManager(ResourceManager* resourceManager);
     ~RenderBatchManager() = default;
