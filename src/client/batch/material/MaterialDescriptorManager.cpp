@@ -2,38 +2,61 @@
 
 #include <stdexcept>
 
-//TODO see about maxMaterials
 MaterialDescriptorManager::MaterialDescriptorManager(
     VkDevice device,
-    uint32_t maxMaterials
+    uint32_t maxMaterials,
+    std::vector<MaterialDescriptorManager::IMaterialLayoutProvider*> providers
 )
     : device(device)
 {
-    // ---- Layout (set 1) ----
-    VkDescriptorSetLayoutBinding samplerBinding{};
-    samplerBinding.binding = 0;
-    samplerBinding.descriptorCount = 1;
-    samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    samplerBinding.pImmutableSamplers = nullptr;
+    MaterialLayoutBuilder builder(0, 7);
+
+    // engine provider
+    EngineMaterialProvider engineProvider;
+    engineProvider.contribute(builder);
+
+    // mods providers
+    for (auto* p : providers)
+        p->contribute(builder);
+
+    // create layouts
+    std::vector<VkDescriptorSetLayoutBinding> vkBindings;
+
+    for (const auto& b : builder.getBindings())
+    {
+        VkDescriptorSetLayoutBinding vk{};
+        vk.binding = b.binding;
+        vk.descriptorType = b.type;
+        vk.descriptorCount = b.count;
+        vk.stageFlags = b.stages;
+        vk.pImmutableSamplers = nullptr;
+
+        vkBindings.push_back(vk);
+    }
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &samplerBinding;
+    layoutInfo.bindingCount = static_cast<uint32_t>(vkBindings.size());
+    layoutInfo.pBindings = vkBindings.data();
 
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
-        throw std::runtime_error("Failed to create material descriptor set layout");
+        throw std::runtime_error("Failed to create material descriptor layout");
 
-    // ---- Pool ----
-    VkDescriptorPoolSize poolSize{};
-    poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSize.descriptorCount = maxMaterials;
+    // create pools
+    std::vector<VkDescriptorPoolSize> poolSizes;
+
+    for (const auto& [type, count] : builder.getDescriptorCounts())
+    {
+        VkDescriptorPoolSize ps{};
+        ps.type = type;
+        ps.descriptorCount = count * maxMaterials;
+        poolSizes.push_back(ps);
+    }
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes = &poolSize;
+    poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+    poolInfo.pPoolSizes = poolSizes.data();
     poolInfo.maxSets = maxMaterials;
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
