@@ -65,7 +65,8 @@ private:
     BufferManager* bufferManager;
     InstanceDescriptorManager* instanceDescriptorManager;
 
-    uint32_t maxInstances = 1000;
+    uint32_t maxMaterials = 1024;
+    uint32_t maxInstances = 21080;
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 

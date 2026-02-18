@@ -143,7 +143,8 @@ void Render::initVulkan(){
 
     materialDescriptorManager = new MaterialDescriptorManager(
         coreVulkan->getDevice(),
-        maxInstances
+        maxMaterials,
+        {}
     );
 
     instanceDescriptorManager = new InstanceDescriptorManager(
