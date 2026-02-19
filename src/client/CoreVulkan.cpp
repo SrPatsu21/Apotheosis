@@ -166,6 +166,8 @@ void CoreVulkan::createInstance(
             validationLayers.begin(),
             validationLayers.end()
         );
+
+        config.extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     #endif
 
     // mods
@@ -196,6 +198,11 @@ void CoreVulkan::createInstance(
         std::cerr << "Failed to create Vulkan instance\n";
     }
 
+
+    // Create Debug Messenger
+    #ifndef NDEBUG
+        CreateDebugCallback();
+    #endif
     // Checking for extension support and print
     #ifndef NDEBUG
         uint32_t extensionCount = 0;
@@ -549,7 +556,9 @@ void CoreVulkan::cleanup()
         vkDestroySurfaceKHR(instance, surface, nullptr);
         surface = VK_NULL_HANDLE;
     }
-
+    #ifndef NDEBUG
+        DestroyDebugCallback();
+    #endif
     if (instance != VK_NULL_HANDLE) {
         vkDestroyInstance(instance, nullptr);
         instance = VK_NULL_HANDLE;
@@ -592,3 +601,51 @@ uint32_t CoreVulkan::findMemoryType(
 bool CoreVulkan::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
+
+#ifndef NDEBUG
+
+void CoreVulkan::CreateDebugCallback()
+{
+    VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    createInfo.messageSeverity =
+        // VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+        // VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+
+    createInfo.messageType =
+        VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+
+    createInfo.pfnUserCallback = DebugCallback;
+    createInfo.pUserData = nullptr;
+
+    auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+        vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT")
+    );
+
+    if (!func) {
+        throw std::runtime_error("Failed to load vkCreateDebugUtilsMessengerEXT");
+    }
+
+    VkResult result = func(instance, &createInfo, nullptr, &debugMessenger);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create debug messenger");
+    }
+
+    std::cout << "Debug messenger active\n";
+}
+
+void CoreVulkan::DestroyDebugCallback()
+{
+    auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+        vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT")
+    );
+
+    if (func) {
+        func(instance, debugMessenger, nullptr);
+    }
+}
+#endif
