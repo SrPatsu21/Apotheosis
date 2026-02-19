@@ -28,19 +28,35 @@ RenderPass::RenderPass(
 : device(device)
 {
     std::vector<AttachmentDesc> attachments;
-    attachments.reserve(3);
+    bool useMSAA = msaaSamples != VK_SAMPLE_COUNT_1_BIT;
+    if(useMSAA) {
+        attachments.reserve(3);
+    }else {
+            attachments.reserve(2);
+    }
     std::vector<SubpassDesc> subpasses;
     std::vector<VkSubpassDependency> dependencies;
 
     // Color (MSAA)
-    attachments.emplace_back(
-        swapchainImageFormat,
-        msaaSamples,
-        VK_ATTACHMENT_LOAD_OP_CLEAR,
-        VK_ATTACHMENT_STORE_OP_STORE,
-        VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-    );
+    if (useMSAA) {
+        attachments.emplace_back(
+            swapchainImageFormat,
+            msaaSamples,
+            VK_ATTACHMENT_LOAD_OP_CLEAR,
+            VK_ATTACHMENT_STORE_OP_STORE,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+        );
+    } else {
+        attachments.emplace_back(
+            swapchainImageFormat,
+            msaaSamples,
+            VK_ATTACHMENT_LOAD_OP_CLEAR,
+            VK_ATTACHMENT_STORE_OP_STORE,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        );
+    }
 
     // Depth
     attachments.emplace_back(
@@ -53,20 +69,25 @@ RenderPass::RenderPass(
     );
 
     // Resolve
-    attachments.emplace_back(
-        swapchainImageFormat,
-        VK_SAMPLE_COUNT_1_BIT,
-        VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        VK_ATTACHMENT_STORE_OP_STORE,
-        VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-    );
+    if (useMSAA) {
+        attachments.emplace_back(
+            swapchainImageFormat,
+            VK_SAMPLE_COUNT_1_BIT,
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            VK_ATTACHMENT_STORE_OP_STORE,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        );
+    }
 
     // Subpass base
     SubpassDesc mainSubpass{};
     mainSubpass.colorAttachments = {0};
     mainSubpass.depthAttachment = 1;
-    mainSubpass.resolveAttachments = {2};
+    if (useMSAA) {
+        mainSubpass.resolveAttachments = {2};
+    }
+
 
     subpasses.push_back(mainSubpass);
 
@@ -113,8 +134,9 @@ RenderPass::RenderPass(
                 auto colorIdx = s.colorAttachments[i];
                 auto resolveIdx = s.resolveAttachments[i];
 
-                if (attachments[colorIdx].samples == VK_SAMPLE_COUNT_1_BIT)
-                    throw std::runtime_error("Resolve used with non-MSAA color attachment");
+                //! no require sample anymore
+                // if (attachments[colorIdx].samples == VK_SAMPLE_COUNT_1_BIT)
+                //     throw std::runtime_error("Resolve used with non-MSAA color attachment");|
 
                 if (attachments[resolveIdx].samples != VK_SAMPLE_COUNT_1_BIT)
                     throw std::runtime_error("Resolve attachment must be SAMPLE_COUNT_1");

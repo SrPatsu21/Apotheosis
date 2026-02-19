@@ -48,7 +48,8 @@ public:
         std::vector<VkImageView> swapchainImageViews,
         const VkImageView colorImageView,
         const VkImageView depthImageView,
-        const VkExtent2D swapChainExtent
+        const VkExtent2D swapChainExtent,
+        bool useMSAA
     );
 
     /**

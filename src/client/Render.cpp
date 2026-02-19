@@ -118,7 +118,8 @@ void Render::initVulkan(){
         swapchainManager->getImageViews(),
         imageColor->getColorImageView(),
         depthBufferManager->getDepthImageView(),
-        swapchainManager->getExtent()
+        swapchainManager->getExtent(),
+        (coreVulkan->getMsaaSamples() != VK_SAMPLE_COUNT_1_BIT)
     );
 
     // create semaphore and fence
@@ -505,7 +506,8 @@ void Render::recreateSwapChain() {
         swapchainManager->getImageViews(),
         imageColor->getColorImageView(),
         depthBufferManager->getDepthImageView(),
-        swapchainManager->getExtent()
+        swapchainManager->getExtent(),
+        (coreVulkan->getMsaaSamples() != VK_SAMPLE_COUNT_1_BIT)
     );
 
     // 8. Recreate command buffers
