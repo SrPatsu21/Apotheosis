@@ -8,9 +8,10 @@ class InstanceDescriptorManager {
 private:
     VkDevice device;
     uint32_t maxInstances;
+    VkDeviceSize nonCoherentAtomSize;
 
     std::vector<VkBuffer> buffers;
-    std::vector<VkDeviceMemory> memory;
+    std::vector<BufferManager::AllocatedMemoryINFO> memoryInfo;
     std::vector<void*> mapped;
 
     VkDescriptorSetLayout descriptorSetLayout;
@@ -20,8 +21,9 @@ public:
     InstanceDescriptorManager(
         VkDevice device,
         BufferManager* bufferManager,
+        VkDeviceSize nonCoherentAtomSize,
         uint32_t maxFramesInFlight,
-        uint32_t maxInstances
+        uint32_t maxInstancesPerFrame
     );
     ~InstanceDescriptorManager();
 

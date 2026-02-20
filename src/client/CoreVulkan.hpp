@@ -13,6 +13,39 @@
 #include "./swapchain&framebuffer/SwapchainSupportDetails.hpp"
 #ifndef NDEBUG
     #include <cassert>
+
+    static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
+        VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+        VkDebugUtilsMessageTypeFlagsEXT type,
+        const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
+        void* userData)
+    {
+        const char* severityStr = "UNKNOWN";
+        if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)   severityStr = "VERBOSE";
+        if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)      severityStr = "INFO";
+        if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)   severityStr = "WARNING";
+        if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)     severityStr = "ERROR";
+
+        const char* typeStr = "UNKNOWN";
+        if (type & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)       typeStr = "GENERAL";
+        if (type & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)    typeStr = "VALIDATION";
+        if (type & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)   typeStr = "PERFORMANCE";
+
+        std::cerr << "\n[VK " << severityStr << "][" << typeStr << "] " << callbackData->pMessage << "\n";
+
+        if (callbackData->objectCount > 0) {
+            std::cerr << "  Objects: ";
+            for (uint32_t i = 0; i < callbackData->objectCount; ++i) {
+                std::cerr << callbackData->pObjects[i].objectHandle << " ";
+            }
+            std::cerr << "\n";
+        }
+
+        std::cerr << std::endl;
+
+        return VK_FALSE; // nunca aborta
+    }
+
 #endif
 
 /// Vulkan validation layers enabled in debug builds.
@@ -57,6 +90,13 @@ struct QueueFamilyIndices {
  */
 class CoreVulkan
 {
+
+    #ifndef NDEBUG
+        void CreateDebugCallback();
+        void DestroyDebugCallback();
+        VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
+    #endif
+
 //* vars
 protected:
     VkInstance instance;
@@ -69,6 +109,7 @@ protected:
     VkQueue presentQueue;
     VkQueue graphicsQueue;
     VkFormat depthFormat;
+    VkDeviceSize atomSize;
     /// Device extensions required by the engine.
     const std::vector<const char*> DEVICE_EXTENSIONS = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,  // * Enables swapchain functionality for presenting images to the screen
@@ -324,6 +365,15 @@ public:
      * @return true if the format includes a stencil component.
      */
     static bool hasStencilComponent(VkFormat format);
+    // find the AtomSize
+    static VkDeviceSize takeAtomSize(
+        VkPhysicalDevice physicalDevice
+    );
+
+    static bool isMemoryCoherent(
+        VkPhysicalDevice physicalDevice,
+        uint32_t memoryTypeIndex
+    );
 
 //* get
     const VkInstance& getInstance() const { return instance; }
@@ -337,4 +387,5 @@ public:
     const VkQueue& getPresentQueue() const { return presentQueue; }
     const VkFormat& getDepthFormat() const { return depthFormat; }
     const std::vector<const char*>& getDeviceExtensions() const { return DEVICE_EXTENSIONS; }
+    const VkDeviceSize getAtomSize() const { return atomSize; }
 };
