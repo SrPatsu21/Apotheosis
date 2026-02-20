@@ -6,16 +6,18 @@
 InstanceDescriptorManager::InstanceDescriptorManager(
     VkDevice device,
     BufferManager* bufferManager,
+    VkDeviceSize nonCoherentAtomSize,
     uint32_t maxFramesInFlight,
     uint32_t maxInstancesPerFrame
 ) :
     device(device),
+    nonCoherentAtomSize(nonCoherentAtomSize),
     maxInstances(maxInstancesPerFrame)
 {
     VkDeviceSize bufferSize = sizeof(glm::mat4) * maxInstances;
 
     buffers.resize(maxFramesInFlight);
-    memory.resize(maxFramesInFlight);
+    memoryInfo.resize(maxFramesInFlight);
     mapped.resize(maxFramesInFlight);
 
     for (uint32_t i = 0; i < maxFramesInFlight; i++)
@@ -28,17 +30,16 @@ InstanceDescriptorManager::InstanceDescriptorManager(
 
         bufferManager->allocateBufferMemory(
             buffers[i],
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            memory[i]
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, // required
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, // preferred
+            memoryInfo[i]
         );
 
-        vkBindBufferMemory(device, buffers[i], memory[i], 0);
+        vkBindBufferMemory(device, buffers[i], memoryInfo[i].memory, 0);
 
         vkMapMemory(
             device,
-            memory[i],
-            0,
+            memoryInfo[i].memory,            0,
             bufferSize,
             0,
             &mapped[i]
@@ -132,11 +133,30 @@ void InstanceDescriptorManager::update(
     if (baseInstance + models.size() > maxInstances)
         throw std::runtime_error("Instance buffer overflow");
 
+    VkDeviceSize offset = baseInstance * sizeof(InstanceData);
+    VkDeviceSize size = models.size() * sizeof(InstanceData);
+
     std::memcpy(
-        static_cast<char*>(mapped[frameIndex]) + baseInstance * sizeof(InstanceData),
+        static_cast<char*>(mapped[frameIndex]) + offset,
         models.data(),
-        models.size() * sizeof(InstanceData)
+        size
     );
+
+    if (!memoryInfo[frameIndex].isCoherent)
+    {
+        VkDeviceSize atomSize = nonCoherentAtomSize;
+
+        VkDeviceSize alignedOffset = offset & ~(atomSize - 1);
+        VkDeviceSize alignedSize = ((offset + size + atomSize - 1) & ~(atomSize - 1)) - alignedOffset;
+
+        VkMappedMemoryRange range{};
+        range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        range.memory = memoryInfo[frameIndex].memory;
+        range.offset = alignedOffset;
+        range.size = alignedSize;
+
+        vkFlushMappedMemoryRanges(device, 1, &range);
+    }
 }
 
 InstanceDescriptorManager::~InstanceDescriptorManager()
@@ -144,13 +164,13 @@ InstanceDescriptorManager::~InstanceDescriptorManager()
     for (size_t i = 0; i < buffers.size(); i++)
     {
         if (mapped[i])
-            vkUnmapMemory(device, memory[i]);
+            vkUnmapMemory(device, memoryInfo[i].memory);
 
         if (buffers[i])
             vkDestroyBuffer(device, buffers[i], nullptr);
 
-        if (memory[i])
-            vkFreeMemory(device, memory[i], nullptr);
+        if (memoryInfo[i].memory)
+            vkFreeMemory(device, memoryInfo[i].memory, nullptr);
     }
 
     if (descriptorPool)

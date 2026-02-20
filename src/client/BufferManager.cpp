@@ -47,6 +47,42 @@ void BufferManager::allocateBufferMemory(
     }
 };
 
+void BufferManager::allocateBufferMemory(
+    VkBuffer buffer,
+    VkMemoryPropertyFlags required,
+    VkMemoryPropertyFlags preferred,
+    BufferManager::AllocatedMemoryINFO& info
+) {
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+
+    uint32_t memoryTypeIndex = CoreVulkan::findMemoryType(
+        physicalDevice,
+        memRequirements.memoryTypeBits,
+        required,
+        preferred
+    );
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = memoryTypeIndex;
+
+    if (vkAllocateMemory(device, &allocInfo, nullptr, &info.memory) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to allocate buffer memory!");
+    }
+
+    // Descobrir flags reais da memória escolhida
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+    VkMemoryPropertyFlags flags = memProperties.memoryTypes[memoryTypeIndex].propertyFlags;
+
+    info.memoryTypeIndex = memoryTypeIndex;
+    info.isCoherent = (flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0;
+}
+
 void BufferManager::copyBuffer(
     VkBuffer srcBuffer,
     VkBuffer dstBuffer,

@@ -151,6 +151,7 @@ void Render::initVulkan(){
     instanceDescriptorManager = new InstanceDescriptorManager(
         coreVulkan->getDevice(),
         bufferManager,
+        coreVulkan->getAtomSize(),
         Render::MAX_FRAMES_IN_FLIGHT,
         maxInstances
     );

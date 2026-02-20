@@ -56,6 +56,11 @@ private:
     void destroyImmediateContext();
 
 public:
+    struct AllocatedMemoryINFO {
+        VkDeviceMemory memory;
+        uint32_t memoryTypeIndex;
+        bool isCoherent;
+    };
     /**
      * @brief Constructs a BufferManager and initializes its internal transfer context.
      *
@@ -105,6 +110,13 @@ public:
         VkBuffer buffer,
         VkMemoryPropertyFlags properties,
         VkDeviceMemory& bufferMemory
+    );
+
+    void allocateBufferMemory(
+        VkBuffer buffer,
+        VkMemoryPropertyFlags required,
+        VkMemoryPropertyFlags preferred,
+        BufferManager::AllocatedMemoryINFO& info
     );
 
     /**

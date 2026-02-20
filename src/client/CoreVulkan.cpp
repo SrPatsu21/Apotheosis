@@ -22,6 +22,7 @@ CoreVulkan::CoreVulkan(
     // device extensions
     pickPhysicalDevice(physicalDeviceSelectors);
     msaaSamples = findMaxLimitedUsableSampleCount(VK_SAMPLE_COUNT_8_BIT, physicalDevice);
+    atomSize = takeAtomSize(physicalDevice);
     #ifndef NDEBUG
         std::cout << "Sample Count: " << msaaSamples << std::endl;
     #endif
@@ -393,6 +394,30 @@ VkSampleCountFlagBits CoreVulkan::findMaxLimitedUsableSampleCount(
     return static_cast<VkSampleCountFlagBits>(
         1u << (31 - __builtin_clz(supported)) // get the max desired
     );
+}
+
+VkDeviceSize CoreVulkan::takeAtomSize(
+    VkPhysicalDevice physicalDevice
+) {
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+    return properties.limits.nonCoherentAtomSize;
+}
+
+bool CoreVulkan::isMemoryCoherent(
+    VkPhysicalDevice physicalDevice,
+    uint32_t memoryTypeIndex
+) {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+    if (memoryTypeIndex >= memProperties.memoryTypeCount)
+        throw std::runtime_error("Invalid memoryTypeIndex");
+
+    VkMemoryPropertyFlags flags = memProperties.memoryTypes[memoryTypeIndex].propertyFlags;
+
+    return (flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0;
 }
 
 void CoreVulkan::pickPhysicalDevice(

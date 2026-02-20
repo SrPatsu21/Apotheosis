@@ -109,6 +109,7 @@ protected:
     VkQueue presentQueue;
     VkQueue graphicsQueue;
     VkFormat depthFormat;
+    VkDeviceSize atomSize;
     /// Device extensions required by the engine.
     const std::vector<const char*> DEVICE_EXTENSIONS = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,  // * Enables swapchain functionality for presenting images to the screen
@@ -364,6 +365,15 @@ public:
      * @return true if the format includes a stencil component.
      */
     static bool hasStencilComponent(VkFormat format);
+    // find the AtomSize
+    static VkDeviceSize takeAtomSize(
+        VkPhysicalDevice physicalDevice
+    );
+
+    static bool isMemoryCoherent(
+        VkPhysicalDevice physicalDevice,
+        uint32_t memoryTypeIndex
+    );
 
 //* get
     const VkInstance& getInstance() const { return instance; }
@@ -377,4 +387,5 @@ public:
     const VkQueue& getPresentQueue() const { return presentQueue; }
     const VkFormat& getDepthFormat() const { return depthFormat; }
     const std::vector<const char*>& getDeviceExtensions() const { return DEVICE_EXTENSIONS; }
+    const VkDeviceSize getAtomSize() const { return atomSize; }
 };
