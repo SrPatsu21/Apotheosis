@@ -163,7 +163,7 @@ void CommandManager::recordCommandBuffer(
     vkCmdBindPipeline(
         cmd,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
-        graphicsPipeline->getPipeline()
+        graphicsPipeline->getPipeline(GraphicsPipeline::PipelineType::Triangles_NoCull)
     );
 
     setViewportAndScissor(

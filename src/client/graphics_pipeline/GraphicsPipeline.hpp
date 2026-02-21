@@ -12,34 +12,47 @@ private:
     VkDevice device;
 
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
-    VkVertexInputBindingDescription bindingDescription{};
-    std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
     VkViewport viewport{};
     VkRect2D scissor{};
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 
-    VkPipelineVertexInputStateCreateInfo createVertexInputState();
-        VkPipelineInputAssemblyStateCreateInfo createInputAssemblyState(
+    VkPipelineVertexInputStateCreateInfo createVertexInputState(
+        VkVertexInputBindingDescription& bindingDescription,
+        std::array<VkVertexInputAttributeDescription, 3>& attributeDescriptions
+    );
+    VkPipelineInputAssemblyStateCreateInfo createInputAssemblyState(
         VkPrimitiveTopology topology
     );
-    VkPipelineViewportStateCreateInfo createViewportState(VkExtent2D extent);
+    VkPipelineViewportStateCreateInfo createViewportState(
+        VkViewport& viewport,
+        VkRect2D& scissor
+    );
     VkPipelineRasterizationStateCreateInfo createRasterizerState(
         VkCullModeFlags cullMode,
         VkPolygonMode polygonMode
     );
-    VkPipelineMultisampleStateCreateInfo createMultisampleState(VkSampleCountFlagBits msaaSamples);
+    VkPipelineMultisampleStateCreateInfo createMultisampleState(
+        VkSampleCountFlagBits msaaSamples
+    );
+    VkPipelineDynamicStateCreateInfo createDynamicState(
+        const std::vector<VkDynamicState>& dynamicState
+    );
     VkPipelineDepthStencilStateCreateInfo createDepthStencilState();
-    VkPipelineColorBlendStateCreateInfo createColorBlendState();
+    VkPipelineColorBlendStateCreateInfo createColorBlendState(
+        VkPipelineColorBlendAttachmentState& colorBlendAttachment
+    );
 
     VkPipeline createPipeline(
-        VkRenderPass renderPass,
-        VkExtent2D swapchainExtent,
-        VkSampleCountFlagBits msaaSamples,
-        VkPipelineShaderStageCreateInfo* shaderStages,
-        VkPipelineDynamicStateCreateInfo* dynamicState,
-        VkPrimitiveTopology topology,
-        VkCullModeFlags cullMode,
-        VkPolygonMode polygonMode
+        const VkRenderPass renderPass,
+        const VkPipelineShaderStageCreateInfo* shaderStages,
+        const VkPipelineVertexInputStateCreateInfo& vertexInput,
+        const VkPipelineInputAssemblyStateCreateInfo& inputAssembly,
+        const VkPipelineViewportStateCreateInfo& viewportState,
+        const VkPipelineRasterizationStateCreateInfo& rasterizer,
+        const VkPipelineMultisampleStateCreateInfo& multisampling,
+        const VkPipelineDepthStencilStateCreateInfo& depthStencil,
+        const VkPipelineColorBlendStateCreateInfo& colorBlend,
+        const VkPipelineDynamicStateCreateInfo& dynamicState
     );
 
 public:
