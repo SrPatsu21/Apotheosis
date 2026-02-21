@@ -10,6 +10,17 @@ GraphicsPipeline::GraphicsPipeline(
 ) :
     device(device)
 {
+ // Dynamic State
+    std::vector<VkDynamicState> dynamicStates = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+
+    VkPipelineDynamicStateCreateInfo dynamicState{};
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+    dynamicState.pDynamicStates = dynamicStates.data();
+
     // Load shaders
     ShaderLoader* shaderLoader = new ShaderLoader(device, "shaders/vertex.glsl.spv", "shaders/fragment.glsl.spv");
 
@@ -42,59 +53,84 @@ GraphicsPipeline::GraphicsPipeline(
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
     pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &this->pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
-    // Dynamic State
-    std::vector<VkDynamicState> dynamicStates = {
-        VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_SCISSOR
-    };
+    // create all pipelines
+    graphicsPipelines[PipelineType::Triangles_NoCull] =
+        createPipeline(
+            renderPass,
+            swapchainExtent,
+            msaaSamples,
+            shaderStages,
+            &dynamicState,
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            VK_CULL_MODE_NONE,
+            VK_POLYGON_MODE_FILL
+        );
 
-    VkPipelineDynamicStateCreateInfo dynamicState{};
-    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
-    dynamicState.pDynamicStates = dynamicStates.data();
+    graphicsPipelines[PipelineType::Triangles_BackCull] =
+        createPipeline(
+            renderPass,
+            swapchainExtent,
+            msaaSamples,
+            shaderStages,
+            &dynamicState,
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            VK_CULL_MODE_BACK_BIT,
+            VK_POLYGON_MODE_FILL
+        );
 
-    // Graphics pipeline
-    auto vertexInputInfo = createVertexInputState();
-    auto inputAssembly = createInputAssemblyState();
-    auto viewportState = createViewportState(swapchainExtent);
-    auto rasterizer = createRasterizerState();
-    auto multisampling = createMultisampleState(msaaSamples);
-    auto depthStencil = createDepthStencilState();
-    auto colorBlending = createColorBlendState();
+    graphicsPipelines[PipelineType::Triangles_FrontCull] =
+        createPipeline(
+            renderPass,
+            swapchainExtent,
+            msaaSamples,
+            shaderStages,
+            &dynamicState,
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            VK_CULL_MODE_FRONT_BIT,
+            VK_POLYGON_MODE_FILL
+        );
 
-    VkGraphicsPipelineCreateInfo pipelineInfo{};
-    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.stageCount = 2;
-    pipelineInfo.pStages = shaderStages;
-    pipelineInfo.pVertexInputState = &vertexInputInfo;
-    pipelineInfo.pInputAssemblyState = &inputAssembly;
-    pipelineInfo.pViewportState = &viewportState;
-    pipelineInfo.pRasterizationState = &rasterizer;
-    pipelineInfo.pMultisampleState = &multisampling;
-    pipelineInfo.pDepthStencilState = &depthStencil;
-    pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.layout = this->pipelineLayout;
-    pipelineInfo.pDynamicState = &dynamicState;
-    pipelineInfo.renderPass = renderPass;
-    pipelineInfo.subpass = 0;
+    graphicsPipelines[PipelineType::Lines] =
+        createPipeline(
+            renderPass,
+            swapchainExtent,
+            msaaSamples,
+            shaderStages,
+            &dynamicState,
+            VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+            VK_CULL_MODE_NONE,
+            VK_POLYGON_MODE_FILL
+        );
 
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &this->graphicsPipeline) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create graphics pipeline!");
-    }
+    graphicsPipelines[PipelineType::Points] =
+        createPipeline(
+            renderPass,
+            swapchainExtent,
+            msaaSamples,
+            shaderStages,
+            &dynamicState,
+            VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+            VK_CULL_MODE_NONE,
+            VK_POLYGON_MODE_FILL
+        );
+
     //shaders is not required anymore
     delete(shaderLoader);
 }
 
 GraphicsPipeline::~GraphicsPipeline() {
-    if (this->graphicsPipeline != VK_NULL_HANDLE) {
-        vkDestroyPipeline(device, this->graphicsPipeline, nullptr);
+    for (auto& pair : graphicsPipelines) {
+        if (pair.second != VK_NULL_HANDLE) {
+            vkDestroyPipeline(device, pair.second, nullptr);
+        }
     }
-    if (this->pipelineLayout != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(device, this->pipelineLayout, nullptr);
+
+    if (pipelineLayout != VK_NULL_HANDLE) {
+        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
     }
 }
 
@@ -119,10 +155,12 @@ VkPipelineVertexInputStateCreateInfo GraphicsPipeline::createVertexInputState() 
     return vertexInputInfo;
 }
 
-VkPipelineInputAssemblyStateCreateInfo GraphicsPipeline::createInputAssemblyState() {
+VkPipelineInputAssemblyStateCreateInfo GraphicsPipeline::createInputAssemblyState(
+    VkPrimitiveTopology topology
+) {
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    inputAssembly.topology = topology;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
     return inputAssembly;
 }
@@ -142,14 +180,17 @@ VkPipelineViewportStateCreateInfo GraphicsPipeline::createViewportState(VkExtent
     return viewportState;
 }
 
-VkPipelineRasterizationStateCreateInfo GraphicsPipeline::createRasterizerState() {
+VkPipelineRasterizationStateCreateInfo GraphicsPipeline::createRasterizerState(
+    VkCullModeFlags cullMode,
+    VkPolygonMode polygonMode
+) {
     VkPipelineRasterizationStateCreateInfo rasterizer{};
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer.depthClampEnable = VK_FALSE;
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer.polygonMode = polygonMode;
     rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = VK_CULL_MODE_NONE;
+    rasterizer.cullMode = cullMode;
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
     rasterizer.depthBiasConstantFactor = 0.0f;
@@ -203,7 +244,6 @@ VkPipelineColorBlendStateCreateInfo GraphicsPipeline::createColorBlendState() {
     this->colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
     this->colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
-
     VkPipelineColorBlendStateCreateInfo colorBlending{};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     colorBlending.logicOpEnable = VK_FALSE;
@@ -216,4 +256,48 @@ VkPipelineColorBlendStateCreateInfo GraphicsPipeline::createColorBlendState() {
     colorBlending.blendConstants[3] = 0.0f;
 
     return colorBlending;
+}
+
+
+VkPipeline GraphicsPipeline::createPipeline(
+    VkRenderPass renderPass,
+    VkExtent2D swapchainExtent,
+    VkSampleCountFlagBits msaaSamples,
+    VkPipelineShaderStageCreateInfo* shaderStages,
+    VkPipelineDynamicStateCreateInfo* dynamicState,
+    VkPrimitiveTopology topology,
+    VkCullModeFlags cullMode,
+    VkPolygonMode polygonMode
+) {
+    VkPipeline graphicsPipeline;
+
+    auto vertexInputInfo = createVertexInputState();
+    auto inputAssembly = createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    auto viewportState = createViewportState(swapchainExtent);
+    auto rasterizer = createRasterizerState(VK_CULL_MODE_NONE, VK_POLYGON_MODE_FILL);
+    auto multisampling = createMultisampleState(msaaSamples);
+    auto depthStencil = createDepthStencilState();
+    auto colorBlending = createColorBlendState();
+
+    VkGraphicsPipelineCreateInfo pipelineInfo{};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.stageCount = 2;
+    pipelineInfo.pStages = shaderStages;
+    pipelineInfo.pVertexInputState = &vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &inputAssembly;
+    pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pMultisampleState = &multisampling;
+    pipelineInfo.pDepthStencilState = &depthStencil;
+    pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.layout = this->pipelineLayout;
+    pipelineInfo.pDynamicState = dynamicState;
+    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.subpass = 0;
+
+    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create graphics pipeline!");
+    }
+
+    return graphicsPipeline;
 }
