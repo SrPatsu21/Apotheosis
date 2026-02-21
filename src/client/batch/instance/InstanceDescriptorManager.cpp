@@ -39,7 +39,8 @@ InstanceDescriptorManager::InstanceDescriptorManager(
 
         vkMapMemory(
             device,
-            memoryInfo[i].memory,            0,
+            memoryInfo[i].memory,
+            0,
             bufferSize,
             0,
             &mapped[i]

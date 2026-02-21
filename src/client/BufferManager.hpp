@@ -55,11 +55,23 @@ private:
      */
     void destroyImmediateContext();
 
-public:
+public:    /**
+     * @brief Describes memory allocated for a Vulkan buffer.
+     *
+     * This structure stores the result of a buffer memory allocation,
+     * including the allocated VkDeviceMemory handle, the selected memory
+     * type index, and whether the memory is host-coherent.
+     *
+     * The isCoherent flag allows higher-level systems to determine whether
+     * explicit flushing (vkFlushMappedMemoryRanges) is required when writing
+     * to mapped memory.
+     *
+     * Instances of this struct are filled by allocateBufferMemory().
+     */
     struct AllocatedMemoryINFO {
-        VkDeviceMemory memory;
-        uint32_t memoryTypeIndex;
-        bool isCoherent;
+        VkDeviceMemory memory; ///< Allocated device memory handle
+        uint32_t memoryTypeIndex; ///< Index of the selected memory type
+        bool isCoherent; ///< True if memory is host-coherent
     };
     /**
      * @brief Constructs a BufferManager and initializes its internal transfer context.
@@ -112,6 +124,31 @@ public:
         VkDeviceMemory& bufferMemory
     );
 
+    /**
+     * @brief Allocates memory for a Vulkan buffer.
+     *
+     * This function:
+     *
+     * 1. Queries the buffer's memory requirements.
+     * 2. Selects a suitable memory type using required and preferred flags.
+     * 3. Allocates VkDeviceMemory.
+     * 4. Determines whether the selected memory type is host-coherent.
+     * 5. Fills the provided AllocatedMemoryINFO structure.
+     *
+     * Memory selection follows this logic:
+     * - All required flags must be satisfied.
+     * - Preferred flags are used to choose the best candidate when possible.
+     *
+     * The allocated memory is not automatically bound to the buffer.
+     * Binding must be performed separately using vkBindBufferMemory.
+     *
+     * @param buffer The Vulkan buffer requiring memory.
+     * @param required Memory property flags that must be present.
+     * @param preferred Memory property flags that are desirable but optional.
+     * @param info Output structure receiving allocation details.
+     *
+     * @throws std::runtime_error if memory allocation fails.
+     */
     void allocateBufferMemory(
         VkBuffer buffer,
         VkMemoryPropertyFlags required,
