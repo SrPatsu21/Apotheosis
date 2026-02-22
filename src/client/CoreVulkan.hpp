@@ -43,7 +43,7 @@
 
         std::cerr << std::endl;
 
-        return VK_FALSE; // nunca aborta
+        return VK_FALSE;
     }
 
 #endif
@@ -365,11 +365,53 @@ public:
      * @return true if the format includes a stencil component.
      */
     static bool hasStencilComponent(VkFormat format);
-    // find the AtomSize
+
+    /**
+     * @brief Retrieves the non-coherent atom size of the physical device.
+     *
+     * The nonCoherentAtomSize defines the minimum alignment requirement
+     * when flushing or invalidating mapped memory ranges that are not
+     * host-coherent.
+     *
+     * When working with non-coherent memory, any vkFlushMappedMemoryRanges
+     * or vkInvalidateMappedMemoryRanges operation must:
+     *
+     * - Use offsets aligned to nonCoherentAtomSize
+     * - Use sizes that are multiples of nonCoherentAtomSize
+     *
+     * Failing to respect this alignment leads to undefined behavior.
+     *
+     * This value is device-specific and retrieved from
+     * VkPhysicalDeviceProperties::limits.
+     *
+     * @param physicalDevice The Vulkan physical device.
+     * @return The non-coherent atom size in bytes.
+     */
     static VkDeviceSize takeAtomSize(
         VkPhysicalDevice physicalDevice
     );
 
+    /**
+     * @brief Checks whether a memory type is host-coherent.
+     *
+     * Host-coherent memory guarantees that writes performed by the CPU
+     * are automatically visible to the GPU without requiring explicit
+     * flush operations, and vice versa.
+     *
+     * If the memory type is not host-coherent, explicit synchronization
+     * using vkFlushMappedMemoryRanges and/or vkInvalidateMappedMemoryRanges
+     * is required.
+     *
+     * This function inspects the memory type flags obtained from
+     * vkGetPhysicalDeviceMemoryProperties.
+     *
+     * @param physicalDevice The Vulkan physical device.
+     * @param memoryTypeIndex Index of the memory type to inspect.
+     *
+     * @return true if the memory type includes VK_MEMORY_PROPERTY_HOST_COHERENT_BIT.
+     *
+     * @throws std::runtime_error if memoryTypeIndex is out of range.
+     */
     static bool isMemoryCoherent(
         VkPhysicalDevice physicalDevice,
         uint32_t memoryTypeIndex

@@ -3,10 +3,10 @@
 #include <bits/stdc++.h>
 #include "../CoreVulkan.hpp"
 #include "../graphics_pipeline/GraphicsPipeline.hpp"
-#include "../batch/instance/InstanceData.hpp"
 #include "../batch/RenderBatchManager.hpp"
 #include "../batch/instance/InstanceDescriptorManager.hpp"
 #include "../graphics_pipeline/GlobalDescriptorManager.hpp"
+#include "../particle/ParticleInstanceDescriptorManager.hpp"
 
 /**
  * @brief Manages Vulkan command buffers and their recording lifecycle.
@@ -223,6 +223,7 @@ public:
         VkExtent2D extent,
         GlobalDescriptorManager* globalDescriptorManager,
         InstanceDescriptorManager* instanceDescriptorManager,
+        ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
         RenderBatchManager* renderBatchManager,
         const std::vector<IClearValueProvider*>& clearProviders,
         const std::vector<IViewportProvider*>& viewportProviders,

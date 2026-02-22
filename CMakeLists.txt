@@ -134,8 +134,10 @@ set(COMPILED_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
 file(MAKE_DIRECTORY ${COMPILED_SHADER_DIR})
 
 set(SHADERS
-    vertex.glsl
-    fragment.glsl
+    triangle.frag.glsl
+    triangle.vert.glsl
+    particle.frag.glsl
+    particle.vert.glsl
 )
 
 set(SHADER_OUTPUTS "")
@@ -143,10 +145,12 @@ foreach(SHADER_NAME IN LISTS SHADERS)
     set(SHADER ${SHADER_DIR}/${SHADER_NAME})
     set(SPV ${COMPILED_SHADER_DIR}/${SHADER_NAME}.spv)
 
-    if(SHADER_NAME MATCHES "vertex")
+    if(SHADER_NAME MATCHES "\\.vert\\.glsl$")
         set(STAGE vert)
-    elseif(SHADER_NAME MATCHES "fragment")
+    elseif(SHADER_NAME MATCHES "\\.frag\\.glsl$")
         set(STAGE frag)
+    else()
+        message(FATAL_ERROR "Unknown shader stage for ${SHADER_NAME}")
     endif()
 
     add_custom_command(
