@@ -5,15 +5,16 @@ GraphicsPipeline::GraphicsPipeline(
     VkDevice device,
     VkExtent2D swapchainExtent,
     VkRenderPass renderPass,
-    std::vector<VkDescriptorSetLayout> descriptorSetLayouts,
+    VkDescriptorSetLayout globalLayout,
+    VkDescriptorSetLayout materialLayout,
+    VkDescriptorSetLayout instanceLayout,
+    VkDescriptorSetLayout particleLayout,
     VkSampleCountFlagBits msaaSamples
 ) :
     device(device)
 {
     // Load shaders
     ShaderLoader* shaderLoader = new ShaderLoader(device, "shaders/triangle.vert.glsl.spv", "shaders/triangle.frag.glsl.spv");
-
-    // Shader stages
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -28,32 +29,31 @@ GraphicsPipeline::GraphicsPipeline(
 
     VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
-    //push range
-    VkPushConstantRange pushConstantRange{};
-    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(InstanceData);
+//* create layouts
+    pipelineLayouts[GraphicsPipeline::LayoutType::Mesh] = createPipelineLayout(
+        static_cast<uint32_t>(sizeof(InstanceData)),
+        {
+            globalLayout,
+            materialLayout,
+            instanceLayout
+        }
+    );
 
-    // Pipeline layout
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.pushConstantRangeCount = 1;
-    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
-    pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+    pipelineLayouts[GraphicsPipeline::LayoutType::Particle] = createPipelineLayout(
+        static_cast<uint32_t>(sizeof(ParticleData)),
+        {
+            globalLayout,
+            particleLayout
+        }
+    );
 
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create pipeline layout!");
-    }
-
-    // create info
+//* create info
     VkVertexInputBindingDescription bindingDescription
     {
         .binding = 0,
         .stride = sizeof(Vertex),
         .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
     };
-
     std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {{
         { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos) },
         { 1, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, color) },
@@ -88,6 +88,7 @@ GraphicsPipeline::GraphicsPipeline(
     graphicsPipelines[PipelineType::Triangles_NoCull] =
         createPipeline(
             renderPass,
+            pipelineLayouts[LayoutType::Mesh],
             shaderStages,
             vertexInputInfo,
             createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
@@ -102,6 +103,7 @@ GraphicsPipeline::GraphicsPipeline(
     graphicsPipelines[PipelineType::Triangles_BackCull] =
         createPipeline(
             renderPass,
+            pipelineLayouts[LayoutType::Mesh],
             shaderStages,
             vertexInputInfo,
             createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
@@ -116,6 +118,7 @@ GraphicsPipeline::GraphicsPipeline(
     graphicsPipelines[PipelineType::Triangles_FrontCull] =
         createPipeline(
             renderPass,
+            pipelineLayouts[LayoutType::Mesh],
             shaderStages,
             vertexInputInfo,
             createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
@@ -131,6 +134,7 @@ GraphicsPipeline::GraphicsPipeline(
     graphicsPipelines[PipelineType::Lines] =
         createPipeline(
             renderPass,
+            pipelineLayouts[LayoutType::Mesh],
             shaderStages,
             vertexInputInfo,
             createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_LINE_LIST),
@@ -177,16 +181,22 @@ GraphicsPipeline::GraphicsPipeline(
         .colorWriteMask = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
     };
 
-    VkPipelineColorBlendStateCreateInfo particleColorBlending =
-        createColorBlendState(particleBlendAttachment);
+    VkPipelineColorBlendStateCreateInfo particleColorBlending = createColorBlendState(particleBlendAttachment);
 
     // depth: test yes, write no
     VkPipelineDepthStencilStateCreateInfo particleDepth = depthStencil;
     particleDepth.depthWriteEnable = VK_FALSE;
 
+    dynamicStates.push_back(VK_DYNAMIC_STATE_LINE_WIDTH);
+
+    dynamicState = createDynamicState(
+        dynamicStates
+    );
+
     graphicsPipelines[PipelineType::Points] =
         createPipeline(
             renderPass,
+            pipelineLayouts[LayoutType::Particle],
             shaderStages,
             emptyVertexInput,
             createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_POINT_LIST),
@@ -209,9 +219,42 @@ GraphicsPipeline::~GraphicsPipeline() {
         }
     }
 
-    if (pipelineLayout != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    for (auto& pair : pipelineLayouts) {
+        if (pair.second != VK_NULL_HANDLE) {
+            vkDestroyPipelineLayout(device, pair.second, nullptr);
+        }
     }
+}
+
+VkPipelineLayout GraphicsPipeline::createPipelineLayout(
+    uint32_t pushConstantRangeSize,
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts
+) {
+    VkPipelineLayout pipelineLayout;
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+    pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+
+    VkPushConstantRange pushConstantRange{};
+
+    if (pushConstantRangeSize > 0) {
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = pushConstantRangeSize;
+
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+        pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+    } else {
+        pipelineLayoutInfo.pushConstantRangeCount = 0;
+        pipelineLayoutInfo.pPushConstantRanges = nullptr;
+    }
+
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create pipeline layout!");
+    }
+    return pipelineLayout;
 }
 
 VkPipelineVertexInputStateCreateInfo GraphicsPipeline::createVertexInputState(
@@ -334,6 +377,7 @@ VkPipelineDynamicStateCreateInfo GraphicsPipeline::createDynamicState(
 
 VkPipeline GraphicsPipeline::createPipeline(
     const VkRenderPass renderPass,
+    const VkPipelineLayout& pipelineLayout,
     const VkPipelineShaderStageCreateInfo* shaderStages,
     const VkPipelineVertexInputStateCreateInfo& vertexInput,
     const VkPipelineInputAssemblyStateCreateInfo& inputAssembly,

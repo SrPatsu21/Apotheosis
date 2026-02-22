@@ -1,20 +1,17 @@
-#include "InstanceDescriptorManager.hpp"
-#include <stdexcept>
-#include <vector>
-#include <cstring>
+#include "ParticleInstanceDescriptorManager.hpp"
 
-InstanceDescriptorManager::InstanceDescriptorManager(
+ParticleInstanceDescriptorManager::ParticleInstanceDescriptorManager(
     VkDevice device,
     BufferManager* bufferManager,
     VkDeviceSize nonCoherentAtomSize,
     uint32_t maxFramesInFlight,
-    uint32_t maxInstancesPerFrame
+    uint32_t maxParticlesPerFrame
 ) :
     device(device),
     nonCoherentAtomSize(nonCoherentAtomSize),
-    maxInstances(maxInstancesPerFrame)
+    maxParticles(maxParticlesPerFrame)
 {
-    VkDeviceSize bufferSize = sizeof(glm::mat4) * maxInstances;
+    VkDeviceSize bufferSize = sizeof(ParticleData) * maxParticles;
 
     buffers.resize(maxFramesInFlight);
     memoryInfo.resize(maxFramesInFlight);
@@ -28,10 +25,11 @@ InstanceDescriptorManager::InstanceDescriptorManager(
             buffers[i]
         );
 
+        BufferManager::AllocatedMemoryINFO info;
         bufferManager->allocateBufferMemory(
             buffers[i],
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, // required
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, // preferred
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             memoryInfo[i]
         );
 
@@ -47,6 +45,7 @@ InstanceDescriptorManager::InstanceDescriptorManager(
         );
     }
 
+    // Descriptor Set Layout
     VkDescriptorSetLayoutBinding binding{};
     binding.binding = 0;
     binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -65,9 +64,10 @@ InstanceDescriptorManager::InstanceDescriptorManager(
             nullptr,
             &descriptorSetLayout) != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to create instance descriptor set layout");
+        throw std::runtime_error("Failed to create particle descriptor set layout");
     }
 
+    // Descriptor Pool
     VkDescriptorPoolSize poolSize{};
     poolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     poolSize.descriptorCount = maxFramesInFlight;
@@ -84,9 +84,10 @@ InstanceDescriptorManager::InstanceDescriptorManager(
             nullptr,
             &descriptorPool) != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to create instance descriptor pool");
+        throw std::runtime_error("Failed to create particle descriptor pool");
     }
 
+    // Allocate descriptor sets
     std::vector<VkDescriptorSetLayout> layouts(
         maxFramesInFlight,
         descriptorSetLayout
@@ -105,9 +106,10 @@ InstanceDescriptorManager::InstanceDescriptorManager(
             &allocInfo,
             descriptorSets.data()) != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to allocate instance descriptor sets");
+        throw std::runtime_error("Failed to allocate particle descriptor sets");
     }
 
+    // Update descriptor sets
     for (uint32_t i = 0; i < maxFramesInFlight; i++)
     {
         VkDescriptorBufferInfo bufferInfo{};
@@ -127,20 +129,21 @@ InstanceDescriptorManager::InstanceDescriptorManager(
     }
 }
 
-void InstanceDescriptorManager::update(
+void ParticleInstanceDescriptorManager::update(
     uint32_t frameIndex,
-    uint32_t baseInstance,
-    const std::vector<InstanceData>& models
-) {
-    if (baseInstance + models.size() > maxInstances)
-        throw std::runtime_error("Instance buffer overflow");
+    uint32_t baseParticle,
+    const std::vector<ParticleData>& particles
+)
+{
+    if (baseParticle + particles.size() > maxParticles)
+        throw std::runtime_error("Particle buffer overflow");
 
-    VkDeviceSize offset = baseInstance * sizeof(InstanceData);
-    VkDeviceSize size = models.size() * sizeof(InstanceData);
+    VkDeviceSize offset = baseParticle * sizeof(ParticleData);
+    VkDeviceSize size   = particles.size() * sizeof(ParticleData);
 
     std::memcpy(
         static_cast<char*>(mapped[frameIndex]) + offset,
-        models.data(),
+        particles.data(),
         size
     );
 
@@ -149,19 +152,20 @@ void InstanceDescriptorManager::update(
         VkDeviceSize atomSize = nonCoherentAtomSize;
 
         VkDeviceSize alignedOffset = offset & ~(atomSize - 1);
-        VkDeviceSize alignedSize = ((offset + size + atomSize - 1) & ~(atomSize - 1)) - alignedOffset;
+        VkDeviceSize alignedSize =
+            ((offset + size + atomSize - 1) & ~(atomSize - 1)) - alignedOffset;
 
         VkMappedMemoryRange range{};
         range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
         range.memory = memoryInfo[frameIndex].memory;
         range.offset = alignedOffset;
-        range.size = alignedSize;
+        range.size   = alignedSize;
 
         vkFlushMappedMemoryRanges(device, 1, &range);
     }
 }
 
-InstanceDescriptorManager::~InstanceDescriptorManager()
+ParticleInstanceDescriptorManager::~ParticleInstanceDescriptorManager()
 {
     for (size_t i = 0; i < buffers.size(); i++)
     {

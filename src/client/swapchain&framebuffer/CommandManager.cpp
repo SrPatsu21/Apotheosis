@@ -131,6 +131,7 @@ void CommandManager::recordCommandBuffer(
     VkExtent2D extent,
     GlobalDescriptorManager* globalDescriptorManager,
     InstanceDescriptorManager* instanceDescriptorManager,
+    ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
     RenderBatchManager* renderBatchManager,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
@@ -174,7 +175,7 @@ void CommandManager::recordCommandBuffer(
     );
 
     // browse batches
-    VkPipelineLayout layout = graphicsPipeline->getLayout();
+    VkPipelineLayout layout = graphicsPipeline->getLayout(GraphicsPipeline::LayoutType::Mesh);
     VkDescriptorSet globalSet = globalDescriptorManager->getDescriptorSets()[currentFrame];
     VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
     Mesh* lastMesh = nullptr;
@@ -267,7 +268,65 @@ void CommandManager::recordCommandBuffer(
         }
     );
 
-    // Extra recorders (ImGui, debug, etc)
+//* === TEST PARTICLE ===
+    currentOffset = 0;
+    layout = graphicsPipeline->getLayout(GraphicsPipeline::LayoutType::Particle);
+
+    // Bind particle pipeline
+    vkCmdBindPipeline(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        graphicsPipeline->getPipeline(GraphicsPipeline::PipelineType::Points)
+    );
+
+    // replicate viewport/scissor
+    setViewportAndScissor(
+        cmd,
+        graphicsPipeline,
+        viewportProviders,
+        scissorProviders
+    );
+
+    ParticleData p{};
+    p.positionSize = glm::vec4(0.0f, 1.0f, 0.0f, 60.0f);
+    p.color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+
+    std::vector<ParticleData> particles { p };
+    particleInstanceDescriptorManager->update(
+        currentFrame,
+        currentOffset,
+        particles
+    );
+
+    // set 0 = global UBO
+    vkCmdBindDescriptorSets(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        layout,
+        0,
+        1,
+        &globalSet,
+        0,
+        nullptr
+    );
+
+    VkDescriptorSet particleSet = particleInstanceDescriptorManager->getDescriptorSets()[currentFrame];
+
+    vkCmdBindDescriptorSets(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        layout,
+        1,
+        1,
+        &particleSet,
+        0,
+        nullptr
+    );
+
+    // Draw 1 vertex, 1 instance
+    vkCmdDraw(cmd, 1, particles.size(), 0, 0);
+
+//* Extra recorders (ImGui, debug, etc)
     for (auto* r : extraRecorders) {
         r->record(cmd);
     }

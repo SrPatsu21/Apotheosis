@@ -13,7 +13,7 @@ struct Particle {
     vec4 color;
 };
 
-layout(std430, set = 2, binding = 0) readonly buffer ParticleBuffer {
+layout(std430, set = 1, binding = 0) readonly buffer ParticleBuffer {
     Particle particles[];
 };
 

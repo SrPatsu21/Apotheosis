@@ -3,18 +3,38 @@
 #include "../CoreVulkan.hpp"
 #include "ShaderLoader.hpp"
 #include "../batch/instance/InstanceData.hpp"
+#include "../particle/ParticleData.hpp"
 #include "../batch/mesh/Vertex.hpp"
 #include <array>
 #include <unordered_map>
 
 class GraphicsPipeline {
+public:
+    enum class PipelineType {
+        Triangles_NoCull,
+        Triangles_BackCull,
+        Triangles_FrontCull,
+        Lines,
+        Points
+    };
+
+    enum class LayoutType {
+        Mesh,
+        Particle
+    };
 private:
     VkDevice device;
 
-    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
+    std::unordered_map<PipelineType, VkPipeline> graphicsPipelines;
+    std::unordered_map<LayoutType, VkPipelineLayout> pipelineLayouts;
     VkViewport viewport{};
     VkRect2D scissor{};
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+
+    VkPipelineLayout createPipelineLayout(
+        uint32_t pushConstantRangeSize,
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts
+    );
 
     VkPipelineVertexInputStateCreateInfo createVertexInputState(
         VkVertexInputBindingDescription& bindingDescription,
@@ -44,6 +64,7 @@ private:
 
     VkPipeline createPipeline(
         const VkRenderPass renderPass,
+        const VkPipelineLayout& pipelineLayout,
         const VkPipelineShaderStageCreateInfo* shaderStages,
         const VkPipelineVertexInputStateCreateInfo& vertexInput,
         const VkPipelineInputAssemblyStateCreateInfo& inputAssembly,
@@ -56,28 +77,23 @@ private:
     );
 
 public:
-    enum class PipelineType {
-        Triangles_NoCull,
-        Triangles_BackCull,
-        Triangles_FrontCull,
-        Lines,
-        Points
-    };
-    std::unordered_map<PipelineType, VkPipeline> graphicsPipelines;
 
     GraphicsPipeline(
         VkDevice device,
         VkExtent2D swapchainExtent,
         VkRenderPass renderPass,
-        std::vector<VkDescriptorSetLayout> descriptorSetLayouts,
+        VkDescriptorSetLayout globalLayout,
+        VkDescriptorSetLayout materialLayout,
+        VkDescriptorSetLayout instanceLayout,
+        VkDescriptorSetLayout particleLayout,
         VkSampleCountFlagBits msaaSamples
     );
 
     ~GraphicsPipeline();
 
     VkPipeline getPipeline(PipelineType type) const { return graphicsPipelines.at(type); }
-    VkPipelineLayout getLayout() const { return this->pipelineLayout; }
-    VkViewport& getViewport() { return this->viewport; }
-    VkRect2D& getScissor() { return this->scissor; }
-    VkPipelineColorBlendAttachmentState getColorBlendAttachment() const { return this->colorBlendAttachment; }
+    VkPipelineLayout getLayout(LayoutType type) const { return pipelineLayouts.at(type); }
+    const VkViewport& getViewport() const  { return viewport; }
+    const VkRect2D& getScissor() const { return scissor; }
+    const VkPipelineColorBlendAttachmentState& getColorBlendAttachment() const { return colorBlendAttachment; }
 };

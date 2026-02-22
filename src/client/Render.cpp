@@ -156,16 +156,23 @@ void Render::initVulkan(){
         maxInstances
     );
 
+    particleInstanceDescriptorManager = new ParticleInstanceDescriptorManager(
+        coreVulkan->getDevice(),
+        bufferManager,
+        coreVulkan->getAtomSize(),
+        Render::MAX_FRAMES_IN_FLIGHT,
+        maxInstances
+    );
+
     // Create graphics pipeline
     graphicsPipeline = new GraphicsPipeline(
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
         renderPass->get(),
-        {
-            globalDescriptorManager->getLayout(),
-            materialDescriptorManager->getLayout(),
-            instanceDescriptorManager->getLayout()
-        },
+        globalDescriptorManager->getLayout(),
+        materialDescriptorManager->getLayout(),
+        instanceDescriptorManager->getLayout(),
+        particleInstanceDescriptorManager->getLayout(),
         coreVulkan->getMsaaSamples()
     );
 
@@ -270,6 +277,7 @@ void Render::drawFrame(){
         this->swapchainManager->getExtent(),
         globalDescriptorManager,
         instanceDescriptorManager,
+        particleInstanceDescriptorManager,
         renderBatchManager,
         {},
         {},
@@ -356,6 +364,7 @@ void Render::cleanup(){
         if (globalDescriptorManager){ delete globalDescriptorManager; globalDescriptorManager = nullptr; }
         if (materialDescriptorManager){ delete materialDescriptorManager; materialDescriptorManager = nullptr; }
         if (instanceDescriptorManager){ delete instanceDescriptorManager; instanceDescriptorManager = nullptr; }
+        if (particleInstanceDescriptorManager){ delete particleInstanceDescriptorManager; particleInstanceDescriptorManager = nullptr; }
         if (iCameraProvider){ delete iCameraProvider; iCameraProvider = nullptr; }
         if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
         if (this->ui) { this->ui->cleanup(); delete this->ui; this->ui = nullptr; }
@@ -473,11 +482,10 @@ void Render::recreateSwapChain() {
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
         renderPass->get(),
-        {
-            globalDescriptorManager->getLayout(),
-            materialDescriptorManager->getLayout(),
-            instanceDescriptorManager->getLayout()
-        },
+        globalDescriptorManager->getLayout(),
+        materialDescriptorManager->getLayout(),
+        instanceDescriptorManager->getLayout(),
+        particleInstanceDescriptorManager->getLayout(),
         coreVulkan->getMsaaSamples()
     );
 

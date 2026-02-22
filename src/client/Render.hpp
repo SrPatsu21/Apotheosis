@@ -19,6 +19,7 @@
 #include "batch/ResourceManager.hpp"
 #include "batch/instance/RenderInstance.hpp"
 #include "batch/instance/InstanceDescriptorManager.hpp"
+#include "particle/ParticleInstanceDescriptorManager.hpp"
 
 class Render {
 public:
@@ -64,6 +65,7 @@ private:
     RenderInstance* renderInstance;
     BufferManager* bufferManager;
     InstanceDescriptorManager* instanceDescriptorManager;
+    ParticleInstanceDescriptorManager* particleInstanceDescriptorManager;
 
     uint32_t maxMaterials = 1024;
     uint32_t maxInstances = 21080;
