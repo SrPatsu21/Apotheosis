@@ -84,6 +84,7 @@ void RenderBatchManager::RenderBatch::removeInstance(RenderInstance* instance)
 }
 
 RenderBatchManager::RenderBatch::~RenderBatch() {
+    
 }
 
 bool RenderBatchManager::RenderBatch::empty() {

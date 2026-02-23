@@ -215,9 +215,14 @@ void Render::initInstances(){
     );
 
     // viking room
+    // renderInstance = new RenderInstance();
+    // renderBatchManager->addInstance(
+    //     renderBatchManager->findBatchKey("./models/viking_room.obj", "./textures/viking_room.png"),
+    //     renderInstance
+    // );
     renderInstance = new RenderInstance();
     renderBatchManager->addInstance(
-        renderBatchManager->findBatchKey("./models/viking_room.obj", "./textures/viking_room.png"),
+        renderBatchManager->findBatchKey("./models/untitled.obj", "./textures/untitled.mtl"),
         renderInstance
     );
 

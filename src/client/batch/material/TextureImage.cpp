@@ -238,7 +238,12 @@ TextureImage::TextureImage(
     const TextureImageDesc& desc,
     IImageTransitionPolicy* transitionPolicy
 ) :
-    device(device)
+    device(device),
+    mipLevels(0),
+    textureImage(VK_NULL_HANDLE),
+    textureImageMemory(VK_NULL_HANDLE),
+    textureImageView(VK_NULL_HANDLE),
+    textureSampler(VK_NULL_HANDLE)
 {
     createTextureImage(physicalDevice, path, bufferManager, desc, transitionPolicy);
     createTextureImageView();
