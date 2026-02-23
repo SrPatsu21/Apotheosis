@@ -133,3 +133,33 @@ cd build-windows
 source ./wine-vulkan-env.sh
 wine Apotheosis_client.exe
 ```
+
+## Textures and Models
+
+### Textures
+
+Only acept __.ktx2__; download [here on GitHub](https://github.com/KhronosGroup/KTX-Software).
+
+#### To compile
+
+- BaseColor (sRGB):
+
+    ```shell
+    toktx --t2 --genmipmap --encode uastc --uastc_quality 2 --zcmp --assign_oetf srgb basecolorOut.ktx2 basecolorInput.png
+    ```
+
+- Normal map (linear):
+
+    ```shell
+    toktx --t2 --genmipmap --encode uastc --uastc_quality 2 --zcmp --normal_mode normalOut.ktx2 normalInput.png
+    ```
+
+- Metallic/Roughness (linear):
+
+    ```shell
+    toktx --t2 --genmipmap --encode uastc --uastc_quality 2 --zcmp mrOut.ktx2 mrInput.png
+    ```
+
+### Models
+
+In Blender or any other graphics software tool you prefer, export as __.glb__. The code does not accept other formats.
