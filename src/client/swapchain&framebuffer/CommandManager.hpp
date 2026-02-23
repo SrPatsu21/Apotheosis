@@ -225,6 +225,7 @@ public:
         InstanceDescriptorManager* instanceDescriptorManager,
         ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
         RenderBatchManager* renderBatchManager,
+        const std::vector<ParticleData>& particles,
         const std::vector<IClearValueProvider*>& clearProviders,
         const std::vector<IViewportProvider*>& viewportProviders,
         const std::vector<IScissorProvider*>& scissorProviders,

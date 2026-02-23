@@ -133,6 +133,7 @@ void CommandManager::recordCommandBuffer(
     InstanceDescriptorManager* instanceDescriptorManager,
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
     RenderBatchManager* renderBatchManager,
+    const std::vector<ParticleData>& particles,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
     const std::vector<IScissorProvider*>& scissorProviders,
@@ -287,11 +288,6 @@ void CommandManager::recordCommandBuffer(
         scissorProviders
     );
 
-    ParticleData p{};
-    p.positionSize = glm::vec4(0.0f, 1.0f, 0.0f, 60.0f);
-    p.color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-
-    std::vector<ParticleData> particles { p };
     particleInstanceDescriptorManager->update(
         currentFrame,
         currentOffset,
