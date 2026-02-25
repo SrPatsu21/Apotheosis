@@ -209,6 +209,39 @@ public:    /**
     );
 
     /**
+     * @brief Uploads data to a specific mip level and array layer of a VkImage.
+     *
+     * This function:
+     * - Creates a temporary host-visible staging buffer
+     * - Copies CPU memory into the staging buffer
+     * - Records a vkCmdCopyBufferToImage command
+     * - Submits the command immediately
+     * - Destroys the staging resources
+     *
+     * The destination image must already be in
+     * VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL layout.
+     *
+     * @param data Pointer to source CPU data.
+     * @param size Size of the data in bytes.
+     * @param image Destination Vulkan image.
+     * @param width Width of the mip level.
+     * @param height Height of the mip level.
+     * @param mipLevel Target mip level.
+     * @param baseArrayLayer First array layer to write to.
+     * @param layerCount Number of layers to update.
+     */
+    void uploadToImageMipLevel(
+        const void* data,
+        VkDeviceSize size,
+        VkImage image,
+        uint32_t width,
+        uint32_t height,
+        uint32_t mipLevel,
+        uint32_t baseArrayLayer,
+        uint32_t layerCount
+    );
+
+    /**
      * @brief Destroys the BufferManager and releases internal resources.
      */
     ~BufferManager();

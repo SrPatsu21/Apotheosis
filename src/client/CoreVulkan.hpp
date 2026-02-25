@@ -417,6 +417,24 @@ public:
         uint32_t memoryTypeIndex
     );
 
+    /**
+     * @brief Returns whether a Vulkan format contains a depth component.
+     *
+     * This helper is typically used to determine the correct
+     * VkImageAspectFlags when creating image views or performing
+     * layout transitions.
+     *
+     * Depth formats detected:
+     * - VK_FORMAT_D32_SFLOAT
+     * - VK_FORMAT_D32_SFLOAT_S8_UINT
+     * - VK_FORMAT_D24_UNORM_S8_UINT
+     *
+     * @param format Vulkan image format.
+     * @return True if the format includes a depth component.
+     */
+    static bool hasDepthComponent(
+        VkFormat format
+    );
 //* get
     const VkInstance& getInstance() const { return instance; }
     const VkSurfaceKHR& getSurface() const { return surface; }
