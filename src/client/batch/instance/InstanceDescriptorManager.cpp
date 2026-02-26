@@ -14,7 +14,7 @@ InstanceDescriptorManager::InstanceDescriptorManager(
     nonCoherentAtomSize(nonCoherentAtomSize),
     maxInstances(maxInstancesPerFrame)
 {
-    VkDeviceSize bufferSize = sizeof(glm::mat4) * maxInstances;
+    VkDeviceSize bufferSize = sizeof(InstanceData) * maxInstances;
 
     buffers.resize(maxFramesInFlight);
     memoryInfo.resize(maxFramesInFlight);

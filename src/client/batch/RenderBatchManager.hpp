@@ -16,7 +16,7 @@ public:
     struct BatchKey
     {
         std::shared_ptr<Mesh> mesh;
-        std::shared_ptr<Material> material;
+        std::shared_ptr<Mesh::SubMesh> submesh;
 
         bool operator==(const RenderBatchManager::BatchKey& other) const;
         bool operator<(const RenderBatchManager::BatchKey& other) const;
