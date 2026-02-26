@@ -35,10 +35,10 @@ RenderBatchManager::RenderBatch::RenderBatch(
 
 RenderBatchManager::RenderBatch::RenderBatch(
     RenderBatch&& other
-) noexcept
-    : batchKey(std::move(other.batchKey)),
-      batchRegistrations(std::move(other.batchRegistrations)),
-      instancesData(std::move(other.instancesData))
+) noexcept :
+    batchKey(std::move(other.batchKey)),
+    batchRegistrations(std::move(other.batchRegistrations)),
+    instancesData(std::move(other.instancesData))
 {}
 
 RenderBatchManager::RenderBatch&
@@ -58,25 +58,24 @@ RenderBatchManager::RenderBatch::operator=(
 RenderBatchManager::RenderBatch::~RenderBatch() = default;
 
 void RenderBatchManager::RenderBatch::addInstance(
-    RenderInstance* instance
+    RenderInstance* instance,
+    size_t intregistrationsIndex,
+    std::shared_ptr<Material> material
 )
 {
-    size_t index = instancesData.size();
-
     instancesData.emplace_back();
-    batchRegistrations.push_back(&instance->batchRegistration);
 
-    instance->batchRegistration.batch = this;
-    instance->batchRegistration.indexInBatch = index;
+    instance->addRegistration(this, intregistrationsIndex, std::move(material));
 
+    batchRegistrations.push_back(&instance->registrations.back());
     instance->updateModelMatrix();
 }
 
 void RenderBatchManager::RenderBatch::removeInstance(
-    RenderInstance* instance
-)
-{
-    auto& reg = instance->batchRegistration;
+    RenderInstance* instance,
+    size_t intregistrationsIndex
+) {
+    auto& reg = instance->registrations[intregistrationsIndex];
 
     size_t index = reg.indexInBatch;
     size_t lastIndex = batchRegistrations.size() - 1;
@@ -113,69 +112,66 @@ RenderBatchManager::RenderBatchManager(
 void RenderBatchManager::addInstance(
     std::shared_ptr<Mesh> mesh,
     RenderInstance* instance
-)
-{
-    for (auto subm : mesh->getSubMeshes())
+) {
+    instance->getRegistrations().reserve(mesh->getSubMeshes().size());
+    const std::vector<Mesh::SubMesh>& meshs = mesh->getSubMeshes();
+
+    for (size_t i = 0; i < meshs.size(); i++)
     {
-        BatchKey key = {mesh, &subm};
-        auto it = batches_map.find({});
-        instance->addRegistration();
+        BatchKey key = {mesh, &meshs[i]};
+        auto it = batches_map.find(key);
+        if (it != batches_map.end())
+        {
+            it->second->addInstance(
+                instance,
+                i,
+                resourceManager->getMaterialForSubMesh(*mesh.get(), meshs[i])
+            );
+        }
+        else{
+            auto batch = std::make_unique<RenderBatch>(key);
+            auto* batchPtr = batch.get();
+
+            batches_map.emplace(key, std::move(batch));
+
+            batchPtr->addInstance(
+                instance,
+                i,
+                resourceManager->getMaterialForSubMesh(*mesh.get(), meshs[i])
+            );
+
+            batches_dirty = true;
+        }
     }
-    
-    
-    // auto it = batches_map.find(key);
-
-    // if (it != batches_map.end())
-    // {
-    //     it->second->addInstance(instance);
-    // }
-    // else
-    // {
-    //     auto batch = std::make_unique<RenderBatch>(key);
-    //     auto* batchPtr = batch.get();
-
-    //     batches_map.emplace(key, std::move(batch));
-
-    //     batchPtr->addInstance(instance);
-
-    //     batches_dirty = true;
-    // }
 }
 
 bool RenderBatchManager::removeInstance(
     RenderInstance* instance
 )
 {
-    auto* batch = instance->batchRegistration.batch;
-
-    if (!batch)
-        return false;
-
-    BatchKey key = batch->getKey();
-
-    batch->removeInstance(instance);
-
-    if (batch->empty())
+    auto registrations = instance->getRegistrations();
+    for (size_t i = 0; i < registrations.size(); i++)
     {
-        batches_map.erase(key);
-        batches_dirty = true;
-    }
+        auto* batch = registrations[i].batch;
 
+        if (!batch)
+            return false;
+
+        BatchKey key = batch->getKey();
+
+        batch->removeInstance(
+            instance,
+            registrations[i].indexInBatch
+        );
+
+        if (batch->empty())
+        {
+            batches_map.erase(key);
+            batches_dirty = true;
+        }
+    }
     return true;
-}
 
-bool RenderBatchManager::moveInstance(
-    const BatchKey& newKey,
-    RenderInstance* instance
-)
-{
-    if (removeInstance(instance))
-    {
-        addInstance(newKey, instance);
-        return true;
-    }
-
-    return false;
 }
 
 void RenderBatchManager::rebuildSortedBatches()

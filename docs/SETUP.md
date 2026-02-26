@@ -55,7 +55,7 @@
     ```shell
     set -e
 
-    IMAGE="srpatsu21/dear-glfw-vulkan-compiler:1.0.0"
+    IMAGE="srpatsu21/dear-glfw-vulkan-compiler:1.1.0"
     DEST="."
 
     mkdir -p "$DEST"

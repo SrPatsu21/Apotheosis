@@ -43,7 +43,7 @@ public:
 
     void updateModelMatrix();
 
-    std::vector<BatchRegistration>& getRegistrations() const { return registrations; }
+    std::vector<BatchRegistration> getRegistrations() const { return registrations; }
 
 private:
     void addRegistration(

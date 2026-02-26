@@ -40,6 +40,12 @@ public:
     std::vector<std::shared_ptr<Material>> getMaterialsForMesh(
         const Mesh& mesh
     );
+
+    std::shared_ptr<Material> getMaterialForSubMesh(
+        const Mesh& mesh,
+        const Mesh::SubMesh& subMesh
+    );
+
     std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> getTexture(
         const std::string& path
     );

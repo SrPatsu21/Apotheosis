@@ -85,6 +85,57 @@ ResourceManager::getMaterialsForMesh(const Mesh& mesh)
     return result;
 }
 
+std::shared_ptr<Material>
+ResourceManager::getMaterialForSubMesh(
+    const Mesh& mesh,
+    const Mesh::SubMesh& subMesh
+)
+{
+    const auto& materialsData = mesh.getMaterials();
+
+    if (subMesh.materialIndex >= materialsData.size())
+        throw std::runtime_error("Invalid material index in SubMesh");
+
+    const auto& matData = materialsData[subMesh.materialIndex];
+
+    std::string key =
+        matData.baseColorPath + "|" +
+        matData.normalPath + "|" +
+        matData.metallicRoughnessPath;
+
+    std::shared_ptr<Material> material = nullptr;
+
+    auto it = materials.find(key);
+    if (it != materials.end())
+        material = it->second.lock();
+
+    if (!material)
+    {
+        std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> baseColorHandle = nullptr;
+        std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> normalHandle = nullptr;
+        std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> mrHandle = nullptr;
+
+        if (!matData.baseColorPath.empty())
+            baseColorHandle = getTexture(matData.baseColorPath);
+
+        if (!matData.normalPath.empty())
+            normalHandle = getTexture(matData.normalPath);
+
+        if (!matData.metallicRoughnessPath.empty())
+            mrHandle = getTexture(matData.metallicRoughnessPath);
+
+        material = std::make_shared<Material>(
+            baseColorHandle,
+            normalHandle,
+            mrHandle
+        );
+
+        materials[key] = material;
+    }
+
+    return material;
+}
+
 std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle>
 ResourceManager::getTexture(const std::string& path)
 {

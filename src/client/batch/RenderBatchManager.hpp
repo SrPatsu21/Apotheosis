@@ -14,6 +14,7 @@ class RenderBatchManager
 {
 public:
 
+    //TODO add pipeline
     struct BatchKey
     {
         std::shared_ptr<Mesh> mesh;
@@ -28,7 +29,7 @@ public:
         size_t operator()(const BatchKey& key) const
         {
             size_t h1 = std::hash<Mesh*>()(key.mesh.get());
-            size_t h2 = std::hash<Mesh::SubMesh*>()(key.submesh);
+            size_t h2 = std::hash<const Mesh::SubMesh*>()(key.submesh);
             return h1 ^ (h2 << 1);
         }
     };
@@ -52,11 +53,14 @@ public:
         RenderBatch& operator=(RenderBatch&& other) noexcept;
 
         void addInstance(
-            RenderInstance* instance
+            RenderInstance* instance,
+            size_t intregistrationsIndex,
+            std::shared_ptr<Material> material
         );
 
         void removeInstance(
-            RenderInstance* instance
+            RenderInstance* instance,
+            size_t intregistrationsIndex
         );
 
         bool empty();
@@ -82,16 +86,11 @@ private:
 
 public:
     void addInstance(
-        const BatchKey& batchKey,
+        std::shared_ptr<Mesh> mesh,
         RenderInstance* instance
     );
 
     bool removeInstance(
-        RenderInstance* instance
-    );
-
-    bool moveInstance(
-        const BatchKey& newBatchKey,
         RenderInstance* instance
     );
 
