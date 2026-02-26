@@ -1,13 +1,17 @@
 #include "RenderBatchManager.hpp"
-#include "material/Material.hpp"
 #include "mesh/Mesh.hpp"
 #include "instance/RenderInstance.hpp"
 
-//* BatchKey
+#include <algorithm>
+
+// ========================
+// BatchKey
+// ========================
+
 bool RenderBatchManager::BatchKey::operator==(
     const RenderBatchManager::BatchKey& other
 ) const {
-    return mesh == other.mesh && material == other.material;
+    return mesh == other.mesh && submesh == other.submesh;
 }
 
 bool RenderBatchManager::BatchKey::operator<(
@@ -16,141 +20,162 @@ bool RenderBatchManager::BatchKey::operator<(
     if (mesh.get() != other.mesh.get())
         return mesh.get() < other.mesh.get();
 
-    return material.get() < other.material.get();
+    return submesh < other.submesh;
 }
 
-//* RenderBatch
+// ========================
+// RenderBatch
+// ========================
+
 RenderBatchManager::RenderBatch::RenderBatch(
     BatchKey batchKey
-) :
-    batchKey(batchKey)
+)
+    : batchKey(batchKey)
 {}
 
 RenderBatchManager::RenderBatch::RenderBatch(
     RenderBatch&& other
-) noexcept :
-    batchKey(std::move(other.batchKey)),
-    instances(std::move(other.instances)),
-    instancesData(std::move(other.instancesData))
+) noexcept
+    : batchKey(std::move(other.batchKey)),
+      batchRegistrations(std::move(other.batchRegistrations)),
+      instancesData(std::move(other.instancesData))
 {}
 
-RenderBatchManager::RenderBatch& RenderBatchManager::RenderBatch::operator=(
+RenderBatchManager::RenderBatch&
+RenderBatchManager::RenderBatch::operator=(
     RenderBatch&& other
-) noexcept {
-    if (this != &other) {
+) noexcept
+{
+    if (this != &other)
+    {
         batchKey = std::move(other.batchKey);
-        instances = std::move(other.instances);
+        batchRegistrations = std::move(other.batchRegistrations);
         instancesData = std::move(other.instancesData);
     }
     return *this;
 }
 
-bool RenderBatchManager::RenderBatch::isEquivalent(
-    const std::shared_ptr<Mesh>& mesh,
-    const std::shared_ptr<Material>& material
-) const {
-    return batchKey.mesh == mesh && batchKey.material == material;
-}
+RenderBatchManager::RenderBatch::~RenderBatch() = default;
 
 void RenderBatchManager::RenderBatch::addInstance(
     RenderInstance* instance
-) {
+)
+{
+    size_t index = instancesData.size();
 
-    instance->ownerBatch = this;
-    instance->indexInBatch = instancesData.size();
-
-    instances.push_back(instance);
     instancesData.emplace_back();
+    batchRegistrations.push_back(&instance->batchRegistration);
+
+    instance->batchRegistration.batch = this;
+    instance->batchRegistration.indexInBatch = index;
+
     instance->updateModelMatrix();
 }
 
-void RenderBatchManager::RenderBatch::removeInstance(RenderInstance* instance)
+void RenderBatchManager::RenderBatch::removeInstance(
+    RenderInstance* instance
+)
 {
-    size_t index = instance->indexInBatch;
-    size_t lastIndex = instances.size() - 1;
+    auto& reg = instance->batchRegistration;
+
+    size_t index = reg.indexInBatch;
+    size_t lastIndex = batchRegistrations.size() - 1;
 
     if (index != lastIndex)
     {
-        instances[index] = instances[lastIndex];
-        instances[index]->indexInBatch = index;
+        batchRegistrations[index] = batchRegistrations[lastIndex];
+        batchRegistrations[index]->indexInBatch = index;
 
         instancesData[index] = instancesData[lastIndex];
     }
 
-    instances.pop_back();
+    batchRegistrations.pop_back();
     instancesData.pop_back();
 
-    instance->ownerBatch = nullptr;
+    reg.batch = nullptr;
 }
 
-RenderBatchManager::RenderBatch::~RenderBatch() {
-    
+bool RenderBatchManager::RenderBatch::empty()
+{
+    return batchRegistrations.empty();
 }
 
-bool RenderBatchManager::RenderBatch::empty() {
-    return instances.empty();
-}
+// ========================
+// RenderBatchManager
+// ========================
 
-//* RenderBatchManager
-void RenderBatchManager::findBatchKey(
-    const std::string& meshPath,
-    const std::string& texturePath,
-    BatchKey& key
-) {
-    key.mesh = resourceManager->getMesh(meshPath);
-    key.material = resourceManager->getMaterial(texturePath);
-}
-
-RenderBatchManager::BatchKey RenderBatchManager::findBatchKey(
-    const std::string& meshPath,
-    const std::string& texturePath
-) {
-    BatchKey key;
-    key.mesh = resourceManager->getMesh(meshPath);
-    key.material = resourceManager->getMaterial(texturePath);
-    return key;
-}
+RenderBatchManager::RenderBatchManager(
+    ResourceManager* resourceManager
+)
+    : resourceManager(resourceManager)
+{}
 
 void RenderBatchManager::addInstance(
-    const BatchKey& key,
+    std::shared_ptr<Mesh> mesh,
     RenderInstance* instance
-) {
-    auto it = batches_map.find(key);
-
-    if (it != batches_map.end())
+)
+{
+    for (auto subm : mesh->getSubMeshes())
     {
-        it->second->addInstance(instance);
+        BatchKey key = {mesh, &subm};
+        auto it = batches_map.find({});
+        instance->addRegistration();
     }
-    else
-    {
-        auto batch = std::make_unique<RenderBatch>(key);
-        auto* batchPtr = batch.get();
+    
+    
+    // auto it = batches_map.find(key);
 
-        batches_map.emplace(key, std::move(batch));
+    // if (it != batches_map.end())
+    // {
+    //     it->second->addInstance(instance);
+    // }
+    // else
+    // {
+    //     auto batch = std::make_unique<RenderBatch>(key);
+    //     auto* batchPtr = batch.get();
 
-        batchPtr->addInstance(instance);
+    //     batches_map.emplace(key, std::move(batch));
 
-        batches_dirty = true;
-    }
+    //     batchPtr->addInstance(instance);
+
+    //     batches_dirty = true;
+    // }
 }
 
 bool RenderBatchManager::removeInstance(
     RenderInstance* instance
-) {
-    RenderBatch* batch = instance->ownerBatch;
+)
+{
+    auto* batch = instance->batchRegistration.batch;
 
     if (!batch)
         return false;
+
+    BatchKey key = batch->getKey();
 
     batch->removeInstance(instance);
 
     if (batch->empty())
     {
-        batches_map.erase(batch->getKey());
+        batches_map.erase(key);
         batches_dirty = true;
     }
 
     return true;
+}
+
+bool RenderBatchManager::moveInstance(
+    const BatchKey& newKey,
+    RenderInstance* instance
+)
+{
+    if (removeInstance(instance))
+    {
+        addInstance(newKey, instance);
+        return true;
+    }
+
+    return false;
 }
 
 void RenderBatchManager::rebuildSortedBatches()
@@ -164,34 +189,41 @@ void RenderBatchManager::rebuildSortedBatches()
     for (auto& [key, batch] : batches_map)
         batches_sorted.push_back(batch.get());
 
-    std::sort(batches_sorted.begin(), batches_sorted.end(),
+    std::sort(
+        batches_sorted.begin(),
+        batches_sorted.end(),
         [](RenderBatch* a, RenderBatch* b)
         {
-            // defina aqui sua ordenação real
             return a->getKey() < b->getKey();
-        });
+        }
+    );
 
     batches_dirty = false;
 }
 
+// ========================
+// BatchKey helpers
+// ========================
 
-bool RenderBatchManager::moveInstance(
-    const BatchKey& newKey,
-    RenderInstance* instance
-) {
-    if (removeInstance(instance))
-    {
-        addInstance(newKey, instance);
-        return true;
-    }
-
-    return false;
+void RenderBatchManager::findBatchKey(
+    const std::string& meshPath,
+    uint32_t submeshIndex,
+    BatchKey& key
+)
+{
+    key.mesh = resourceManager->getMesh(meshPath);
+    key.submesh = &key.mesh->getSubMeshes()[submeshIndex];
 }
 
-RenderBatchManager::RenderBatchManager(
-    ResourceManager* resourceManager
-) :
-    resourceManager(resourceManager)
+RenderBatchManager::BatchKey
+RenderBatchManager::findBatchKey(
+    const std::string& meshPath,
+    uint32_t submeshIndex
+)
 {
-
-};
+    BatchKey key;
+    key.mesh = resourceManager->getMesh(meshPath);
+    auto a = &key.mesh->getSubMeshes()[submeshIndex];
+    key.submesh = &key.mesh->getSubMeshes()[submeshIndex];
+    return key;
+}

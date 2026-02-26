@@ -2,6 +2,7 @@
 
 #include "ResourceManager.hpp"
 #include "instance/InstanceData.hpp"
+#include "instance/RenderInstance.hpp"
 
 #include <list>
 
@@ -16,7 +17,7 @@ public:
     struct BatchKey
     {
         std::shared_ptr<Mesh> mesh;
-        std::shared_ptr<Mesh::SubMesh> submesh;
+        const Mesh::SubMesh* submesh;
 
         bool operator==(const RenderBatchManager::BatchKey& other) const;
         bool operator<(const RenderBatchManager::BatchKey& other) const;
@@ -27,7 +28,7 @@ public:
         size_t operator()(const BatchKey& key) const
         {
             size_t h1 = std::hash<Mesh*>()(key.mesh.get());
-            size_t h2 = std::hash<Material*>()(key.material.get());
+            size_t h2 = std::hash<Mesh::SubMesh*>()(key.submesh);
             return h1 ^ (h2 << 1);
         }
     };
@@ -35,7 +36,7 @@ public:
     class RenderBatch {
     private:
         BatchKey batchKey;
-        std::vector<RenderInstance*> instances;
+        std::vector<RenderInstance::BatchRegistration*> batchRegistrations;
         std::vector<InstanceData> instancesData;
     public:
         explicit RenderBatch(
@@ -67,8 +68,7 @@ public:
             const std::shared_ptr<Material>& material
         ) const;
 
-        const std::vector<RenderInstance*>& getRenderInstance() const{ return instances; }
-        std::vector<InstanceData>& getinstancesData() { return instancesData; }
+        const std::vector<RenderInstance::BatchRegistration*>& getRenderInstance() const{ return batchRegistrations; }
         const std::vector<InstanceData>& getinstancesData() const { return instancesData; }
     };
 
@@ -97,13 +97,13 @@ public:
 
     void findBatchKey(
         const std::string& meshPath,
-        const std::string& texturePath,
+        uint32_t submeshIndex,
         BatchKey& key
     );
 
     RenderBatchManager::BatchKey findBatchKey(
         const std::string& meshPath,
-        const std::string& texturePath
+        uint32_t submeshIndex
     );
 
     template<typename Func> void forEachBatch(Func&& func)
