@@ -110,6 +110,7 @@ protected:
     VkQueue graphicsQueue;
     VkFormat depthFormat;
     VkDeviceSize atomSize;
+    VkPhysicalDeviceVulkan12Features supportedFeatures12{};
     /// Device extensions required by the engine.
     const std::vector<const char*> DEVICE_EXTENSIONS = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,  // * Enables swapchain functionality for presenting images to the screen
@@ -447,4 +448,5 @@ public:
     const VkFormat& getDepthFormat() const { return depthFormat; }
     const std::vector<const char*>& getDeviceExtensions() const { return DEVICE_EXTENSIONS; }
     const VkDeviceSize getAtomSize() const { return atomSize; }
+    const VkPhysicalDeviceVulkan12Features getSupportedFeatures12() const { return supportedFeatures12; }
 };

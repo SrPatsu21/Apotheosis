@@ -501,15 +501,32 @@ void CoreVulkan::createLogicalDevice(
     }
 
     // resolve feature suport
-    VkPhysicalDeviceVulkan12Features features12{};
-    features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    VkPhysicalDeviceVulkan12Features enabled12{};
+    enabled12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 
-    features12.descriptorIndexing = VK_TRUE;
-    features12.runtimeDescriptorArray = VK_TRUE;
-    features12.descriptorBindingPartiallyBound = VK_TRUE;
-    features12.descriptorBindingVariableDescriptorCount = VK_TRUE;
-    features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-    features12.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
+    supportedFeatures12 = {};
+    supportedFeatures12.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+
+    VkPhysicalDeviceFeatures2 features2{};
+    features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    features2.pNext = &supportedFeatures12;
+
+    vkGetPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+    if (supportedFeatures12.descriptorIndexing) {
+        enabled12.descriptorIndexing = VK_TRUE;
+        enabled12.runtimeDescriptorArray = supportedFeatures12.runtimeDescriptorArray;
+        enabled12.descriptorBindingPartiallyBound = supportedFeatures12.descriptorBindingPartiallyBound;
+        enabled12.descriptorBindingVariableDescriptorCount = supportedFeatures12.descriptorBindingVariableDescriptorCount;
+        enabled12.shaderSampledImageArrayNonUniformIndexing =
+            supportedFeatures12.shaderSampledImageArrayNonUniformIndexing;
+        enabled12.shaderStorageBufferArrayNonUniformIndexing =
+            supportedFeatures12.shaderStorageBufferArrayNonUniformIndexing;
+    } else {
+        // either gracefully degrade
+        // or throw if your engine truly requires bindless
+    }
 
     VkPhysicalDeviceFeatures supported{};
     vkGetPhysicalDeviceFeatures(physicalDevice, &supported);
@@ -550,7 +567,7 @@ void CoreVulkan::createLogicalDevice(
 
     createInfo.enabledExtensionCount = static_cast<uint32_t>(config.extensions.size());
     createInfo.ppEnabledExtensionNames = config.extensions.data();
-    createInfo.pNext = &features12;
+    createInfo.pNext = &enabled12;
 
     // #ifndef NDEBUG
     //     createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
