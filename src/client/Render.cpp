@@ -229,7 +229,7 @@ void Render::initInstances(){
     // );
     renderInstance = new RenderInstance();
     renderBatchManager->addInstance(
-        resourceManager->getMesh("./models/DingusTheCat.glb"),
+        resourceManager->getMesh("models/Maxwell/Untitled.gltf"),
         renderInstance
     );
 

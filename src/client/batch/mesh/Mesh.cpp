@@ -1,5 +1,8 @@
 #include "Mesh.hpp"
 
+#include <filesystem>
+#include <iostream>
+
 void Mesh::load(
     const std::string& path,
     std::vector<Vertex>& vertices,
@@ -13,7 +16,8 @@ void Mesh::load(
         aiProcess_FlipUVs |
         aiProcess_GenNormals |
         aiProcess_CalcTangentSpace |
-        aiProcess_JoinIdenticalVertices
+        aiProcess_JoinIdenticalVertices |
+        aiProcess_PreTransformVertices
     );
 
     if (!scene || !scene->mRootNode || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)) {
@@ -24,6 +28,9 @@ void Mesh::load(
     indices.clear();
     subMeshes.clear();
     materials.clear();
+
+    std::filesystem::path modelPath(path);
+    std::filesystem::path directory = modelPath.parent_path();
 
     // MATERIAIS
     materials.resize(scene->mNumMaterials);
@@ -36,17 +43,20 @@ void Mesh::load(
 
         if (mat->GetTextureCount(aiTextureType_BASE_COLOR) > 0) {
             mat->GetTexture(aiTextureType_BASE_COLOR, 0, &pathStr);
-            material.baseColorPath = pathStr.C_Str();
+            material.baseColorPath =
+                (directory / pathStr.C_Str()).string();
         }
 
         if (mat->GetTextureCount(aiTextureType_NORMALS) > 0) {
             mat->GetTexture(aiTextureType_NORMALS, 0, &pathStr);
-            material.normalPath = pathStr.C_Str();
+            material.normalPath =
+                (directory / pathStr.C_Str()).string();
         }
 
         if (mat->GetTextureCount(aiTextureType_METALNESS) > 0) {
             mat->GetTexture(aiTextureType_METALNESS, 0, &pathStr);
-            material.metallicRoughnessPath = pathStr.C_Str();
+            material.metallicRoughnessPath =
+                (directory / pathStr.C_Str()).string();
         }
 
         materials[i] = material;
@@ -68,29 +78,44 @@ void Mesh::load(
                 mesh->mVertices[v].z
             };
 
-            glm::vec3 normal = mesh->HasNormals()
-                ? glm::vec3{
+            glm::vec3 normal{0.0f};
+            if (mesh->HasNormals()) {
+                normal = {
                     mesh->mNormals[v].x,
                     mesh->mNormals[v].y,
                     mesh->mNormals[v].z
-                }
-                : glm::vec3{0.0f};
+                };
+            }
 
-            glm::vec4 tangent = mesh->HasTangentsAndBitangents()
-                ? glm::vec4{
+            glm::vec4 tangent{0.0f};
+            if (mesh->HasTangentsAndBitangents()) {
+
+                glm::vec3 t{
                     mesh->mTangents[v].x,
                     mesh->mTangents[v].y,
-                    mesh->mTangents[v].z,
-                    1.0f // handedness simplificada
-                }
-                : glm::vec4{0.0f};
+                    mesh->mTangents[v].z
+                };
+                glm::vec3 b{
+                    mesh->mBitangents[v].x,
+                    mesh->mBitangents[v].y,
+                    mesh->mBitangents[v].z
+                };
 
-            glm::vec2 texCoord = mesh->mTextureCoords[0]
-                ? glm::vec2{
+                float handedness =
+                    (glm::dot(glm::cross(normal, t), b) < 0.0f)
+                        ? -1.0f
+                        : 1.0f;
+
+                tangent = glm::vec4(t, handedness);
+            }
+
+            glm::vec2 texCoord{0.0f};
+            if (mesh->HasTextureCoords(0)) {
+                texCoord = {
                     mesh->mTextureCoords[0][v].x,
                     mesh->mTextureCoords[0][v].y
-                }
-                : glm::vec2{0.0f};
+                };
+            }
 
             vertices.emplace_back(position, normal, tangent, texCoord);
         }
@@ -105,8 +130,8 @@ void Mesh::load(
         }
 
         SubMesh sub{};
-        sub.firstIndex   = indexOffset;
-        sub.indexCount   = mesh->mNumFaces * 3;
+        sub.firstIndex = indexOffset;
+        sub.indexCount = mesh->mNumFaces * 3;
         sub.vertexOffset = 0;
         sub.materialIndex = mesh->mMaterialIndex;
 
@@ -122,14 +147,17 @@ Mesh::Mesh(
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
 
-    load(
-        path,
-        vertices,
-        indices
-    );
+    load(path, vertices, indices);
 
-    vertexBufferManager = std::make_unique<VertexBufferManager>(device, bufferManager, vertices);
-    indexBufferManager  = std::make_unique<IndexBufferManager>(device, bufferManager, indices);
+    vertexBufferManager =
+        std::make_unique<VertexBufferManager>(
+            device, bufferManager, vertices
+        );
+
+    indexBufferManager =
+        std::make_unique<IndexBufferManager>(
+            device, bufferManager, indices
+        );
 
     indexCount = static_cast<uint32_t>(indices.size());
 }
