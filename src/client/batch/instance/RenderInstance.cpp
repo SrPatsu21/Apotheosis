@@ -1,4 +1,5 @@
 #include "RenderInstance.hpp"
+#include "../RenderBatchManager.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 
 RenderInstance::RenderInstance(
@@ -13,7 +14,7 @@ RenderInstance::RenderInstance(
 }
 
 void RenderInstance::addRegistration(
-    RenderBatchManager::RenderBatch* batch,
+    RenderBatch* batch,
     size_t index,
     std::shared_ptr<Material> material
 )
@@ -38,7 +39,7 @@ void RenderInstance::updateModelMatrix()
 
     for (auto& reg : registrations)
     {
-        reg.batch->getinstancesData()[reg.indexInBatch] = model;
+        reg.batch->getinstancesData()[reg.indexInBatch].model = model;
     }
 }
 
@@ -47,6 +48,6 @@ RenderInstance::~RenderInstance()
     for (auto& reg : registrations)
     {
         if (reg.batch)
-            reg.batch->removeInstance(this);
+            reg.batch->removeInstance(this, reg.indexInBatch);
     }
 }

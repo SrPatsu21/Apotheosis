@@ -62,12 +62,14 @@ private:
     std::vector<VkFence> imagesInFlight;
     RenderBatchManager* renderBatchManager;
     ResourceManager* resourceManager;
+    BindlessTextureRegistry* bindlessTextureRegistry;
     RenderInstance* renderInstance;
     BufferManager* bufferManager;
     InstanceDescriptorManager* instanceDescriptorManager;
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager;
 
     uint32_t maxMaterials = 1024;
+    uint32_t maxbindlessTextures = 2048;
     uint32_t maxInstances = 21080;
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);

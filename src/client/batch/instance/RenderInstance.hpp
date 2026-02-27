@@ -1,19 +1,22 @@
 #pragma once
 
-#include "../RenderBatchManager.hpp"
 #include "../material/Material.hpp"
 
 #include <vector>
 #include <memory>
 #include <glm/glm.hpp>
 
+class RenderBatch;
+class RenderBatchManager;
+
 class RenderInstance
 {
+    friend class RenderBatch;
     friend class RenderBatchManager;
 public:
     struct BatchRegistration
     {
-        RenderBatchManager::RenderBatch* batch = nullptr;
+        RenderBatch* batch = nullptr;
         size_t indexInBatch = 0;
         std::shared_ptr<Material> material;
     };
@@ -47,7 +50,7 @@ public:
 
 private:
     void addRegistration(
-        RenderBatchManager::RenderBatch* batch,
+        RenderBatch* batch,
         size_t index,
         std::shared_ptr<Material> material
     );

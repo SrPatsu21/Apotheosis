@@ -105,8 +105,9 @@ void Mesh::load(
         }
 
         SubMesh sub{};
-        sub.indexOffset = indexOffset;
-        sub.indexCount = mesh->mNumFaces * 3;
+        sub.firstIndex   = indexOffset;
+        sub.indexCount   = mesh->mNumFaces * 3;
+        sub.vertexOffset = 0;
         sub.materialIndex = mesh->mMaterialIndex;
 
         subMeshes.push_back(sub);

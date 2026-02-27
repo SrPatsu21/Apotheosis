@@ -11,7 +11,7 @@ struct InstanceData {
     // z = metallicRoughness
     // w = reserved
 
-    InstanceData() : 
+    InstanceData() :
         model(1.0f),
         materialIndices(0, 0, 0, 0)
     {}

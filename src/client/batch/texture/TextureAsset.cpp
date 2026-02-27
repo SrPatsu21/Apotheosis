@@ -24,8 +24,10 @@ void TextureAsset::loadFromFile(const std::string& path)
         &texture
     );
 
-    if (result != KTX_SUCCESS || !texture)
+    if (result != KTX_SUCCESS || !texture){
+        std::cout << path << std::endl;
         throw std::runtime_error("Failed to load KTX2 texture");
+    }
 
     width     = texture->baseWidth;
     height    = texture->baseHeight;

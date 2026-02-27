@@ -501,6 +501,16 @@ void CoreVulkan::createLogicalDevice(
     }
 
     // resolve feature suport
+    VkPhysicalDeviceVulkan12Features features12{};
+    features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+
+    features12.descriptorIndexing = VK_TRUE;
+    features12.runtimeDescriptorArray = VK_TRUE;
+    features12.descriptorBindingPartiallyBound = VK_TRUE;
+    features12.descriptorBindingVariableDescriptorCount = VK_TRUE;
+    features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    features12.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
+
     VkPhysicalDeviceFeatures supported{};
     vkGetPhysicalDeviceFeatures(physicalDevice, &supported);
     VkPhysicalDeviceFeatures enabled{};
@@ -540,6 +550,7 @@ void CoreVulkan::createLogicalDevice(
 
     createInfo.enabledExtensionCount = static_cast<uint32_t>(config.extensions.size());
     createInfo.ppEnabledExtensionNames = config.extensions.data();
+    createInfo.pNext = &features12;
 
     // #ifndef NDEBUG
     //     createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());

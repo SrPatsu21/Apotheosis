@@ -38,7 +38,7 @@ private:
 
     VkPipelineVertexInputStateCreateInfo createVertexInputState(
         VkVertexInputBindingDescription& bindingDescription,
-        std::array<VkVertexInputAttributeDescription, 3>& attributeDescriptions
+        std::array<VkVertexInputAttributeDescription, 4>& attributeDescriptions
     );
     VkPipelineInputAssemblyStateCreateInfo createInputAssemblyState(
         VkPrimitiveTopology topology

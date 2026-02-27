@@ -148,6 +148,13 @@ void Render::initVulkan(){
         {}
     );
 
+    bindlessTextureRegistry = new BindlessTextureRegistry(
+        coreVulkan->getDevice(),
+        materialDescriptorManager->getDescriptorPool(),
+        materialDescriptorManager->getLayout(),
+        maxbindlessTextures
+    );
+
     instanceDescriptorManager = new InstanceDescriptorManager(
         coreVulkan->getDevice(),
         bufferManager,
@@ -202,12 +209,12 @@ void Render::initImGui(){
 }
 
 void Render::initInstances(){
+
     resourceManager = new ResourceManager(
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
         bufferManager,
-        materialDescriptorManager->getDescriptorPool(),
-        materialDescriptorManager->getLayout()
+        bindlessTextureRegistry
     );
 
     renderBatchManager = new RenderBatchManager(
@@ -222,7 +229,7 @@ void Render::initInstances(){
     // );
     renderInstance = new RenderInstance();
     renderBatchManager->addInstance(
-        renderBatchManager->findBatchKey("./models/untitled.obj", "./textures/untitled.mtl"),
+        resourceManager->getMesh("./models/DingusTheCat.glb"),
         renderInstance
     );
 
@@ -399,6 +406,7 @@ void Render::cleanup(){
         if (renderInstance ){ delete renderInstance; renderInstance = nullptr; }
         if ( renderBatchManager ){ delete renderBatchManager; renderBatchManager = nullptr; }
         if ( resourceManager ){ delete resourceManager; resourceManager = nullptr; }
+        if ( bindlessTextureRegistry ){ delete bindlessTextureRegistry; bindlessTextureRegistry = nullptr; }
         if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
         if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
         if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }

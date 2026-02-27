@@ -1,11 +1,11 @@
 #include "Material.hpp"
 
 Material::Material(
-    uint32_t baseColorIndex,
-    uint32_t normalIndex,
-    uint32_t metallicRoughnessIndex
+    std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> baseColorHandle,
+    std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> normalHandle,
+    std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> metallicRoughnessHandle
 ) :
-    baseColorIndex(baseColorIndex),
-    normalIndex(normalIndex),
-    metallicRoughnessIndex(metallicRoughnessIndex)
+    baseColorHandle(baseColorHandle),
+    normalHandle(normalHandle),
+    metallicRoughnessHandle(metallicRoughnessHandle)
 {}

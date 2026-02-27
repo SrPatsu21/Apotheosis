@@ -48,17 +48,9 @@ GraphicsPipeline::GraphicsPipeline(
     );
 
 //* create info
-    VkVertexInputBindingDescription bindingDescription
-    {
-        .binding = 0,
-        .stride = sizeof(Vertex),
-        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-    };
-    std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {{
-        { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos) },
-        { 1, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, color) },
-        { 2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord) }
-    }};
+    VkVertexInputBindingDescription bindingDescription = Vertex::getBindingDescription();
+    std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions = Vertex::getAttributeDescriptions();
+
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = createVertexInputState(
         bindingDescription,
         attributeDescriptions
@@ -259,7 +251,7 @@ VkPipelineLayout GraphicsPipeline::createPipelineLayout(
 
 VkPipelineVertexInputStateCreateInfo GraphicsPipeline::createVertexInputState(
     VkVertexInputBindingDescription& bindingDescription,
-    std::array<VkVertexInputAttributeDescription, 3>& attributeDescriptions
+    std::array<VkVertexInputAttributeDescription, 4>& attributeDescriptions
 ) {
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

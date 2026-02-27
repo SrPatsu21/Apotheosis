@@ -6,10 +6,7 @@
 
 #include <list>
 
-class RenderInstance;
-class Mesh;
-class Material;
-
+class RenderBatch;
 class RenderBatchManager
 {
 public:
@@ -32,48 +29,6 @@ public:
             size_t h2 = std::hash<const Mesh::SubMesh*>()(key.submesh);
             return h1 ^ (h2 << 1);
         }
-    };
-
-    class RenderBatch {
-    private:
-        BatchKey batchKey;
-        std::vector<RenderInstance::BatchRegistration*> batchRegistrations;
-        std::vector<InstanceData> instancesData;
-    public:
-        explicit RenderBatch(
-            BatchKey batchKey
-        );
-
-        ~RenderBatch();
-
-        RenderBatch(const RenderBatch& other) = delete;
-        RenderBatch& operator=(const RenderBatch& other) = delete;
-
-        RenderBatch(RenderBatch&& other) noexcept;
-        RenderBatch& operator=(RenderBatch&& other) noexcept;
-
-        void addInstance(
-            RenderInstance* instance,
-            size_t intregistrationsIndex,
-            std::shared_ptr<Material> material
-        );
-
-        void removeInstance(
-            RenderInstance* instance,
-            size_t intregistrationsIndex
-        );
-
-        bool empty();
-
-        const BatchKey& getKey() const { return batchKey; }
-
-        bool isEquivalent(
-            const std::shared_ptr<Mesh>& mesh,
-            const std::shared_ptr<Material>& material
-        ) const;
-
-        const std::vector<RenderInstance::BatchRegistration*>& getRenderInstance() const{ return batchRegistrations; }
-        const std::vector<InstanceData>& getinstancesData() const { return instancesData; }
     };
 
 private:
@@ -120,4 +75,47 @@ public:
 
     RenderBatchManager(ResourceManager* resourceManager);
     ~RenderBatchManager() = default;
+};
+
+class RenderBatch {
+    friend class RenderBatchManager;
+private:
+    RenderBatchManager::BatchKey batchKey;
+    std::vector<RenderInstance::BatchRegistration*> batchRegistrations;
+    std::vector<InstanceData> instancesData;
+public:
+    explicit RenderBatch(
+        RenderBatchManager::BatchKey batchKey
+    );
+
+    ~RenderBatch();
+
+    RenderBatch(const RenderBatch& other) = delete;
+    RenderBatch& operator=(const RenderBatch& other) = delete;
+
+    RenderBatch(RenderBatch&& other) noexcept;
+    RenderBatch& operator=(RenderBatch&& other) noexcept;
+
+    void addInstance(
+        RenderInstance* instance,
+        size_t intregistrationsIndex,
+        std::shared_ptr<Material> material
+    );
+
+    void removeInstance(
+        RenderInstance* instance,
+        size_t intregistrationsIndex
+    );
+
+    bool empty();
+
+    const RenderBatchManager::BatchKey& getKey() const { return batchKey; }
+
+    bool isEquivalent(
+        const std::shared_ptr<Mesh>& mesh,
+        const std::shared_ptr<Material>& material
+    ) const;
+
+    std::vector<RenderInstance::BatchRegistration*> getRenderInstance() const{ return batchRegistrations; }
+    std::vector<InstanceData> getinstancesData() const { return instancesData; }
 };

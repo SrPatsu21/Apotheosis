@@ -113,7 +113,6 @@ protected:
     /// Device extensions required by the engine.
     const std::vector<const char*> DEVICE_EXTENSIONS = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,  // * Enables swapchain functionality for presenting images to the screen
-        VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, // * Allows binding descriptors with dynamic indexing to improve resource management
         VK_EXT_MEMORY_BUDGET_EXTENSION_NAME, // * Provides information about memory budgets, allowing applications to make better memory usage decisions
         // VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME, // * Allows querying performance-related metrics to help optimize graphics performance
         // VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME, // * Provides a mechanism for high-precision timestamps for better timing and synchronization in applications

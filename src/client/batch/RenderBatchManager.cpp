@@ -1,6 +1,7 @@
 #include "RenderBatchManager.hpp"
 #include "mesh/Mesh.hpp"
 #include "instance/RenderInstance.hpp"
+#include "instance/InstanceData.hpp"
 
 #include <algorithm>
 
@@ -27,13 +28,13 @@ bool RenderBatchManager::BatchKey::operator<(
 // RenderBatch
 // ========================
 
-RenderBatchManager::RenderBatch::RenderBatch(
-    BatchKey batchKey
+RenderBatch::RenderBatch(
+    RenderBatchManager::BatchKey batchKey
 )
     : batchKey(batchKey)
 {}
 
-RenderBatchManager::RenderBatch::RenderBatch(
+RenderBatch::RenderBatch(
     RenderBatch&& other
 ) noexcept :
     batchKey(std::move(other.batchKey)),
@@ -41,8 +42,8 @@ RenderBatchManager::RenderBatch::RenderBatch(
     instancesData(std::move(other.instancesData))
 {}
 
-RenderBatchManager::RenderBatch&
-RenderBatchManager::RenderBatch::operator=(
+RenderBatch&
+RenderBatch::operator=(
     RenderBatch&& other
 ) noexcept
 {
@@ -55,9 +56,9 @@ RenderBatchManager::RenderBatch::operator=(
     return *this;
 }
 
-RenderBatchManager::RenderBatch::~RenderBatch() = default;
+RenderBatch::~RenderBatch() = default;
 
-void RenderBatchManager::RenderBatch::addInstance(
+void RenderBatch::addInstance(
     RenderInstance* instance,
     size_t intregistrationsIndex,
     std::shared_ptr<Material> material
@@ -71,7 +72,7 @@ void RenderBatchManager::RenderBatch::addInstance(
     instance->updateModelMatrix();
 }
 
-void RenderBatchManager::RenderBatch::removeInstance(
+void RenderBatch::removeInstance(
     RenderInstance* instance,
     size_t intregistrationsIndex
 ) {
@@ -94,7 +95,7 @@ void RenderBatchManager::RenderBatch::removeInstance(
     reg.batch = nullptr;
 }
 
-bool RenderBatchManager::RenderBatch::empty()
+bool RenderBatch::empty()
 {
     return batchRegistrations.empty();
 }

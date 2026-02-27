@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "../texture/BindlessTextureRegistry.hpp"
 
 /**
  * @brief CPU-side representation of a material for bindless rendering.
@@ -12,18 +13,18 @@
 class Material
 {
 private:
-    uint32_t baseColorIndex;
-    uint32_t normalIndex;
-    uint32_t metallicRoughnessIndex;
+    std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> baseColorHandle;
+        std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> normalHandle;
+        std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> metallicRoughnessHandle;
 
 public:
     Material(
-        uint32_t baseColorIndex,
-        uint32_t normalIndex,
-        uint32_t metallicRoughnessIndex
+        std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> baseColorHandle,
+        std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> normalHandle,
+        std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> metallicRoughnessHandle
     );
 
-    uint32_t getBaseColorIndex() const { return baseColorIndex; }
-    uint32_t getNormalIndex() const { return normalIndex; }
-    uint32_t getMetallicRoughnessIndex() const { return metallicRoughnessIndex; }
+    std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> getBaseColorHandle() const { return baseColorHandle; }
+    std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> getNnormalHandle() const { return normalHandle; }
+    std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> getMetallicRoughnessHandle() const { return metallicRoughnessHandle; }
 };
