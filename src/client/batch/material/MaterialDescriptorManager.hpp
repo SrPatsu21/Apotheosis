@@ -23,6 +23,7 @@ private:
     VkDevice device;
     VkDescriptorSetLayout descriptorSetLayout{};
     VkDescriptorPool descriptorPool{};
+    bool bindlessMode;
 public:
 
     /**
@@ -111,6 +112,7 @@ public:
     MaterialDescriptorManager(
         VkDevice device,
         uint32_t maxMaterials,
+        bool bindlessMode,
         std::vector<MaterialDescriptorManager::IMaterialLayoutProvider*> providers
     );
 

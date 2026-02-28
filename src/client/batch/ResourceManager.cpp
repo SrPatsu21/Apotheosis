@@ -149,7 +149,9 @@ ResourceManager::getTexture(const std::string& path)
 
     TextureAsset asset(path, physicalDevice);
 
-    auto textureImage = new TextureImage(
+    std::cout << "segfault 0" << std::endl;
+
+    std::unique_ptr<TextureImage> textureImage = std::make_unique<TextureImage>(
         physicalDevice,
         device,
         bufferManager,
@@ -157,10 +159,14 @@ ResourceManager::getTexture(const std::string& path)
         asset,
         &TextureImage::DefaultImageTransitionPolicy::instance()
     );
+    std::cout << "segfault 1" << std::endl;
 
-    std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> handle
-        = bindlessRegistry->registerTexture(textureImage);
+    std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> handle = bindlessRegistry->registerTexture(
+        std::move(textureImage)
+    );
     textures[path] = handle;
+
+    std::cout << "segfault 2" << std::endl;
 
     return handle;
 }

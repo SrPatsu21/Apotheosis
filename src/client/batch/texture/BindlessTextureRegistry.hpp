@@ -51,7 +51,7 @@ private:
 
     uint32_t capacity = 0;
 
-    std::vector<BindlessTextureHandle*> handles;
+    std::vector<std::shared_ptr<BindlessTextureHandle>> handles;
 
     void release(uint32_t index);
 public:
@@ -65,7 +65,7 @@ public:
     ~BindlessTextureRegistry() = default;
 
     std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> registerTexture(
-        TextureImage* tex
+        std::unique_ptr<TextureImage> texture
     );
 
     VkDescriptorSet getDescriptorSet() const { return descriptorSet; }

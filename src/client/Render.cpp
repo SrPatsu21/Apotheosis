@@ -145,6 +145,7 @@ void Render::initVulkan(){
     materialDescriptorManager = new MaterialDescriptorManager(
         coreVulkan->getDevice(),
         maxMaterials,
+        coreVulkan->getSupportedFeatures12().descriptorIndexing,
         {}
     );
 

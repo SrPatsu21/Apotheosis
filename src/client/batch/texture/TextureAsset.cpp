@@ -24,10 +24,8 @@ void TextureAsset::loadFromFile(const std::string& path)
         &texture
     );
 
-    if (result != KTX_SUCCESS || !texture){
-        std::cout << path << std::endl;
+    if (result != KTX_SUCCESS || !texture)
         throw std::runtime_error("Failed to load KTX2 texture");
-    }
 
     width     = texture->baseWidth;
     height    = texture->baseHeight;
@@ -36,21 +34,18 @@ void TextureAsset::loadFromFile(const std::string& path)
     layers    = texture->numLayers;
     faces     = texture->numFaces;
 
-    cubemap = (faces == 6);
+    cubemap      = (faces == 6);
     arrayTexture = (layers > 1);
-
-    vkFormat = static_cast<VkFormat>(texture->vkFormat);
 }
 
 void TextureAsset::transcodeIfNeeded(VkPhysicalDevice physicalDevice)
 {
-    if (texture->supercompressionScheme != KTX_SS_BASIS_LZ)
+    if (!ktxTexture2_NeedsTranscoding(texture))
+    {
+        vkFormat = static_cast<VkFormat>(texture->vkFormat);
         return;
+    }
 
-    VkPhysicalDeviceFeatures features{};
-    vkGetPhysicalDeviceFeatures(physicalDevice, &features);
-
-    // Aqui você pode evoluir para detectar ASTC/BC/etc
     KTX_error_code result = ktxTexture2_TranscodeBasis(
         texture,
         KTX_TTF_BC7_RGBA,
@@ -58,9 +53,12 @@ void TextureAsset::transcodeIfNeeded(VkPhysicalDevice physicalDevice)
     );
 
     if (result != KTX_SUCCESS)
-        throw std::runtime_error("Failed to transcode Basis texture");
+        throw std::runtime_error("Failed to transcode texture");
 
     vkFormat = static_cast<VkFormat>(texture->vkFormat);
+
+    if (vkFormat == VK_FORMAT_UNDEFINED)
+        throw std::runtime_error("Transcode succeeded but vkFormat is undefined");
 }
 
 void TextureAsset::extractAllSubresources()
