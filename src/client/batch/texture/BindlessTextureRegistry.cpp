@@ -1,21 +1,71 @@
 #include "BindlessTextureRegistry.hpp"
+#include "TextureImage.hpp"
 
 BindlessTextureRegistry::BindlessTextureRegistry(
     VkDevice device,
-    VkDescriptorPool pool,
-    VkDescriptorSetLayout layout,
     uint32_t capacity
-) :
-    device(device),
-    pool(pool),
-    layout(layout),
-    capacity(capacity)
+)
+    : device(device), capacity(capacity)
 {
+    // LAYOUT
+
+    VkDescriptorSetLayoutBinding binding{};
+    binding.binding = 0;
+    binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    binding.descriptorCount = capacity;
+    binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorBindingFlags bindingFlags =
+        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+        VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT |
+        VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
+
+    VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo{};
+    flagsInfo.sType =
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+    flagsInfo.bindingCount = 1;
+    flagsInfo.pBindingFlags = &bindingFlags;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType =
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &binding;
+    layoutInfo.pNext = &flagsInfo;
+    layoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+
+    if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout) != VK_SUCCESS)
+        throw std::runtime_error("Failed to create bindless layout");
+
+    // POOL
+
+    VkDescriptorPoolSize poolSize{};
+    poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSize.descriptorCount = capacity;
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &poolSize;
+    poolInfo.maxSets = 1;
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+
+    if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &pool) != VK_SUCCESS)
+        throw std::runtime_error("Failed to create bindless pool");
+
+    // ALLOCATION
+
+    VkDescriptorSetVariableDescriptorCountAllocateInfo countInfo{};
+    countInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
+    countInfo.descriptorSetCount = 1;
+    countInfo.pDescriptorCounts = &capacity;
+
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = pool;
-    allocInfo.descriptorSetCount = 2;
+    allocInfo.descriptorSetCount = 1;
     allocInfo.pSetLayouts = &layout;
+    allocInfo.pNext = &countInfo;
 
     if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
         throw std::runtime_error("Failed to allocate bindless descriptor set");
@@ -23,18 +73,28 @@ BindlessTextureRegistry::BindlessTextureRegistry(
     handles.reserve(capacity);
 }
 
+BindlessTextureRegistry::~BindlessTextureRegistry()
+{
+    if (pool)
+        vkDestroyDescriptorPool(device, pool, nullptr);
+
+    if (layout)
+        vkDestroyDescriptorSetLayout(device, layout, nullptr);
+}
+
 std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle>
-    BindlessTextureRegistry::registerTexture(
-        std::unique_ptr<TextureImage> texture
-) {
+BindlessTextureRegistry::registerTexture(
+    std::unique_ptr<TextureImage> texture
+)
+{
     uint32_t index = static_cast<uint32_t>(handles.size());
     if (index >= capacity)
-        throw std::runtime_error("Bindless texture capacity exceeded");
+        throw std::runtime_error("Bindless capacity exceeded");
 
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = texture.get()->getImageView();
-    imageInfo.sampler = texture.get()->getSampler();
+    imageInfo.imageView = texture->getImageView();
+    imageInfo.sampler = texture->getSampler();
 
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -45,21 +105,13 @@ std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle>
     write.descriptorCount = 1;
     write.pImageInfo = &imageInfo;
 
-    std::cout << "imageView: " << texture->getImageView() << std::endl;
-    std::cout << "sampler: " << texture->getSampler() << std::endl;
-    std::cout << "descriptorSet: " << descriptorSet << std::endl;
-    std::cout << "index: " << index << std::endl;
-
-    std::cout << "segfault 1.1" << std::endl;
     vkUpdateDescriptorSets(device, 1, &write, 0, nullptr);
 
-    std::cout << "segfault 1.2" << std::endl;
     auto handle = std::make_shared<BindlessTextureHandle>(
-        std::move(texture),
+        move(texture),
         index,
         this
     );
-    std::cout << "segfault 1.3" << std::endl;
 
     handles.push_back(handle);
 
@@ -68,17 +120,14 @@ std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle>
 
 void BindlessTextureRegistry::release(uint32_t index)
 {
-    uint32_t nextIndex = static_cast<uint32_t>(handles.size());
-    if (index >= nextIndex)
+    if (index >= handles.size())
         return;
 
-    uint32_t lastIndex = nextIndex - 1;
+    uint32_t lastIndex = static_cast<uint32_t>(handles.size() - 1);
 
     if (index != lastIndex)
     {
-        // Move last texture descriptor into freed slot
-
-        std::shared_ptr<BindlessTextureHandle> lastHandle = handles[lastIndex];
+        auto lastHandle = handles[lastIndex];
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -96,9 +145,7 @@ void BindlessTextureRegistry::release(uint32_t index)
 
         vkUpdateDescriptorSets(device, 1, &write, 0, nullptr);
 
-        // Update moved handle index
         lastHandle->index = index;
-
         handles[index] = lastHandle;
     }
 

@@ -521,6 +521,7 @@ void CoreVulkan::createLogicalDevice(
         enabled12.descriptorBindingVariableDescriptorCount = supportedFeatures12.descriptorBindingVariableDescriptorCount;
         enabled12.shaderSampledImageArrayNonUniformIndexing = supportedFeatures12.shaderSampledImageArrayNonUniformIndexing;
         enabled12.shaderStorageBufferArrayNonUniformIndexing = supportedFeatures12.shaderStorageBufferArrayNonUniformIndexing;
+        enabled12.descriptorBindingSampledImageUpdateAfterBind = supportedFeatures12.descriptorBindingSampledImageUpdateAfterBind;
     }
 
     VkPhysicalDeviceFeatures2 enabledFeatures2{};

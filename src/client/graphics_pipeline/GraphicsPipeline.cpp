@@ -7,9 +7,11 @@ GraphicsPipeline::GraphicsPipeline(
     VkRenderPass renderPass,
     VkDescriptorSetLayout globalLayout,
     VkDescriptorSetLayout materialLayout,
+    VkDescriptorSetLayout bindlessLayout,
     VkDescriptorSetLayout instanceLayout,
     VkDescriptorSetLayout particleLayout,
-    VkSampleCountFlagBits msaaSamples
+    VkSampleCountFlagBits msaaSamples,
+    bool bindlessMode
 ) :
     device(device)
 {
@@ -30,11 +32,12 @@ GraphicsPipeline::GraphicsPipeline(
     VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
 //* create layouts
-    pipelineLayouts[GraphicsPipeline::LayoutType::Mesh] = createPipelineLayout(
-        static_cast<uint32_t>(sizeof(InstanceData)),
+    VkDescriptorSetLayout meshMaterialLayout = bindlessMode ? bindlessLayout : materialLayout;
+    pipelineLayouts[LayoutType::Mesh] = createPipelineLayout(
+        sizeof(InstanceData),
         {
             globalLayout,
-            materialLayout,
+            meshMaterialLayout,
             instanceLayout
         }
     );

@@ -151,8 +151,6 @@ void Render::initVulkan(){
 
     bindlessTextureRegistry = new BindlessTextureRegistry(
         coreVulkan->getDevice(),
-        materialDescriptorManager->getDescriptorPool(),
-        materialDescriptorManager->getLayout(),
         maxbindlessTextures
     );
 
@@ -179,9 +177,11 @@ void Render::initVulkan(){
         renderPass->get(),
         globalDescriptorManager->getLayout(),
         materialDescriptorManager->getLayout(),
+        bindlessTextureRegistry->getLayout(),
         instanceDescriptorManager->getLayout(),
         particleInstanceDescriptorManager->getLayout(),
-        coreVulkan->getMsaaSamples()
+        coreVulkan->getMsaaSamples(),
+        coreVulkan->getSupportedFeatures12().descriptorIndexing
     );
 
     #ifndef NDEBUG
@@ -328,7 +328,10 @@ void Render::drawFrame(){
         globalDescriptorManager,
         instanceDescriptorManager,
         particleInstanceDescriptorManager,
+        materialDescriptorManager,
+        bindlessTextureRegistry,
         renderBatchManager,
+        coreVulkan->getSupportedFeatures12().descriptorIndexing,
         {particle, particle1},
         {},
         {},
@@ -497,6 +500,9 @@ void Render::cleanupSwapChain() {
 }
 
 void Render::recreateSwapChain() {
+    #ifndef NDEBUG
+    std::cout << "swap chain recreated" << std::endl;
+    #endif
     vkDeviceWaitIdle(coreVulkan->getDevice());
 
     int width = 0, height = 0;
@@ -530,15 +536,17 @@ void Render::recreateSwapChain() {
     );
 
     // 4. Recreate pipeline (depends on render pass + extent)
-    this->graphicsPipeline = new GraphicsPipeline(
+    graphicsPipeline = new GraphicsPipeline(
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
         renderPass->get(),
         globalDescriptorManager->getLayout(),
         materialDescriptorManager->getLayout(),
+        bindlessTextureRegistry->getLayout(),
         instanceDescriptorManager->getLayout(),
         particleInstanceDescriptorManager->getLayout(),
-        coreVulkan->getMsaaSamples()
+        coreVulkan->getMsaaSamples(),
+        coreVulkan->getSupportedFeatures12().descriptorIndexing
     );
 
     // 5. Recreate Multisampling

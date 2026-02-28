@@ -84,9 +84,11 @@ public:
         VkRenderPass renderPass,
         VkDescriptorSetLayout globalLayout,
         VkDescriptorSetLayout materialLayout,
+        VkDescriptorSetLayout bindlessLayout,
         VkDescriptorSetLayout instanceLayout,
         VkDescriptorSetLayout particleLayout,
-        VkSampleCountFlagBits msaaSamples
+        VkSampleCountFlagBits msaaSamples,
+        bool bindlessMode
     );
 
     ~GraphicsPipeline();

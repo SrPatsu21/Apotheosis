@@ -5,6 +5,7 @@
 #include "../graphics_pipeline/GraphicsPipeline.hpp"
 #include "../batch/RenderBatchManager.hpp"
 #include "../batch/instance/InstanceDescriptorManager.hpp"
+#include "../batch/material/MaterialDescriptorManager.hpp"
 #include "../graphics_pipeline/GlobalDescriptorManager.hpp"
 #include "../particle/ParticleInstanceDescriptorManager.hpp"
 
@@ -224,7 +225,10 @@ public:
         GlobalDescriptorManager* globalDescriptorManager,
         InstanceDescriptorManager* instanceDescriptorManager,
         ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
+        MaterialDescriptorManager* materialDescriptorManager,
+        BindlessTextureRegistry* BindlessTextureRegistry,
         RenderBatchManager* renderBatchManager,
+        bool bindlessMode,
         const std::vector<ParticleData>& particles,
         const std::vector<IClearValueProvider*>& clearProviders,
         const std::vector<IViewportProvider*>& viewportProviders,

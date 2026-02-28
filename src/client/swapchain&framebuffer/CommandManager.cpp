@@ -132,7 +132,10 @@ void CommandManager::recordCommandBuffer(
     GlobalDescriptorManager* globalDescriptorManager,
     InstanceDescriptorManager* instanceDescriptorManager,
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
+    MaterialDescriptorManager* materialDescriptorManager,
+    BindlessTextureRegistry* BindlessTextureRegistry,
     RenderBatchManager* renderBatchManager,
+    bool bindlessMode,
     const std::vector<ParticleData>& particles,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
@@ -143,6 +146,7 @@ void CommandManager::recordCommandBuffer(
     assert(imageIndex < commandBuffers.size());
     assert(imageIndex < framebuffers.size());
 #endif
+    std::cout << "fault 1" << std::endl;
 
     VkCommandBuffer cmd = commandBuffers[imageIndex];
     beginCommandBuffer(cmd);
@@ -161,6 +165,7 @@ void CommandManager::recordCommandBuffer(
         clearValues
     );
 
+    std::cout << "fault 1.2" << std::endl;
     // Bind pipeline
     vkCmdBindPipeline(
         cmd,
@@ -179,11 +184,13 @@ void CommandManager::recordCommandBuffer(
     VkPipelineLayout layout = graphicsPipeline->getLayout(GraphicsPipeline::LayoutType::Mesh);
     VkDescriptorSet globalSet = globalDescriptorManager->getDescriptorSets()[currentFrame];
     VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
+    VkDescriptorSet materialOrBindlessSet = BindlessTextureRegistry->getDescriptorSet();
 
     // Bind sets fixos uma vez
     VkDescriptorSet sets[] = {
         globalSet,     // set 0
-        instanceSet    // set 1
+        materialOrBindlessSet, // set 1
+        instanceSet    // set 2
     };
 
     vkCmdBindDescriptorSets(
@@ -191,15 +198,18 @@ void CommandManager::recordCommandBuffer(
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         layout,
         0,
-        2,
+        3,
         sets,
         0,
         nullptr
     );
 
+    std::cout << "fault 1.4" << std::endl;
+
     Mesh* lastMesh = nullptr;
     uint32_t currentOffset = 0;
 
+    std::cout << "fault 2" << std::endl;
     renderBatchManager->forEachBatch(
         [&](const RenderBatch& batch)
     {
@@ -208,8 +218,7 @@ void CommandManager::recordCommandBuffer(
         const auto& submesh = key.submesh;
         const auto& instancesData = batch.getinstancesData();
 
-        uint32_t instanceCount =
-            static_cast<uint32_t>(instancesData.size());
+        uint32_t instanceCount = static_cast<uint32_t>(instancesData.size());
 
         if (instanceCount == 0)
             return;
@@ -244,7 +253,7 @@ void CommandManager::recordCommandBuffer(
             currentOffset,
             instancesData
         );
-
+        std::cout << "fault 2.4" << std::endl;
         // Draw using mesh
         vkCmdDrawIndexed(
             cmd,
@@ -258,6 +267,7 @@ void CommandManager::recordCommandBuffer(
         currentOffset += instanceCount;
     });
 
+    std::cout << "fault 3" << std::endl;
 //* === TEST PARTICLE ===
     currentOffset = 0;
     layout = graphicsPipeline->getLayout(GraphicsPipeline::LayoutType::Particle);

@@ -10,9 +10,10 @@
 class BindlessTextureRegistry
 {
 public:
-    class BindlessTextureHandle
+        class BindlessTextureHandle
     {
-    friend class BindlessTextureRegistry;
+        friend class BindlessTextureRegistry;
+
     private:
         std::unique_ptr<TextureImage> texture;
         uint32_t index = 0;
@@ -31,42 +32,39 @@ public:
         {
             if (registry)
                 registry->release(index);
-            // texture é destruída automaticamente
         }
-
-        BindlessTextureHandle(const BindlessTextureHandle&) = delete;
-        BindlessTextureHandle& operator=(const BindlessTextureHandle&) = delete;
-        BindlessTextureHandle(BindlessTextureHandle&&) = delete;
-        BindlessTextureHandle& operator=(BindlessTextureHandle&&) = delete;
 
         TextureImage* get() const { return texture.get(); }
         uint32_t getIndex() const { return index; }
+
+        BindlessTextureHandle(const BindlessTextureHandle&) = delete;
+        BindlessTextureHandle& operator=(const BindlessTextureHandle&) = delete;
     };
-
 private:
-    VkDevice device{ VK_NULL_HANDLE };
-    VkDescriptorSetLayout layout{ VK_NULL_HANDLE };
-    VkDescriptorPool pool{ VK_NULL_HANDLE };
-    VkDescriptorSet descriptorSet{ VK_NULL_HANDLE };
+    VkDevice device;
+    VkDescriptorPool pool = VK_NULL_HANDLE;
+    VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+    VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
 
-    uint32_t capacity = 0;
+    uint32_t capacity;
 
     std::vector<std::shared_ptr<BindlessTextureHandle>> handles;
 
-    void release(uint32_t index);
 public:
     BindlessTextureRegistry(
         VkDevice device,
-        VkDescriptorPool pool,
-        VkDescriptorSetLayout layout,
         uint32_t capacity
     );
 
-    ~BindlessTextureRegistry() = default;
+    ~BindlessTextureRegistry();
 
-    std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> registerTexture(
-        std::unique_ptr<TextureImage> texture
-    );
+    std::shared_ptr<BindlessTextureHandle>
+    registerTexture(std::unique_ptr<TextureImage> texture);
 
+    VkDescriptorSetLayout getLayout() const { return layout; }
     VkDescriptorSet getDescriptorSet() const { return descriptorSet; }
+
+private:
+    void release(uint32_t index);
+
 };
