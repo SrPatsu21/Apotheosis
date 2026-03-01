@@ -134,10 +134,17 @@ void Render::initVulkan(){
         coreVulkan->getMsaaSamples()
     );
 
+    samplerManagerForStaticTextures = new SamplerManager(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice()
+    );
+
+
     Render::defaultTextures.white = TextureFactory::createSolidRGBA8(
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
         bufferManager,
+        samplerManagerForStaticTextures,
         VK_FORMAT_R8G8B8A8_SRGB,
         255, 255, 255, 255
     );
@@ -146,6 +153,7 @@ void Render::initVulkan(){
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
         bufferManager,
+        samplerManagerForStaticTextures,
         VK_FORMAT_R8G8B8A8_UNORM,
         128, 128, 255, 255
     );
@@ -154,6 +162,7 @@ void Render::initVulkan(){
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
         bufferManager,
+        samplerManagerForStaticTextures,
         VK_FORMAT_R8G8B8A8_UNORM,
         0, 255, 0, 255
     );
@@ -448,7 +457,14 @@ void Render::cleanup(){
         //    (Everything that depends on the swapchain must go BEFORE swapchain.)
         //    Delete pointers and null them to avoid accidental double free later.
         if (renderInstance ){ delete renderInstance; renderInstance = nullptr; }
-        if ( renderBatchManager ){ delete renderBatchManager; renderBatchManager = nullptr; }
+        if (renderBatchManager){ delete renderBatchManager; renderBatchManager = nullptr; }
+        if (samplerManagerForStaticTextures) { delete samplerManagerForStaticTextures; samplerManagerForStaticTextures = nullptr; }
+        if (defaultTextures.metallic)
+        {
+            defaultTextures.metallic.reset();
+            defaultTextures.normal.reset();
+            defaultTextures.white.reset();
+        }
         if ( resourceManager ){ delete resourceManager; resourceManager = nullptr; }
         if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
         if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }

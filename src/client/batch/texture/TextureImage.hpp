@@ -183,6 +183,7 @@ public:
         VkPhysicalDevice physicalDevice,
         VkDevice device,
         BufferManager* bufferManager,
+        SamplerManager* samplerManager,
         VkFormat format,
         uint8_t r,
         uint8_t g,

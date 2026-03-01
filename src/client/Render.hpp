@@ -66,6 +66,7 @@ private:
     BufferManager* bufferManager;
     InstanceDescriptorManager* instanceDescriptorManager;
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager;
+    SamplerManager* samplerManagerForStaticTextures;
 
     uint32_t maxMaterials = 1024;
     uint32_t maxbindlessTextures = 2048;

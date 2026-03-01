@@ -48,6 +48,8 @@ SamplerManager::~SamplerManager()
 {
     for (auto& pair : samplers)
         vkDestroySampler(device, pair.second, nullptr);
+
+    samplers.clear();
 }
 
 VkSampler SamplerManager::getSampler(const SamplerDesc& desc)

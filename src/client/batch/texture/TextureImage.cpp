@@ -232,6 +232,7 @@ std::shared_ptr<TextureImage> TextureFactory::createSolidRGBA8(
     VkPhysicalDevice physicalDevice,
     VkDevice device,
     BufferManager* bufferManager,
+    SamplerManager* samplerManager,
     VkFormat format,
     uint8_t r,
     uint8_t g,
@@ -347,20 +348,7 @@ std::shared_ptr<TextureImage> TextureFactory::createSolidRGBA8(
         1
     );
 
-    VkSampler sampler;
-    {
-        VkSamplerCreateInfo samplerInfo{};
-        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerInfo.magFilter = VK_FILTER_LINEAR;
-        samplerInfo.minFilter = VK_FILTER_LINEAR;
-        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerInfo.maxLod = 0.0f;
-
-        vkCreateSampler(device, &samplerInfo, nullptr, &sampler);
-    }
+    VkSampler sampler = samplerManager->getSampler(SamplerManager::LinearRepeat);
 
     return std::make_shared<TextureImage>(
         device,

@@ -17,19 +17,6 @@ Material::Material(
     auto normal = normalHandle ? normalHandle : Render::defaultTextures.normal;
     auto metallic = metallicRoughnessHandle ? metallicRoughnessHandle : Render::defaultTextures.metallic;
 
-    if (albedo == Render::defaultTextures.white)
-    {
-        std:: cout << "albedo =" << baseColorHandle << ":" << Render::defaultTextures.white << std::endl;
-    }
-    if (normal == Render::defaultTextures.normal)
-    {
-        std:: cout << "normal =" << normalHandle << ":" << Render::defaultTextures.normal << std::endl;
-    }
-    if (metallic == Render::defaultTextures.metallic)
-    {
-        std:: cout << "metallic =" << metallicRoughnessHandle << ":" << Render::defaultTextures.metallic << std::endl;
-    }
-
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = descriptorManager->getDescriptorPool();
