@@ -318,7 +318,7 @@ void Render::drawFrame(){
     );
     this->cameraBufferManager->update(currentFrame, ubg);
     renderInstance->rotation = glm::vec3(
-        0.15* time,
+        0.5* time,
         0.3,
         0.6
     );
