@@ -38,10 +38,10 @@ struct Vertex {
     //     attributeDescriptions[0].offset = offsetof(Vertex, pos);
     static const std::array<VkVertexInputAttributeDescription, 4>& getAttributeDescriptions() {
     static const std::array<VkVertexInputAttributeDescription, 4> attributes{{
-        {0, 0, VK_FORMAT_R32G32B32_SFLOAT,    offsetof(Vertex, pos)},
-        {1, 0, VK_FORMAT_R32G32B32_SFLOAT,    offsetof(Vertex, normal)},
+        {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)},
+        {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
         {2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, tangent)},
-        {3, 0, VK_FORMAT_R32G32_SFLOAT,       offsetof(Vertex, texCoord)}
+        {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord)}
     }};
     return attributes;
 }

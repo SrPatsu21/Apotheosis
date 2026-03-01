@@ -24,7 +24,7 @@
 class Render {
 public:
     const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
-
+    static TextureImage::DefaultTextures defaultTextures;
     bool framebufferResized = false;
 
     Render();
@@ -62,7 +62,6 @@ private:
     std::vector<VkFence> imagesInFlight;
     RenderBatchManager* renderBatchManager;
     ResourceManager* resourceManager;
-    BindlessTextureRegistry* bindlessTextureRegistry;
     RenderInstance* renderInstance;
     BufferManager* bufferManager;
     InstanceDescriptorManager* instanceDescriptorManager;

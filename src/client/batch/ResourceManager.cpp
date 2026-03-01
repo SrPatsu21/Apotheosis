@@ -4,12 +4,12 @@ ResourceManager::ResourceManager(
     VkPhysicalDevice physicalDevice,
     VkDevice device,
     BufferManager* bufferManager,
-    BindlessTextureRegistry* bindlessRegistry
+    MaterialDescriptorManager* descriptorManager
 ) :
     physicalDevice(physicalDevice),
     device(device),
     bufferManager(bufferManager),
-    bindlessRegistry(bindlessRegistry),
+    descriptorManager(descriptorManager),
     samplerManager(physicalDevice, device)
 {
 }
@@ -57,9 +57,9 @@ ResourceManager::getMaterialsForMesh(const Mesh& mesh)
 
         if (!material)
         {
-            std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> baseColorHandle = nullptr;
-            std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> normalHandle = nullptr;
-            std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> mrHandle = nullptr;
+            std::shared_ptr<TextureImage> baseColorHandle = nullptr;
+            std::shared_ptr<TextureImage> normalHandle = nullptr;
+            std::shared_ptr<TextureImage> mrHandle = nullptr;
 
             if (!matData.baseColorPath.empty())
                 baseColorHandle = getTexture(matData.baseColorPath);
@@ -71,6 +71,8 @@ ResourceManager::getMaterialsForMesh(const Mesh& mesh)
                 mrHandle = getTexture(matData.metallicRoughnessPath);
 
             material = std::make_shared<Material>(
+                device,
+                descriptorManager,
                 baseColorHandle,
                 normalHandle,
                 mrHandle
@@ -111,9 +113,9 @@ ResourceManager::getMaterialForSubMesh(
 
     if (!material)
     {
-        std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> baseColorHandle = nullptr;
-        std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> normalHandle = nullptr;
-        std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> mrHandle = nullptr;
+        std::shared_ptr<TextureImage> baseColorHandle = nullptr;
+        std::shared_ptr<TextureImage> normalHandle = nullptr;
+        std::shared_ptr<TextureImage> mrHandle = nullptr;
 
         if (!matData.baseColorPath.empty())
             baseColorHandle = getTexture(matData.baseColorPath);
@@ -125,6 +127,8 @@ ResourceManager::getMaterialForSubMesh(
             mrHandle = getTexture(matData.metallicRoughnessPath);
 
         material = std::make_shared<Material>(
+            device,
+            descriptorManager,
             baseColorHandle,
             normalHandle,
             mrHandle
@@ -136,7 +140,7 @@ ResourceManager::getMaterialForSubMesh(
     return material;
 }
 
-std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle>
+std::shared_ptr<TextureImage>
 ResourceManager::getTexture(const std::string& path)
 {
     auto it = textures.find(path);
@@ -149,7 +153,7 @@ ResourceManager::getTexture(const std::string& path)
 
     TextureAsset asset(path, physicalDevice);
 
-    std::unique_ptr<TextureImage> textureImage = std::make_unique<TextureImage>(
+    std::shared_ptr<TextureImage> textureImage = std::make_unique<TextureImage>(
         physicalDevice,
         device,
         bufferManager,
@@ -158,10 +162,7 @@ ResourceManager::getTexture(const std::string& path)
         &TextureImage::DefaultImageTransitionPolicy::instance()
     );
 
-    std::shared_ptr<BindlessTextureRegistry::BindlessTextureHandle> handle = bindlessRegistry->registerTexture(
-        move(textureImage)
-    );
-    textures[path] = handle;
+    textures[path] = textureImage;
 
-    return handle;
+    return textureImage;
 }

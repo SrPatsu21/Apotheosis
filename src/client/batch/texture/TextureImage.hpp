@@ -3,6 +3,7 @@
 #include "../../CoreVulkan.hpp"
 #include "../../BufferManager.hpp"
 #include "TextureAsset.hpp"
+#include <memory>
 
 class TextureImage
 {
@@ -61,6 +62,13 @@ public:
         DefaultImageTransitionPolicy() = default;
     };
 
+    struct DefaultTextures
+    {
+        std::shared_ptr<TextureImage> white;
+        std::shared_ptr<TextureImage> normal;
+        std::shared_ptr<TextureImage> metallic;
+    };
+
 private:
     VkDevice device{VK_NULL_HANDLE};
 
@@ -73,7 +81,7 @@ private:
     uint32_t layers{1};
     VkFormat format{VK_FORMAT_UNDEFINED};
 
-     /**
+    /**
      * @brief Creates a Vulkan image from a TextureAsset and uploads its data.
      *
      * This function:
@@ -137,6 +145,17 @@ public:
         TextureImage::IImageTransitionPolicy* transitionPolicy
     );
 
+    TextureImage(
+        VkDevice device,
+        VkImage image,
+        VkDeviceMemory memory,
+        VkImageView view,
+        VkSampler sampler,
+        uint32_t mipLevels,
+        uint32_t layers,
+        VkFormat format
+    );
+
 
     /**
      * @brief Destroys the texture image and releases Vulkan resources.
@@ -155,4 +174,19 @@ public:
     uint32_t getMipLevels() const { return mipLevels; }
     VkFormat getFormat() const { return format; }
     VkSampler getSampler() const { return sampler; }
+};
+
+class TextureFactory
+{
+public:
+    static std::shared_ptr<TextureImage> createSolidRGBA8(
+        VkPhysicalDevice physicalDevice,
+        VkDevice device,
+        BufferManager* bufferManager,
+        VkFormat format,
+        uint8_t r,
+        uint8_t g,
+        uint8_t b,
+        uint8_t a
+    );
 };

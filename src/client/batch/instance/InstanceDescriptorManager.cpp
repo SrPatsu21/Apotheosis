@@ -132,7 +132,6 @@ void InstanceDescriptorManager::update(
     uint32_t baseInstance,
     const std::vector<InstanceData>& models
 ) {
-    std::cout << "fault 2.1" << std::endl;
     if (baseInstance + models.size() > maxInstances)
         throw std::runtime_error("Instance buffer overflow");
 
@@ -145,7 +144,6 @@ void InstanceDescriptorManager::update(
         size
     );
 
-    std::cout << "fault 2.2" << std::endl;
     if (!memoryInfo[frameIndex].isCoherent)
     {
         VkDeviceSize atomSize = nonCoherentAtomSize;
@@ -161,7 +159,6 @@ void InstanceDescriptorManager::update(
 
         vkFlushMappedMemoryRanges(device, 1, &range);
     }
-    std::cout << "fault 2.3" << std::endl;
 }
 
 InstanceDescriptorManager::~InstanceDescriptorManager()

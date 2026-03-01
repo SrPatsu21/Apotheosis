@@ -10,23 +10,31 @@
 
 class GraphicsPipeline {
 public:
-    enum class PipelineType {
-        Triangles_NoCull,
-        Triangles_BackCull,
-        Triangles_FrontCull,
-        Lines,
-        Points
+    using PipelineFlags = uint16_t;
+    enum : PipelineFlags
+    {
+        // bits 0-1: topology (2 bits)
+        PIPE_TOPO_TRIANGLES = 0 << 0,
+        PIPE_TOPO_LINES = 1 << 0,
+        PIPE_TOPO_POINTS = 2 << 0,
+
+        // bits 2-3: cull mode (2 bits)
+        PIPE_CULL_NONE = 0 << 2,
+        PIPE_CULL_BACK = 1 << 2,
+        PIPE_CULL_FRONT = 2 << 2,
+
+        // individual
+        PIPE_DEPTH_TEST = 1 << 4,
+        PIPE_DEPTH_WRITE = 1 << 5,
+        PIPE_BLEND = 1 << 6,
+        //next 7-15
     };
 
-    enum class LayoutType {
-        Mesh,
-        Particle
-    };
 private:
     VkDevice device;
 
-    std::unordered_map<PipelineType, VkPipeline> graphicsPipelines;
-    std::unordered_map<LayoutType, VkPipelineLayout> pipelineLayouts;
+    std::unordered_map<PipelineFlags, VkPipeline> graphicsPipelines;
+    std::unordered_map<PipelineFlags, VkPipelineLayout> pipelineLayouts;
     VkViewport viewport{};
     VkRect2D scissor{};
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
@@ -84,17 +92,16 @@ public:
         VkRenderPass renderPass,
         VkDescriptorSetLayout globalLayout,
         VkDescriptorSetLayout materialLayout,
-        VkDescriptorSetLayout bindlessLayout,
         VkDescriptorSetLayout instanceLayout,
         VkDescriptorSetLayout particleLayout,
         VkSampleCountFlagBits msaaSamples,
-        bool bindlessMode
+        VkPhysicalDeviceVulkan12Features SupportedFeatures12
     );
 
     ~GraphicsPipeline();
 
-    VkPipeline getPipeline(PipelineType type) const { return graphicsPipelines.at(type); }
-    VkPipelineLayout getLayout(LayoutType type) const { return pipelineLayouts.at(type); }
+    VkPipeline getPipeline(PipelineFlags flags) const { return graphicsPipelines.at(flags); }
+    VkPipelineLayout getLayout(PipelineFlags flags) const { return pipelineLayouts.at(flags); }
     const VkViewport& getViewport() const  { return viewport; }
     const VkRect2D& getScissor() const { return scissor; }
     const VkPipelineColorBlendAttachmentState& getColorBlendAttachment() const { return colorBlendAttachment; }

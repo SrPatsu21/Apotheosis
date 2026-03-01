@@ -103,6 +103,26 @@ TextureImage::TextureImage(
     createView(aspect);
 }
 
+TextureImage::TextureImage(
+    VkDevice device,
+    VkImage image,
+    VkDeviceMemory memory,
+    VkImageView view,
+    VkSampler sampler,
+    uint32_t mipLevels,
+    uint32_t layers,
+    VkFormat format
+) :
+    device(device),
+    image(image),
+    memory(memory),
+    imageView(view),
+    sampler(sampler),
+    mipLevels(mipLevels),
+    layers(layers),
+    format(format)
+{}
+
 TextureImage::~TextureImage()
 {
     if (imageView != VK_NULL_HANDLE)
@@ -205,5 +225,151 @@ void TextureImage::createView(
         format,
         aspectFlags,
         mipLevels
+    );
+}
+
+std::shared_ptr<TextureImage> TextureFactory::createSolidRGBA8(
+    VkPhysicalDevice physicalDevice,
+    VkDevice device,
+    BufferManager* bufferManager,
+    VkFormat format,
+    uint8_t r,
+    uint8_t g,
+    uint8_t b,
+    uint8_t a
+)
+{
+    uint32_t width = 1;
+    uint32_t height = 1;
+    uint32_t mipLevels = 1;
+
+    uint8_t pixel[4] = { r, g, b, a };
+
+    VkImage image;
+    VkDeviceMemory memory;
+
+    createImage(
+        physicalDevice,
+        device,
+        width,
+        height,
+        mipLevels,
+        VK_SAMPLE_COUNT_1_BIT,
+        format,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        image,
+        memory
+    );
+
+    // TRANSITION: UNDEFINED → TRANSFER_DST
+    {
+        VkCommandBuffer cmd = bufferManager->beginImmediate();
+
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = image;
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        vkCmdPipelineBarrier(
+            cmd,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier
+        );
+
+        bufferManager->endImmediate();
+    }
+
+    // Upload pixel
+    bufferManager->uploadToImageMipLevel(
+        pixel,
+        4,
+        image,
+        width,
+        height,
+        0,
+        0,
+        1
+    );
+
+    // ---- TRANSITION: TRANSFER_DST → SHADER_READ_ONLY ----
+    {
+        VkCommandBuffer cmd = bufferManager->beginImmediate();
+
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = image;
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(
+            cmd,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier
+        );
+
+        bufferManager->endImmediate();
+    }
+
+    VkImageView view = createImageView(
+        device,
+        image,
+        format,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        1
+    );
+
+    VkSampler sampler;
+    {
+        VkSamplerCreateInfo samplerInfo{};
+        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.magFilter = VK_FILTER_LINEAR;
+        samplerInfo.minFilter = VK_FILTER_LINEAR;
+        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        samplerInfo.maxLod = 0.0f;
+
+        vkCreateSampler(device, &samplerInfo, nullptr, &sampler);
+    }
+
+    return std::make_shared<TextureImage>(
+        device,
+        image,
+        memory,
+        view,
+        sampler,
+        mipLevels,
+        1,
+        format
     );
 }

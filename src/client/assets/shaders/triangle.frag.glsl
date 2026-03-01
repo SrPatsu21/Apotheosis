@@ -1,25 +1,26 @@
 #version 450
-#extension GL_EXT_nonuniform_qualifier : require
 
-layout(set = 1, binding = 0) uniform sampler2D textures[];
+layout(set = 1, binding = 0) uniform sampler2D albedoTex;
+layout(set = 1, binding = 1) uniform sampler2D normalTex;
+layout(set = 1, binding = 2) uniform sampler2D metallicRoughnessTex;
 
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 1) in vec3 fragNormal;
-layout(location = 2) flat in uvec4 fragMaterialIndices;
+layout(location = 2) in vec3 fragWorldPos;
 
 layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    uint baseColorIndex = fragMaterialIndices.x;
+    vec4 albedo = texture(albedoTex, fragTexCoord);
 
-    vec4 albedo = texture(
-        textures[nonuniformEXT(baseColorIndex)],
-        fragTexCoord
-    );
+    // Normal map (tangent space simplificado — assumindo que você ainda não montou TBN)
+    vec3 normal = normalize(fragNormal);
 
     vec3 lightDir = normalize(vec3(0.5, 1.0, 0.3));
-    float NdotL = max(dot(normalize(fragNormal), lightDir), 0.0);
+    float NdotL = max(dot(normal, lightDir), 0.0);
 
-    outColor = vec4(albedo.rgb * NdotL, albedo.a);
+    vec3 lighting = albedo.rgb * NdotL;
+
+    outColor = vec4(lighting, albedo.a);
 }

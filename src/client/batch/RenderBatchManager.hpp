@@ -3,6 +3,7 @@
 #include "ResourceManager.hpp"
 #include "instance/InstanceData.hpp"
 #include "instance/RenderInstance.hpp"
+#include "../graphics_pipeline/GraphicsPipeline.hpp"
 
 #include <list>
 
@@ -11,11 +12,12 @@ class RenderBatchManager
 {
 public:
 
-    //TODO add pipeline
     struct BatchKey
     {
         std::shared_ptr<Mesh> mesh;
         const Mesh::SubMesh* submesh;
+        std::shared_ptr<Material> material;
+        GraphicsPipeline::PipelineFlags pipelineFlags;
 
         bool operator==(const RenderBatchManager::BatchKey& other) const;
         bool operator<(const RenderBatchManager::BatchKey& other) const;
@@ -25,9 +27,19 @@ public:
     {
         size_t operator()(const BatchKey& key) const
         {
-            size_t h1 = std::hash<Mesh*>()(key.mesh.get());
-            size_t h2 = std::hash<const Mesh::SubMesh*>()(key.submesh);
-            return h1 ^ (h2 << 1);
+            size_t seed = 0;
+
+            auto hash_combine = [&seed](size_t value)
+            {
+                seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            };
+
+            hash_combine(std::hash<GraphicsPipeline::PipelineFlags>()(key.pipelineFlags));
+            hash_combine(std::hash<Mesh*>()(key.mesh.get()));
+            hash_combine(std::hash<const Mesh::SubMesh*>()(key.submesh));
+            hash_combine(std::hash<Material*>()(key.material.get()));
+
+            return seed;
         }
     };
 
@@ -35,7 +47,11 @@ private:
 
     std::unordered_map<BatchKey, std::unique_ptr<RenderBatch>, BatchKeyHasher> batches_map;
     std::vector<RenderBatch*> batches_sorted;
-    bool batches_dirty = false;
+    bool batches_dirty = true;
+
+    std::shared_ptr<Mesh> testMesh;
+    std::shared_ptr<Material> testMaterial;
+    std::shared_ptr<RenderInstance> testRInstance;
 
     ResourceManager* resourceManager;
 
@@ -64,9 +80,9 @@ public:
     {
         rebuildSortedBatches();
 
-        for (auto* batch : batches_sorted)
+        for (auto& [key, batchPtr] : batches_map)
         {
-            func(*batch);
+            func(*batchPtr);
         }
     }
 
@@ -75,6 +91,12 @@ public:
 
     RenderBatchManager(ResourceManager* resourceManager);
     ~RenderBatchManager() = default;
+
+    #ifndef NDEBUG
+    void batchSize(){
+        std::cout << "batches map: " << batches_map.size() << " batch sorted:" << batches_sorted.size() << std::endl;
+    }
+    #endif
 };
 
 class RenderBatch {
@@ -97,9 +119,7 @@ public:
     RenderBatch& operator=(RenderBatch&& other) noexcept;
 
     void addInstance(
-        RenderInstance* instance,
-        size_t intregistrationsIndex,
-        std::shared_ptr<Material> material
+        RenderInstance* instance
     );
 
     void removeInstance(
@@ -110,11 +130,6 @@ public:
     bool empty();
 
     const RenderBatchManager::BatchKey& getKey() const { return batchKey; }
-
-    bool isEquivalent(
-        const std::shared_ptr<Mesh>& mesh,
-        const std::shared_ptr<Material>& material
-    ) const;
 
     std::vector<RenderInstance::BatchRegistration*> getRenderInstance() const{ return batchRegistrations; }
     std::vector<InstanceData> getinstancesData() const { return instancesData; }

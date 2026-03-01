@@ -5,15 +5,9 @@
 
 struct InstanceData {
     alignas(16) glm::mat4 model;
-    alignas(16) glm::uvec4 materialIndices;
-    // x = baseColor
-    // y = normal
-    // z = metallicRoughness
-    // w = reserved
 
     InstanceData() :
-        model(1.0f),
-        materialIndices(0, 0, 0, 0)
+        model(1.0f)
     {}
 
     InstanceData(glm::mat4 model) : model(model){}

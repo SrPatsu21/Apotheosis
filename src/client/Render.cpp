@@ -1,5 +1,12 @@
 #include "Render.hpp"
 
+TextureImage::DefaultTextures Render::defaultTextures =
+{
+    nullptr,
+    nullptr,
+    nullptr
+};
+
 Render::Render(){};
 
 int Render::run(){
@@ -18,11 +25,12 @@ int Render::run(){
     //main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-
         // ui new frame
         this->ui->newFrame();
         this->ui->build();
-
+        #ifndef NDEBUG
+            // renderBatchManager->batchSize();
+        #endif
         drawFrame();
     }
 
@@ -101,6 +109,30 @@ void Render::initVulkan(){
         coreVulkan->getMsaaSamples()
     );
 
+    Render::defaultTextures.white = TextureFactory::createSolidRGBA8(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        bufferManager,
+        VK_FORMAT_R8G8B8A8_SRGB,
+        255, 255, 255, 255
+    );
+
+    Render::defaultTextures.normal = TextureFactory::createSolidRGBA8(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        bufferManager,
+        VK_FORMAT_R8G8B8A8_UNORM,
+        128, 128, 255, 255
+    );
+
+    Render::defaultTextures.metallic = TextureFactory::createSolidRGBA8(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        bufferManager,
+        VK_FORMAT_R8G8B8A8_UNORM,
+        0, 255, 0, 255
+    );
+
     //Create DepthResources
     depthBufferManager = new DepthBufferManager(
         coreVulkan->getPhysicalDevice(),
@@ -145,13 +177,7 @@ void Render::initVulkan(){
     materialDescriptorManager = new MaterialDescriptorManager(
         coreVulkan->getDevice(),
         maxMaterials,
-        coreVulkan->getSupportedFeatures12().descriptorIndexing,
         {}
-    );
-
-    bindlessTextureRegistry = new BindlessTextureRegistry(
-        coreVulkan->getDevice(),
-        maxbindlessTextures
     );
 
     instanceDescriptorManager = new InstanceDescriptorManager(
@@ -177,11 +203,10 @@ void Render::initVulkan(){
         renderPass->get(),
         globalDescriptorManager->getLayout(),
         materialDescriptorManager->getLayout(),
-        bindlessTextureRegistry->getLayout(),
         instanceDescriptorManager->getLayout(),
         particleInstanceDescriptorManager->getLayout(),
         coreVulkan->getMsaaSamples(),
-        coreVulkan->getSupportedFeatures12().descriptorIndexing
+        coreVulkan->getSupportedFeatures12()
     );
 
     #ifndef NDEBUG
@@ -215,25 +240,19 @@ void Render::initInstances(){
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
         bufferManager,
-        bindlessTextureRegistry
+        materialDescriptorManager
     );
 
     renderBatchManager = new RenderBatchManager(
         resourceManager
     );
 
-    // viking room
-    // renderInstance = new RenderInstance();
-    // renderBatchManager->addInstance(
-    //     renderBatchManager->findBatchKey("./models/viking_room.obj", "./textures/viking_room.png"),
-    //     renderInstance
-    // );
     renderInstance = new RenderInstance();
     renderBatchManager->addInstance(
         resourceManager->getMesh("models/Maxwell/Untitled.gltf"),
         renderInstance
     );
-
+    renderInstance->scale = glm::vec3(1.0f);
 }
 
 void Render::drawFrame(){
@@ -328,10 +347,7 @@ void Render::drawFrame(){
         globalDescriptorManager,
         instanceDescriptorManager,
         particleInstanceDescriptorManager,
-        materialDescriptorManager,
-        bindlessTextureRegistry,
         renderBatchManager,
-        coreVulkan->getSupportedFeatures12().descriptorIndexing,
         {particle, particle1},
         {},
         {},
@@ -371,7 +387,6 @@ void Render::drawFrame(){
 
     VkResult presentResult = vkQueuePresentKHR(coreVulkan->getPresentQueue(), &presentInfo);
     if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR  || framebufferResized) {
-        // std::cout << "work here:" << presentResult << " framebufferResized:" << framebufferResized << std::endl;
         framebufferResized = false;
         recreateSwapChain();
     } else if (presentResult != VK_SUCCESS) {
@@ -410,7 +425,6 @@ void Render::cleanup(){
         if (renderInstance ){ delete renderInstance; renderInstance = nullptr; }
         if ( renderBatchManager ){ delete renderBatchManager; renderBatchManager = nullptr; }
         if ( resourceManager ){ delete resourceManager; resourceManager = nullptr; }
-        if ( bindlessTextureRegistry ){ delete bindlessTextureRegistry; bindlessTextureRegistry = nullptr; }
         if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
         if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
         if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
@@ -542,11 +556,10 @@ void Render::recreateSwapChain() {
         renderPass->get(),
         globalDescriptorManager->getLayout(),
         materialDescriptorManager->getLayout(),
-        bindlessTextureRegistry->getLayout(),
         instanceDescriptorManager->getLayout(),
         particleInstanceDescriptorManager->getLayout(),
         coreVulkan->getMsaaSamples(),
-        coreVulkan->getSupportedFeatures12().descriptorIndexing
+        coreVulkan->getSupportedFeatures12()
     );
 
     // 5. Recreate Multisampling

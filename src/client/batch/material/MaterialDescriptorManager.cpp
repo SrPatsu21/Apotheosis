@@ -5,26 +5,21 @@
 MaterialDescriptorManager::MaterialDescriptorManager(
     VkDevice device,
     uint32_t maxMaterials,
-    bool bindless,
     std::vector<MaterialDescriptorManager::IMaterialLayoutProvider*> providers
-) :
-    device(device),
-    bindlessMode(bindless)
+)
+    : device(device)
 {
-    #ifndef NDEBUG
-    std::cout << "bindlessMode: " << (bindlessMode ? "true" : "false") << std::endl;
-    #endif
     MaterialLayoutBuilder builder(0, 7);
 
-    // Engine provider
+    // engine provider
     EngineMaterialProvider engineProvider;
     engineProvider.contribute(builder);
 
-    // External providers
+    // mods providers
     for (auto* p : providers)
         p->contribute(builder);
 
-    //* Descriptor Set Layout
+    // create layouts
     std::vector<VkDescriptorSetLayoutBinding> vkBindings;
 
     for (const auto& b : builder.getBindings())
@@ -44,37 +39,10 @@ MaterialDescriptorManager::MaterialDescriptorManager(
     layoutInfo.bindingCount = static_cast<uint32_t>(vkBindings.size());
     layoutInfo.pBindings = vkBindings.data();
 
-    // Bindless flags
-    std::vector<VkDescriptorBindingFlags> bindingFlags;
-    VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo{};
-
-    if (bindlessMode)
-    {
-        bindingFlags.resize(vkBindings.size(), 0);
-
-        for (size_t i = 0; i < vkBindings.size(); ++i)
-        {
-            // Aplicar flags apenas para bindings que são arrays
-            if (vkBindings[i].descriptorCount > 1)
-            {
-                bindingFlags[i] =
-                    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
-                    VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
-            }
-        }
-
-        flagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
-        flagsInfo.bindingCount = static_cast<uint32_t>(bindingFlags.size());
-        flagsInfo.pBindingFlags = bindingFlags.data();
-
-        layoutInfo.pNext = &flagsInfo;
-        layoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
-    }
-
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
         throw std::runtime_error("Failed to create material descriptor layout");
 
-    //* Descriptor Pool
+    // create pools
     std::vector<VkDescriptorPoolSize> poolSizes;
 
     for (const auto& [type, count] : builder.getDescriptorCounts())
@@ -91,9 +59,6 @@ MaterialDescriptorManager::MaterialDescriptorManager(
     poolInfo.pPoolSizes = poolSizes.data();
     poolInfo.maxSets = maxMaterials;
 
-    if (bindlessMode)
-        poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
-
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
         throw std::runtime_error("Failed to create material descriptor pool");
 }
@@ -101,8 +66,12 @@ MaterialDescriptorManager::MaterialDescriptorManager(
 MaterialDescriptorManager::~MaterialDescriptorManager()
 {
     if (descriptorPool)
+    {
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+    }
 
     if (descriptorSetLayout)
+    {
         vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+    }
 }

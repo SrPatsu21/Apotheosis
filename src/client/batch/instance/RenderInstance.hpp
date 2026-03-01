@@ -18,7 +18,6 @@ public:
     {
         RenderBatch* batch = nullptr;
         size_t indexInBatch = 0;
-        std::shared_ptr<Material> material;
     };
 private:
 
@@ -33,7 +32,7 @@ public:
     RenderInstance(
         const glm::vec3& position = glm::vec3(0.0f),
         const glm::vec3& rotation = glm::vec3(0.0f),
-        const glm::vec3& scale = glm::vec3(1.0f)
+        const glm::vec3& scale = glm::vec3(0.0f)
     );
 
     ~RenderInstance();
@@ -51,8 +50,7 @@ public:
 private:
     void addRegistration(
         RenderBatch* batch,
-        size_t index,
-        std::shared_ptr<Material> material
+        size_t index
     );
 
     void clearRegistrations();

@@ -23,7 +23,6 @@ private:
     VkDevice device;
     VkDescriptorSetLayout descriptorSetLayout{};
     VkDescriptorPool descriptorPool{};
-    bool bindlessMode;
 public:
 
     /**
@@ -86,6 +85,14 @@ public:
                 1,
                 VK_SHADER_STAGE_FRAGMENT_BIT
             );
+
+            // Binding 1 reserved for metallicRoughness
+            builder.addEngineBinding(
+                2,
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                1,
+                VK_SHADER_STAGE_FRAGMENT_BIT
+            );
         }
     };
 
@@ -112,7 +119,6 @@ public:
     MaterialDescriptorManager(
         VkDevice device,
         uint32_t maxMaterials,
-        bool bindlessMode,
         std::vector<MaterialDescriptorManager::IMaterialLayoutProvider*> providers
     );
 

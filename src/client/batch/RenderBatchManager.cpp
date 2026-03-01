@@ -12,12 +12,18 @@
 bool RenderBatchManager::BatchKey::operator==(
     const RenderBatchManager::BatchKey& other
 ) const {
-    return mesh == other.mesh && submesh == other.submesh;
+    return material == other.material && submesh == other.submesh && mesh == other.mesh && pipelineFlags == other.pipelineFlags;
 }
 
 bool RenderBatchManager::BatchKey::operator<(
     const RenderBatchManager::BatchKey& other
 ) const {
+    if (pipelineFlags != other.pipelineFlags)
+        return pipelineFlags < other.pipelineFlags;
+
+    if (material.get() != other.material.get())
+        return material.get() < other.material.get();
+
     if (mesh.get() != other.mesh.get())
         return mesh.get() < other.mesh.get();
 
@@ -59,17 +65,13 @@ RenderBatch::operator=(
 RenderBatch::~RenderBatch() = default;
 
 void RenderBatch::addInstance(
-    RenderInstance* instance,
-    size_t intregistrationsIndex,
-    std::shared_ptr<Material> material
+    RenderInstance* instance
 )
 {
     instancesData.emplace_back();
-
-    instance->addRegistration(this, intregistrationsIndex, std::move(material));
+    instance->addRegistration(this, instancesData.size()-1);
 
     batchRegistrations.push_back(&instance->registrations.back());
-    instance->updateModelMatrix();
 }
 
 void RenderBatch::removeInstance(
@@ -108,25 +110,29 @@ RenderBatchManager::RenderBatchManager(
     ResourceManager* resourceManager
 )
     : resourceManager(resourceManager)
-{}
+{
+}
 
 void RenderBatchManager::addInstance(
     std::shared_ptr<Mesh> mesh,
     RenderInstance* instance
 ) {
-    instance->getRegistrations().reserve(mesh->getSubMeshes().size());
+    // instance->getRegistrations().reserve(mesh->getSubMeshes().size());
     const std::vector<Mesh::SubMesh>& meshs = mesh->getSubMeshes();
 
     for (size_t i = 0; i < meshs.size(); i++)
     {
-        BatchKey key = {mesh, &meshs[i]};
+        BatchKey key = {
+            mesh,
+            &meshs[i],
+            resourceManager->getMaterialForSubMesh(*mesh.get(), meshs[i]),
+            GraphicsPipeline::PIPE_TOPO_TRIANGLES | GraphicsPipeline::PIPE_CULL_BACK | GraphicsPipeline::PIPE_DEPTH_TEST | GraphicsPipeline::PIPE_DEPTH_WRITE | GraphicsPipeline::PIPE_BLEND
+        };
         auto it = batches_map.find(key);
         if (it != batches_map.end())
         {
             it->second->addInstance(
-                instance,
-                i,
-                resourceManager->getMaterialForSubMesh(*mesh.get(), meshs[i])
+                instance
             );
         }
         else{
@@ -136,9 +142,7 @@ void RenderBatchManager::addInstance(
             batches_map.emplace(key, std::move(batch));
 
             batchPtr->addInstance(
-                instance,
-                i,
-                resourceManager->getMaterialForSubMesh(*mesh.get(), meshs[i])
+                instance
             );
 
             batches_dirty = true;
@@ -210,6 +214,13 @@ void RenderBatchManager::findBatchKey(
 {
     key.mesh = resourceManager->getMesh(meshPath);
     key.submesh = &key.mesh->getSubMeshes()[submeshIndex];
+    key.material = resourceManager->getMaterialForSubMesh(*key.mesh.get(), *key.submesh);
+    key.pipelineFlags =
+        GraphicsPipeline::PIPE_TOPO_TRIANGLES |
+        GraphicsPipeline::PIPE_CULL_BACK |
+        GraphicsPipeline::PIPE_DEPTH_TEST |
+        GraphicsPipeline::PIPE_DEPTH_WRITE |
+        GraphicsPipeline::PIPE_BLEND;
 }
 
 RenderBatchManager::BatchKey
@@ -220,7 +231,13 @@ RenderBatchManager::findBatchKey(
 {
     BatchKey key;
     key.mesh = resourceManager->getMesh(meshPath);
-    auto a = &key.mesh->getSubMeshes()[submeshIndex];
     key.submesh = &key.mesh->getSubMeshes()[submeshIndex];
+    key.material = resourceManager->getMaterialForSubMesh(*key.mesh.get(), *key.submesh);
+    key.pipelineFlags =
+        GraphicsPipeline::PIPE_TOPO_TRIANGLES |
+        GraphicsPipeline::PIPE_CULL_BACK |
+        GraphicsPipeline::PIPE_DEPTH_TEST |
+        GraphicsPipeline::PIPE_DEPTH_WRITE |
+        GraphicsPipeline::PIPE_BLEND;
     return key;
 }

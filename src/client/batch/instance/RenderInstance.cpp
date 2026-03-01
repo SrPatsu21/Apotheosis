@@ -15,11 +15,10 @@ RenderInstance::RenderInstance(
 
 void RenderInstance::addRegistration(
     RenderBatch* batch,
-    size_t index,
-    std::shared_ptr<Material> material
+    size_t index
 )
 {
-    registrations.push_back({ batch, index, std::move(material) });
+    registrations.push_back({ batch, index});
 }
 
 void RenderInstance::clearRegistrations()
@@ -39,7 +38,7 @@ void RenderInstance::updateModelMatrix()
 
     for (auto& reg : registrations)
     {
-        reg.batch->getinstancesData()[reg.indexInBatch].model = model;
+        reg.batch->getinstancesData()[reg.indexInBatch] = model;
     }
 }
 

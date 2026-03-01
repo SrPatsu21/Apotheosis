@@ -132,10 +132,7 @@ void CommandManager::recordCommandBuffer(
     GlobalDescriptorManager* globalDescriptorManager,
     InstanceDescriptorManager* instanceDescriptorManager,
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
-    MaterialDescriptorManager* materialDescriptorManager,
-    BindlessTextureRegistry* BindlessTextureRegistry,
     RenderBatchManager* renderBatchManager,
-    bool bindlessMode,
     const std::vector<ParticleData>& particles,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
@@ -146,7 +143,6 @@ void CommandManager::recordCommandBuffer(
     assert(imageIndex < commandBuffers.size());
     assert(imageIndex < framebuffers.size());
 #endif
-    std::cout << "fault 1" << std::endl;
 
     VkCommandBuffer cmd = commandBuffers[imageIndex];
     beginCommandBuffer(cmd);
@@ -165,14 +161,6 @@ void CommandManager::recordCommandBuffer(
         clearValues
     );
 
-    std::cout << "fault 1.2" << std::endl;
-    // Bind pipeline
-    vkCmdBindPipeline(
-        cmd,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        graphicsPipeline->getPipeline(GraphicsPipeline::PipelineType::Triangles_BackCull)
-    );
-
     setViewportAndScissor(
         cmd,
         graphicsPipeline,
@@ -181,102 +169,129 @@ void CommandManager::recordCommandBuffer(
     );
 
     // browse batches
-    VkPipelineLayout layout = graphicsPipeline->getLayout(GraphicsPipeline::LayoutType::Mesh);
+    VkPipelineLayout layout = VK_NULL_HANDLE;
     VkDescriptorSet globalSet = globalDescriptorManager->getDescriptorSets()[currentFrame];
     VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
-    VkDescriptorSet materialOrBindlessSet = BindlessTextureRegistry->getDescriptorSet();
-
-    // Bind sets fixos uma vez
-    VkDescriptorSet sets[] = {
-        globalSet,     // set 0
-        materialOrBindlessSet, // set 1
-        instanceSet    // set 2
-    };
-
-    vkCmdBindDescriptorSets(
-        cmd,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        layout,
-        0,
-        3,
-        sets,
-        0,
-        nullptr
-    );
-
-    std::cout << "fault 1.4" << std::endl;
-
     Mesh* lastMesh = nullptr;
+    Material* lastMaterial = nullptr;
+    GraphicsPipeline::PipelineFlags lastPipeline = 0;
     uint32_t currentOffset = 0;
-
-    std::cout << "fault 2" << std::endl;
     renderBatchManager->forEachBatch(
         [&](const RenderBatch& batch)
-    {
-        const auto& key = batch.getKey();
-        const auto& mesh = key.mesh;
-        const auto& submesh = key.submesh;
-        const auto& instancesData = batch.getinstancesData();
-
-        uint32_t instanceCount = static_cast<uint32_t>(instancesData.size());
-
-        if (instanceCount == 0)
-            return;
-
-        // Bind mesh apenas se mudou
-        if (mesh.get() != lastMesh)
         {
-            lastMesh = mesh.get();
+            const RenderBatchManager::BatchKey& key = batch.getKey();
+            const std::shared_ptr<Mesh>&  mesh = key.mesh;
+            const Mesh::SubMesh* submesh = key.submesh;
+            const std::shared_ptr<Material> material = key.material;
+            const GraphicsPipeline::PipelineFlags pipelineFlags = key.pipelineFlags;
+            const std::vector<InstanceData>& instancesData = batch.getinstancesData();
 
-            VkBuffer vertexBuffer = mesh->getVertexBuffer();
-            VkDeviceSize offsets[] = { 0 };
+            uint32_t instanceCount = static_cast<uint32_t>(instancesData.size());
 
-            vkCmdBindVertexBuffers(
+
+            // Bind pipeline
+            if (lastPipeline != pipelineFlags)
+            {
+                lastPipeline = pipelineFlags;
+                layout = graphicsPipeline->getLayout(pipelineFlags & 0x3);
+                vkCmdBindPipeline(
+                    cmd,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    graphicsPipeline->getPipeline(pipelineFlags)
+                );
+            }
+
+            // Bind mesh
+            if (mesh.get() != lastMesh)
+            {
+                lastMesh = mesh.get();
+
+                VkBuffer vertexBuffer = mesh->getVertexBuffer();
+                VkDeviceSize offsets[] = { 0 };
+                vkCmdBindVertexBuffers(
+                    cmd,
+                    0,
+                    1,
+                    &vertexBuffer,
+                    offsets
+                );
+
+                vkCmdBindIndexBuffer(
+                    cmd,
+                    mesh->getIndexBuffer(),
+                    0,
+                    VK_INDEX_TYPE_UINT32
+                );
+            }
+
+            // Bind descriptor sets (set 0 & 1)
+            if (material.get() != lastMaterial)
+            {
+                lastMaterial = material.get();
+                VkDescriptorSet descriptorSets[] = {
+                    globalSet,
+                    material->getDescriptorSet()
+                };
+
+                vkCmdBindDescriptorSets(
+                    cmd,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    layout,
+                    0,
+                    2,
+                    descriptorSets,
+                    0,
+                    nullptr
+                );
+            }
+
+            // Update storage buffer of the current frame.
+            instanceDescriptorManager->update(
+                currentFrame,
+                currentOffset,
+                instancesData
+            );
+
+            // Bind descriptor set 2 (instances)
+            vkCmdBindDescriptorSets(
                 cmd,
-                0,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                layout,
+                2, // set index
                 1,
-                &vertexBuffer,
-                offsets
-            );
-
-            vkCmdBindIndexBuffer(
-                cmd,
-                mesh->getIndexBuffer(),
+                &instanceSet,
                 0,
-                VK_INDEX_TYPE_UINT32
+                nullptr
             );
+
+            // Draw instanciado
+            vkCmdDrawIndexed(
+                cmd,
+                mesh->getIndexCount(),
+                instanceCount,
+                0,
+                0,
+                currentOffset
+            );
+
+            currentOffset += instanceCount;
         }
+    );
 
-        // Update storage buffer of the current frame.
-        instanceDescriptorManager->update(
-            currentFrame,
-            currentOffset,
-            instancesData
-        );
-        std::cout << "fault 2.4" << std::endl;
-        // Draw using mesh
-        vkCmdDrawIndexed(
-            cmd,
-            submesh->indexCount,
-            instanceCount,
-            submesh->firstIndex,
-            submesh->vertexOffset,
-            currentOffset
-        );
-
-        currentOffset += instanceCount;
-    });
-
-    std::cout << "fault 3" << std::endl;
 //* === TEST PARTICLE ===
     currentOffset = 0;
-    layout = graphicsPipeline->getLayout(GraphicsPipeline::LayoutType::Particle);
+    layout = graphicsPipeline->getLayout(GraphicsPipeline::PIPE_TOPO_POINTS);
 
     // Bind particle pipeline
     vkCmdBindPipeline(
         cmd,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
-        graphicsPipeline->getPipeline(GraphicsPipeline::PipelineType::Points)
+        graphicsPipeline->getPipeline(
+            GraphicsPipeline::PIPE_TOPO_POINTS |
+            GraphicsPipeline::PIPE_CULL_NONE |
+            GraphicsPipeline::PIPE_DEPTH_TEST |
+            GraphicsPipeline::PIPE_BLEND
+        )
     );
 
     // replicate viewport/scissor
