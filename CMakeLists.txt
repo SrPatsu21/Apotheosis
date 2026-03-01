@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.10)
 # Project
 # ============================================================
 set(PROJECT_NAME "Apotheosis")
-project(${PROJECT_NAME} LANGUAGES CXX)
+project(${PROJECT_NAME} LANGUAGES C CXX)
 
 # ============================================================
 # C++ Standard
@@ -122,6 +122,16 @@ option(ASSIMP_BUILD_SAMPLES OFF)
 add_subdirectory(lib/assimp)
 
 # ============================================================
+# KTX (Khronos Texture)
+# ============================================================
+option(KTX_FEATURE_STATIC_LIBRARY ON)
+option(KTX_FEATURE_TESTS OFF)
+option(KTX_FEATURE_TOOLS OFF)
+option(KTX_FEATURE_VK_UPLOAD ON)
+
+add_subdirectory(lib/KTX-Software)
+
+# ============================================================
 # Shader compilation (CLIENT ONLY)
 # ============================================================
 find_program(GLSLANG_VALIDATOR glslangValidator)
@@ -165,19 +175,6 @@ endforeach()
 add_custom_target(Shaders ALL DEPENDS ${SHADER_OUTPUTS})
 
 # ============================================================
-# Copy textures (CLIENT ONLY)
-# ============================================================
-set(TEXTURE_SRC_DIR ${CMAKE_SOURCE_DIR}/src/client/assets/textures)
-set(TEXTURE_DST_DIR ${CMAKE_BINARY_DIR}/textures)
-
-add_custom_target(Textures ALL
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${TEXTURE_DST_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${TEXTURE_SRC_DIR}
-            ${TEXTURE_DST_DIR}
-)
-
-# ============================================================
 # Copy models (CLIENT ONLY)
 # ============================================================
 set(MODELS_SRC_DIR ${CMAKE_SOURCE_DIR}/src/client/assets/models)
@@ -203,7 +200,7 @@ add_executable(${PROJECT_NAME}_client
     ${STB_SOURCES}
 )
 
-add_dependencies(${PROJECT_NAME}_client Shaders Textures)
+add_dependencies(${PROJECT_NAME}_client Shaders Models)
 
 # ============================================================
 # Client include directories
@@ -258,6 +255,7 @@ if(WIN32)
         assimp
         vulkan-1
         glm
+        ktx
     )
 elseif(UNIX)
     target_link_libraries(${PROJECT_NAME}_client
@@ -266,6 +264,7 @@ elseif(UNIX)
         Vulkan::Vulkan
         glm::glm
         assimp
+        ktx
         pthread
         dl
     )

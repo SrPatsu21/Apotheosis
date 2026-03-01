@@ -110,10 +110,10 @@ protected:
     VkQueue graphicsQueue;
     VkFormat depthFormat;
     VkDeviceSize atomSize;
+    VkPhysicalDeviceVulkan12Features supportedFeatures12{};
     /// Device extensions required by the engine.
     const std::vector<const char*> DEVICE_EXTENSIONS = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,  // * Enables swapchain functionality for presenting images to the screen
-        VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, // * Allows binding descriptors with dynamic indexing to improve resource management
         VK_EXT_MEMORY_BUDGET_EXTENSION_NAME, // * Provides information about memory budgets, allowing applications to make better memory usage decisions
         // VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME, // * Allows querying performance-related metrics to help optimize graphics performance
         // VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME, // * Provides a mechanism for high-precision timestamps for better timing and synchronization in applications
@@ -417,6 +417,24 @@ public:
         uint32_t memoryTypeIndex
     );
 
+    /**
+     * @brief Returns whether a Vulkan format contains a depth component.
+     *
+     * This helper is typically used to determine the correct
+     * VkImageAspectFlags when creating image views or performing
+     * layout transitions.
+     *
+     * Depth formats detected:
+     * - VK_FORMAT_D32_SFLOAT
+     * - VK_FORMAT_D32_SFLOAT_S8_UINT
+     * - VK_FORMAT_D24_UNORM_S8_UINT
+     *
+     * @param format Vulkan image format.
+     * @return True if the format includes a depth component.
+     */
+    static bool hasDepthComponent(
+        VkFormat format
+    );
 //* get
     const VkInstance& getInstance() const { return instance; }
     const VkSurfaceKHR& getSurface() const { return surface; }
@@ -430,4 +448,5 @@ public:
     const VkFormat& getDepthFormat() const { return depthFormat; }
     const std::vector<const char*>& getDeviceExtensions() const { return DEVICE_EXTENSIONS; }
     const VkDeviceSize getAtomSize() const { return atomSize; }
+    const VkPhysicalDeviceVulkan12Features getSupportedFeatures12() const { return supportedFeatures12; }
 };

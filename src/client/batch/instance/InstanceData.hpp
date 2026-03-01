@@ -6,7 +6,9 @@
 struct InstanceData {
     alignas(16) glm::mat4 model;
 
-    InstanceData() : model(glm::mat4(1.0f)) {}
+    InstanceData() :
+        model(1.0f)
+    {}
 
     InstanceData(glm::mat4 model) : model(model){}
 

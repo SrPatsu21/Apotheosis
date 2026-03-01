@@ -4,14 +4,13 @@ ResourceManager::ResourceManager(
     VkPhysicalDevice physicalDevice,
     VkDevice device,
     BufferManager* bufferManager,
-    VkDescriptorPool descriptorPool,
-    VkDescriptorSetLayout layout
+    MaterialDescriptorManager* descriptorManager
 ) :
     physicalDevice(physicalDevice),
     device(device),
     bufferManager(bufferManager),
-    descriptorPool(descriptorPool),
-    layout(layout)
+    descriptorManager(descriptorManager),
+    samplerManager(physicalDevice, device)
 {
 }
 
@@ -36,36 +35,134 @@ std::shared_ptr<Mesh> ResourceManager::getMesh(
     return mesh;
 }
 
-std::shared_ptr<Material> ResourceManager::getMaterial(
-    const std::string& texturePath
-) {
-    auto it = materials.find(texturePath);
+std::vector<std::shared_ptr<Material>>
+ResourceManager::getMaterialsForMesh(const Mesh& mesh)
+{
+    std::vector<std::shared_ptr<Material>> result;
 
-    if (it != materials.end())
+    for (const auto& matData : mesh.getMaterials())
     {
-        if (auto mat = it->second.lock())
-            return mat;
+        std::string key =
+            matData.baseColorPath + "|" +
+            matData.normalPath + "|" +
+            matData.metallicRoughnessPath;
+
+        std::shared_ptr<Material> material = nullptr;
+
+        auto it = materials.find(key);
+        if (it != materials.end())
+        {
+            material = it->second.lock();
+        }
+
+        if (!material)
+        {
+            std::shared_ptr<TextureImage> baseColorHandle = nullptr;
+            std::shared_ptr<TextureImage> normalHandle = nullptr;
+            std::shared_ptr<TextureImage> mrHandle = nullptr;
+
+            if (!matData.baseColorPath.empty())
+                baseColorHandle = getTexture(matData.baseColorPath);
+
+            if (!matData.normalPath.empty())
+                normalHandle = getTexture(matData.normalPath);
+
+            if (!matData.metallicRoughnessPath.empty())
+                mrHandle = getTexture(matData.metallicRoughnessPath);
+
+            material = std::make_shared<Material>(
+                device,
+                descriptorManager,
+                baseColorHandle,
+                normalHandle,
+                mrHandle
+            );
+
+            materials[key] = material;
+        }
+
+        result.push_back(material);
     }
 
-    //TODO auto texture = getTexture(texturePath);
+    return result;
+}
 
-    TextureImage::TextureImageDesc textureImageDesc = TextureImage::TextureImageDesc();
-    std::shared_ptr<TextureImage> texture = std::make_shared<TextureImage>(
+std::shared_ptr<Material>
+ResourceManager::getMaterialForSubMesh(
+    const Mesh& mesh,
+    const Mesh::SubMesh& subMesh
+)
+{
+    const auto& materialsData = mesh.getMaterials();
+
+    if (subMesh.materialIndex >= materialsData.size())
+        throw std::runtime_error("Invalid material index in SubMesh");
+
+    const auto& matData = materialsData[subMesh.materialIndex];
+
+    std::string key =
+        matData.baseColorPath + "|" +
+        matData.normalPath + "|" +
+        matData.metallicRoughnessPath;
+
+    std::shared_ptr<Material> material = nullptr;
+
+    auto it = materials.find(key);
+    if (it != materials.end())
+        material = it->second.lock();
+
+    if (!material)
+    {
+        std::shared_ptr<TextureImage> baseColorHandle = nullptr;
+        std::shared_ptr<TextureImage> normalHandle = nullptr;
+        std::shared_ptr<TextureImage> mrHandle = nullptr;
+
+        if (!matData.baseColorPath.empty())
+            baseColorHandle = getTexture(matData.baseColorPath);
+
+        if (!matData.normalPath.empty())
+            normalHandle = getTexture(matData.normalPath);
+
+        if (!matData.metallicRoughnessPath.empty())
+            mrHandle = getTexture(matData.metallicRoughnessPath);
+
+        material = std::make_shared<Material>(
+            device,
+            descriptorManager,
+            baseColorHandle,
+            normalHandle,
+            mrHandle
+        );
+
+        materials[key] = material;
+    }
+
+    return material;
+}
+
+std::shared_ptr<TextureImage>
+ResourceManager::getTexture(const std::string& path)
+{
+    auto it = textures.find(path);
+
+    if (it != textures.end())
+    {
+        if (auto handle = it->second.lock())
+            return handle;
+    }
+
+    TextureAsset asset(path, physicalDevice);
+
+    std::shared_ptr<TextureImage> textureImage = std::make_unique<TextureImage>(
         physicalDevice,
         device,
-        texturePath,
         bufferManager,
-        textureImageDesc,
+        samplerManager.getSampler(asset.getRecommendedSamplerDesc()),
+        asset,
         &TextureImage::DefaultImageTransitionPolicy::instance()
     );
 
-    std::shared_ptr<Material> material = std::make_shared<Material>(
-        device,
-        descriptorPool,
-        layout,
-        texture
-    );
+    textures[path] = textureImage;
 
-    materials[texturePath] = material;
-    return material;
+    return textureImage;
 }

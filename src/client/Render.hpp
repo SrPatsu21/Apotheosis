@@ -24,7 +24,7 @@
 class Render {
 public:
     const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
-
+    static TextureImage::DefaultTextures defaultTextures;
     bool framebufferResized = false;
 
     Render();
@@ -66,8 +66,10 @@ private:
     BufferManager* bufferManager;
     InstanceDescriptorManager* instanceDescriptorManager;
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager;
+    SamplerManager* samplerManagerForStaticTextures;
 
     uint32_t maxMaterials = 1024;
+    uint32_t maxbindlessTextures = 2048;
     uint32_t maxInstances = 21080;
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);

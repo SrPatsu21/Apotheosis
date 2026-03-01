@@ -476,6 +476,7 @@ void CoreVulkan::createLogicalDevice(
         graphicsQueueFamilyIndices.graphicsFamily.value(),
         graphicsQueueFamilyIndices.presentFamily.value()
     };
+
     float queuePriority = 1.0f;
 
     for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -495,48 +496,48 @@ void CoreVulkan::createLogicalDevice(
     config.optionalFeatures.sampleRateShading = VK_TRUE;
     config.optionalFeatures.wideLines = VK_TRUE;
 
-    // mods
     for (auto* p : providers) {
         p->contribute(config);
     }
 
     // resolve feature suport
-    VkPhysicalDeviceFeatures supported{};
-    vkGetPhysicalDeviceFeatures(physicalDevice, &supported);
-    VkPhysicalDeviceFeatures enabled{};
+    supportedFeatures12 = {};
+    supportedFeatures12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 
-    auto enableIfSupported = [&](
-        VkBool32 required,
-        VkBool32 supportedFeature,
-        VkBool32& out
-    ) {
-        if (required && !supportedFeature)
-            throw std::runtime_error("Required device feature not supported");
-        out = required || supportedFeature;
-    };
+    VkPhysicalDeviceFeatures2 supportedFeatures2{};
+    supportedFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    supportedFeatures2.pNext = &supportedFeatures12;
 
-    enableIfSupported(
-        config.requiredFeatures.samplerAnisotropy,
-        supported.samplerAnisotropy,
-        enabled.samplerAnisotropy
-    );
-    enableIfSupported(
-        config.optionalFeatures.sampleRateShading,
-        supported.sampleRateShading,
-        enabled.sampleRateShading
-    );
-    enableIfSupported(
-        config.optionalFeatures.wideLines,
-        supported.wideLines,
-        enabled.wideLines
-    );
+    vkGetPhysicalDeviceFeatures2(physicalDevice, &supportedFeatures2);
 
-    // create info
+    // enable features
+    VkPhysicalDeviceVulkan12Features enabled12{};
+    enabled12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+
+    if (supportedFeatures12.descriptorIndexing) {
+        enabled12.descriptorIndexing = VK_TRUE;
+        enabled12.runtimeDescriptorArray = supportedFeatures12.runtimeDescriptorArray;
+        enabled12.descriptorBindingPartiallyBound = supportedFeatures12.descriptorBindingPartiallyBound;
+        enabled12.descriptorBindingVariableDescriptorCount = supportedFeatures12.descriptorBindingVariableDescriptorCount;
+        enabled12.shaderSampledImageArrayNonUniformIndexing = supportedFeatures12.shaderSampledImageArrayNonUniformIndexing;
+        enabled12.shaderStorageBufferArrayNonUniformIndexing = supportedFeatures12.shaderStorageBufferArrayNonUniformIndexing;
+        enabled12.descriptorBindingSampledImageUpdateAfterBind = supportedFeatures12.descriptorBindingSampledImageUpdateAfterBind;
+    }
+
+    VkPhysicalDeviceFeatures2 enabledFeatures2{};
+    enabledFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    enabledFeatures2.features.samplerAnisotropy = config.requiredFeatures.samplerAnisotropy;
+    enabledFeatures2.features.sampleRateShading = config.optionalFeatures.sampleRateShading;
+    enabledFeatures2.features.wideLines = config.optionalFeatures.wideLines;
+    enabledFeatures2.pNext = &enabled12;
+
+    // device create info
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-    createInfo.pEnabledFeatures = &enabled;
+    createInfo.pEnabledFeatures = nullptr;
+    createInfo.pNext = &enabledFeatures2;
 
     createInfo.enabledExtensionCount = static_cast<uint32_t>(config.extensions.size());
     createInfo.ppEnabledExtensionNames = config.extensions.data();
@@ -546,9 +547,8 @@ void CoreVulkan::createLogicalDevice(
     //     createInfo.ppEnabledLayerNames = validationLayers.data();
     // #endif
 
-    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
         throw std::runtime_error("failed to create logical device");
-    }
 }
 
 VkFormat CoreVulkan::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
@@ -625,6 +625,13 @@ uint32_t CoreVulkan::findMemoryType(
 
 bool CoreVulkan::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+}
+
+bool CoreVulkan::hasDepthComponent(VkFormat format)
+{
+    return format == VK_FORMAT_D32_SFLOAT ||
+        format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
+        format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
 #ifndef NDEBUG

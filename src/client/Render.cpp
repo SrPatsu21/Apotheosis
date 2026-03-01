@@ -1,5 +1,12 @@
 #include "Render.hpp"
 
+TextureImage::DefaultTextures Render::defaultTextures =
+{
+    nullptr,
+    nullptr,
+    nullptr
+};
+
 Render::Render(){};
 
 int Render::run(){
@@ -18,11 +25,37 @@ int Render::run(){
     //main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-
         // ui new frame
         this->ui->newFrame();
         this->ui->build();
-
+        #ifndef NDEBUG
+            // renderBatchManager->batchSize();
+            // renderBatchManager->forEachBatch(
+            //     [&](RenderBatch& batch)
+            //     {
+            //         std::cout << "-------------------" << std::endl;
+            //         auto key = batch.getKey();
+            //         std::cout << "pipelineFlags:" << key.pipelineFlags << std::endl;
+            //         std::cout << "mesh:" << key.mesh << std::endl;
+            //         std::cout << "submesh:" << key.submesh << std::endl;
+            //         std::cout << "material:" << key.material << std::endl;
+            //         std::cout << "instances:" << std::endl;
+            //         for (auto i : batch.getinstancesData())
+            //         {
+            //             std::cout << "==" << std::endl;
+            //             const float* p = (const float*)&i.model;
+            //             for (int i = 0; i < 4; ++i) {
+            //                 for (int j = 0; j < 4; ++j) {
+            //                     std::cout << p[i * 4 + j] << " ";
+            //                 }
+            //                 std::cout << std::endl;
+            //             }
+            //             std::cout << "==" << std::endl;
+            //         }
+            //         std::cout << "-------------------" << std::endl;
+            //     }
+            // );
+        #endif
         drawFrame();
     }
 
@@ -101,6 +134,39 @@ void Render::initVulkan(){
         coreVulkan->getMsaaSamples()
     );
 
+    samplerManagerForStaticTextures = new SamplerManager(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice()
+    );
+
+
+    Render::defaultTextures.white = TextureFactory::createSolidRGBA8(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        bufferManager,
+        samplerManagerForStaticTextures,
+        VK_FORMAT_R8G8B8A8_SRGB,
+        255, 255, 255, 255
+    );
+
+    Render::defaultTextures.normal = TextureFactory::createSolidRGBA8(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        bufferManager,
+        samplerManagerForStaticTextures,
+        VK_FORMAT_R8G8B8A8_UNORM,
+        128, 128, 255, 255
+    );
+
+    Render::defaultTextures.metallic = TextureFactory::createSolidRGBA8(
+        coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        bufferManager,
+        samplerManagerForStaticTextures,
+        VK_FORMAT_R8G8B8A8_UNORM,
+        0, 255, 0, 255
+    );
+
     //Create DepthResources
     depthBufferManager = new DepthBufferManager(
         coreVulkan->getPhysicalDevice(),
@@ -173,7 +239,8 @@ void Render::initVulkan(){
         materialDescriptorManager->getLayout(),
         instanceDescriptorManager->getLayout(),
         particleInstanceDescriptorManager->getLayout(),
-        coreVulkan->getMsaaSamples()
+        coreVulkan->getMsaaSamples(),
+        coreVulkan->getSupportedFeatures12()
     );
 
     #ifndef NDEBUG
@@ -202,29 +269,30 @@ void Render::initImGui(){
 }
 
 void Render::initInstances(){
+
     resourceManager = new ResourceManager(
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice(),
         bufferManager,
-        materialDescriptorManager->getDescriptorPool(),
-        materialDescriptorManager->getLayout()
+        materialDescriptorManager
     );
 
     renderBatchManager = new RenderBatchManager(
         resourceManager
     );
 
-    // viking room
     renderInstance = new RenderInstance();
     renderBatchManager->addInstance(
-        renderBatchManager->findBatchKey("./models/viking_room.obj", "./textures/viking_room.png"),
+        resourceManager->getMesh("models/Maxwell/Untitled.gltf"),
         renderInstance
     );
-
+    renderInstance->scale = glm::vec3(0.2f);
 }
 
 void Render::drawFrame(){
-    float time = glfwGetTime();
+    double time = glfwGetTime();
+    // double deltaTime = time - lastTime;
+    // double lastTime = currentTime;
 
     // Wait for this frame to be free
     vkWaitForFences(coreVulkan->getDevice(), 1, &this->inFlightFences[this->currentFrame], VK_TRUE, UINT64_MAX);
@@ -259,11 +327,46 @@ void Render::drawFrame(){
     );
     this->cameraBufferManager->update(currentFrame, ubg);
     renderInstance->rotation = glm::vec3(
-        0.15* time,
+        0.5* time,
         0.3,
         0.6
     );
     renderInstance->updateModelMatrix();
+
+    // platicles
+    float timetester = (time * 5);
+    float phaseA = sin(timetester);
+    float phaseB = sin(timetester + 2.094395f);  // 120°
+    float phaseC = sin(timetester + 4.18879f);   // 240°
+
+    ParticleData particle{};
+    ParticleData particle1{};
+
+    particle.positionSize = glm::vec4(
+        0.6f * phaseA,
+        0.6f  * phaseB,
+        0.6f  * phaseC,
+        60 // (timetester*60) + 10.0f
+    );
+    particle1.positionSize = glm::vec4(
+        -0.6f * phaseA,
+        -0.6f  * phaseB,
+        -0.6f  * phaseC,
+        60 // (timetester*60) + 10.0f
+    );
+
+    particle.color = glm::vec4(
+        (phaseA + 1.0f) * 0.5f,
+        (phaseB + 1.0f) * 0.5f,
+        (phaseC + 1.0f) * 0.5f,
+        1.0f
+    );
+    particle1.color = glm::vec4(
+        (phaseA + 1.0f) * 0.5f,
+        (phaseB + 1.0f) * 0.5f,
+        (phaseC + 1.0f) * 0.5f,
+        1.0f
+    );
 
     // Reset + record only the command buffer for this swapchain image
     VkCommandBuffer cmd = this->commandManager->getCommandBuffers()[imageIndex];
@@ -279,6 +382,7 @@ void Render::drawFrame(){
         instanceDescriptorManager,
         particleInstanceDescriptorManager,
         renderBatchManager,
+        {particle, particle1},
         {},
         {},
         {},
@@ -317,7 +421,6 @@ void Render::drawFrame(){
 
     VkResult presentResult = vkQueuePresentKHR(coreVulkan->getPresentQueue(), &presentInfo);
     if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR  || framebufferResized) {
-        // std::cout << "work here:" << presentResult << " framebufferResized:" << framebufferResized << std::endl;
         framebufferResized = false;
         recreateSwapChain();
     } else if (presentResult != VK_SUCCESS) {
@@ -354,7 +457,14 @@ void Render::cleanup(){
         //    (Everything that depends on the swapchain must go BEFORE swapchain.)
         //    Delete pointers and null them to avoid accidental double free later.
         if (renderInstance ){ delete renderInstance; renderInstance = nullptr; }
-        if ( renderBatchManager ){ delete renderBatchManager; renderBatchManager = nullptr; }
+        if (renderBatchManager){ delete renderBatchManager; renderBatchManager = nullptr; }
+        if (samplerManagerForStaticTextures) { delete samplerManagerForStaticTextures; samplerManagerForStaticTextures = nullptr; }
+        if (defaultTextures.metallic)
+        {
+            defaultTextures.metallic.reset();
+            defaultTextures.normal.reset();
+            defaultTextures.white.reset();
+        }
         if ( resourceManager ){ delete resourceManager; resourceManager = nullptr; }
         if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
         if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
@@ -445,6 +555,9 @@ void Render::cleanupSwapChain() {
 }
 
 void Render::recreateSwapChain() {
+    #ifndef NDEBUG
+    std::cout << "swap chain recreated" << std::endl;
+    #endif
     vkDeviceWaitIdle(coreVulkan->getDevice());
 
     int width = 0, height = 0;
@@ -478,7 +591,7 @@ void Render::recreateSwapChain() {
     );
 
     // 4. Recreate pipeline (depends on render pass + extent)
-    this->graphicsPipeline = new GraphicsPipeline(
+    graphicsPipeline = new GraphicsPipeline(
         coreVulkan->getDevice(),
         swapchainManager->getExtent(),
         renderPass->get(),
@@ -486,7 +599,8 @@ void Render::recreateSwapChain() {
         materialDescriptorManager->getLayout(),
         instanceDescriptorManager->getLayout(),
         particleInstanceDescriptorManager->getLayout(),
-        coreVulkan->getMsaaSamples()
+        coreVulkan->getMsaaSamples(),
+        coreVulkan->getSupportedFeatures12()
     );
 
     // 5. Recreate Multisampling

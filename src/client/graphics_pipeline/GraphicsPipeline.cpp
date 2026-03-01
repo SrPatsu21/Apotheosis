@@ -9,7 +9,8 @@ GraphicsPipeline::GraphicsPipeline(
     VkDescriptorSetLayout materialLayout,
     VkDescriptorSetLayout instanceLayout,
     VkDescriptorSetLayout particleLayout,
-    VkSampleCountFlagBits msaaSamples
+    VkSampleCountFlagBits msaaSamples,
+    VkPhysicalDeviceVulkan12Features SupportedFeatures12
 ) :
     device(device)
 {
@@ -30,16 +31,17 @@ GraphicsPipeline::GraphicsPipeline(
     VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
 //* create layouts
-    pipelineLayouts[GraphicsPipeline::LayoutType::Mesh] = createPipelineLayout(
-        static_cast<uint32_t>(sizeof(InstanceData)),
+    VkDescriptorSetLayout meshMaterialLayout = materialLayout; // bindlessMode ? bindlessLayout :
+    pipelineLayouts[GraphicsPipeline::PIPE_TOPO_TRIANGLES] = createPipelineLayout(
+        sizeof(InstanceData),
         {
             globalLayout,
-            materialLayout,
+            meshMaterialLayout,
             instanceLayout
         }
     );
 
-    pipelineLayouts[GraphicsPipeline::LayoutType::Particle] = createPipelineLayout(
+    pipelineLayouts[GraphicsPipeline::PIPE_TOPO_POINTS] = createPipelineLayout(
         static_cast<uint32_t>(sizeof(ParticleData)),
         {
             globalLayout,
@@ -48,17 +50,9 @@ GraphicsPipeline::GraphicsPipeline(
     );
 
 //* create info
-    VkVertexInputBindingDescription bindingDescription
-    {
-        .binding = 0,
-        .stride = sizeof(Vertex),
-        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-    };
-    std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {{
-        { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos) },
-        { 1, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, color) },
-        { 2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord) }
-    }};
+    VkVertexInputBindingDescription bindingDescription = Vertex::getBindingDescription();
+    std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions = Vertex::getAttributeDescriptions();
+
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = createVertexInputState(
         bindingDescription,
         attributeDescriptions
@@ -74,21 +68,28 @@ GraphicsPipeline::GraphicsPipeline(
     VkPipelineDynamicStateCreateInfo dynamicState = createDynamicState(dynamicStates);
     VkPipelineDepthStencilStateCreateInfo depthStencil = createDepthStencilState();
     VkPipelineColorBlendAttachmentState colorBlendAttachment = {
-        .blendEnable = VK_FALSE,
-        .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-        .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+        .blendEnable = VK_TRUE,
+        .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+        .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
         .colorBlendOp = VK_BLEND_OP_ADD,
         .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
         .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
         .alphaBlendOp = VK_BLEND_OP_ADD,
+
         .colorWriteMask = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
     };
     VkPipelineColorBlendStateCreateInfo colorBlending = createColorBlendState(colorBlendAttachment);
 
-    graphicsPipelines[PipelineType::Triangles_NoCull] =
+    graphicsPipelines[
+        GraphicsPipeline::PIPE_TOPO_TRIANGLES |
+        GraphicsPipeline::PIPE_CULL_NONE |
+        GraphicsPipeline::PIPE_DEPTH_TEST |
+        GraphicsPipeline::PIPE_DEPTH_WRITE |
+        GraphicsPipeline::PIPE_BLEND
+    ] =
         createPipeline(
             renderPass,
-            pipelineLayouts[LayoutType::Mesh],
+            pipelineLayouts[GraphicsPipeline::PIPE_TOPO_TRIANGLES],
             shaderStages,
             vertexInputInfo,
             createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
@@ -100,10 +101,16 @@ GraphicsPipeline::GraphicsPipeline(
             dynamicState
         );
 
-    graphicsPipelines[PipelineType::Triangles_BackCull] =
+    graphicsPipelines[
+        GraphicsPipeline::PIPE_TOPO_TRIANGLES |
+        GraphicsPipeline::PIPE_CULL_BACK |
+        GraphicsPipeline::PIPE_DEPTH_TEST |
+        GraphicsPipeline::PIPE_DEPTH_WRITE |
+        GraphicsPipeline::PIPE_BLEND
+    ] =
         createPipeline(
             renderPass,
-            pipelineLayouts[LayoutType::Mesh],
+            pipelineLayouts[GraphicsPipeline::PIPE_TOPO_TRIANGLES],
             shaderStages,
             vertexInputInfo,
             createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
@@ -115,10 +122,16 @@ GraphicsPipeline::GraphicsPipeline(
             dynamicState
         );
 
-    graphicsPipelines[PipelineType::Triangles_FrontCull] =
+    graphicsPipelines[
+        GraphicsPipeline::PIPE_TOPO_TRIANGLES |
+        GraphicsPipeline::PIPE_CULL_FRONT |
+        GraphicsPipeline::PIPE_DEPTH_TEST |
+        GraphicsPipeline::PIPE_DEPTH_WRITE |
+        GraphicsPipeline::PIPE_BLEND
+    ] =
         createPipeline(
             renderPass,
-            pipelineLayouts[LayoutType::Mesh],
+            pipelineLayouts[GraphicsPipeline::PIPE_TOPO_TRIANGLES],
             shaderStages,
             vertexInputInfo,
             createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
@@ -131,10 +144,16 @@ GraphicsPipeline::GraphicsPipeline(
         );
 
 
-    graphicsPipelines[PipelineType::Lines] =
+    graphicsPipelines[
+        GraphicsPipeline::PIPE_TOPO_LINES |
+        GraphicsPipeline::PIPE_CULL_NONE |
+        GraphicsPipeline::PIPE_DEPTH_TEST |
+        GraphicsPipeline::PIPE_DEPTH_WRITE |
+        GraphicsPipeline::PIPE_BLEND
+    ] =
         createPipeline(
             renderPass,
-            pipelineLayouts[LayoutType::Mesh],
+            pipelineLayouts[GraphicsPipeline::PIPE_TOPO_TRIANGLES],
             shaderStages,
             vertexInputInfo,
             createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_LINE_LIST),
@@ -193,10 +212,15 @@ GraphicsPipeline::GraphicsPipeline(
         dynamicStates
     );
 
-    graphicsPipelines[PipelineType::Points] =
+    graphicsPipelines[
+        GraphicsPipeline::PIPE_TOPO_POINTS |
+        GraphicsPipeline::PIPE_CULL_NONE |
+        GraphicsPipeline::PIPE_DEPTH_TEST |
+        GraphicsPipeline::PIPE_BLEND
+    ] =
         createPipeline(
             renderPass,
-            pipelineLayouts[LayoutType::Particle],
+            pipelineLayouts[GraphicsPipeline::PIPE_TOPO_POINTS],
             shaderStages,
             emptyVertexInput,
             createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_POINT_LIST),
@@ -259,7 +283,7 @@ VkPipelineLayout GraphicsPipeline::createPipelineLayout(
 
 VkPipelineVertexInputStateCreateInfo GraphicsPipeline::createVertexInputState(
     VkVertexInputBindingDescription& bindingDescription,
-    std::array<VkVertexInputAttributeDescription, 3>& attributeDescriptions
+    std::array<VkVertexInputAttributeDescription, 4>& attributeDescriptions
 ) {
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

@@ -133,6 +133,7 @@ void CommandManager::recordCommandBuffer(
     InstanceDescriptorManager* instanceDescriptorManager,
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
     RenderBatchManager* renderBatchManager,
+    const std::vector<ParticleData>& particles,
     const std::vector<IClearValueProvider*>& clearProviders,
     const std::vector<IViewportProvider*>& viewportProviders,
     const std::vector<IScissorProvider*>& scissorProviders,
@@ -160,13 +161,6 @@ void CommandManager::recordCommandBuffer(
         clearValues
     );
 
-    // Bind pipeline
-    vkCmdBindPipeline(
-        cmd,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        graphicsPipeline->getPipeline(GraphicsPipeline::PipelineType::Triangles_NoCull)
-    );
-
     setViewportAndScissor(
         cmd,
         graphicsPipeline,
@@ -175,21 +169,37 @@ void CommandManager::recordCommandBuffer(
     );
 
     // browse batches
-    VkPipelineLayout layout = graphicsPipeline->getLayout(GraphicsPipeline::LayoutType::Mesh);
+    VkPipelineLayout layout = VK_NULL_HANDLE;
     VkDescriptorSet globalSet = globalDescriptorManager->getDescriptorSets()[currentFrame];
     VkDescriptorSet instanceSet = instanceDescriptorManager->getDescriptorSets()[currentFrame];
     Mesh* lastMesh = nullptr;
     Material* lastMaterial = nullptr;
+    GraphicsPipeline::PipelineFlags lastPipeline = 0;
     uint32_t currentOffset = 0;
     renderBatchManager->forEachBatch(
-        [&](const RenderBatchManager::RenderBatch& batch)
+        [&](RenderBatch& batch)
         {
             const RenderBatchManager::BatchKey& key = batch.getKey();
             const std::shared_ptr<Mesh>&  mesh = key.mesh;
-            const std::shared_ptr<Material>& material = key.material;
+            const Mesh::SubMesh* submesh = key.submesh;
+            const std::shared_ptr<Material> material = key.material;
+            const GraphicsPipeline::PipelineFlags pipelineFlags = key.pipelineFlags;
             const std::vector<InstanceData>& instancesData = batch.getinstancesData();
 
             uint32_t instanceCount = static_cast<uint32_t>(instancesData.size());
+
+
+            // Bind pipeline
+            if (lastPipeline != pipelineFlags)
+            {
+                lastPipeline = pipelineFlags;
+                layout = graphicsPipeline->getLayout(pipelineFlags & 0x3);
+                vkCmdBindPipeline(
+                    cmd,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    graphicsPipeline->getPipeline(pipelineFlags)
+                );
+            }
 
             // Bind mesh
             if (mesh.get() != lastMesh)
@@ -257,10 +267,10 @@ void CommandManager::recordCommandBuffer(
             // Draw instanciado
             vkCmdDrawIndexed(
                 cmd,
-                mesh->getIndexCount(),
+                submesh->indexCount,
                 instanceCount,
-                0,
-                0,
+                submesh->firstIndex,
+                submesh->vertexOffset,
                 currentOffset
             );
 
@@ -270,13 +280,18 @@ void CommandManager::recordCommandBuffer(
 
 //* === TEST PARTICLE ===
     currentOffset = 0;
-    layout = graphicsPipeline->getLayout(GraphicsPipeline::LayoutType::Particle);
+    layout = graphicsPipeline->getLayout(GraphicsPipeline::PIPE_TOPO_POINTS);
 
     // Bind particle pipeline
     vkCmdBindPipeline(
         cmd,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
-        graphicsPipeline->getPipeline(GraphicsPipeline::PipelineType::Points)
+        graphicsPipeline->getPipeline(
+            GraphicsPipeline::PIPE_TOPO_POINTS |
+            GraphicsPipeline::PIPE_CULL_NONE |
+            GraphicsPipeline::PIPE_DEPTH_TEST |
+            GraphicsPipeline::PIPE_BLEND
+        )
     );
 
     // replicate viewport/scissor
@@ -287,11 +302,6 @@ void CommandManager::recordCommandBuffer(
         scissorProviders
     );
 
-    ParticleData p{};
-    p.positionSize = glm::vec4(0.0f, 1.0f, 0.0f, 60.0f);
-    p.color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-
-    std::vector<ParticleData> particles { p };
     particleInstanceDescriptorManager->update(
         currentFrame,
         currentOffset,

@@ -5,7 +5,9 @@ build-windows
 build-release
 build-windows-release
 .vscode
-src/client/assets/textures/*.jpg
-src/client/assets/textures/*.png
-src/client/assets/textures/*.gif
-src/client/assets/models/*.obj
+
+src/client/assets/**/*.gif
+src/client/assets/**/*.ktx2
+src/client/assets/**/*.glb
+src/client/assets/**/*.gltf
+src/client/assets/**/*.bin

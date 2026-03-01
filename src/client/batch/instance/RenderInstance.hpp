@@ -1,18 +1,27 @@
 #pragma once
 
-#include "InstanceData.hpp"
-#include "../RenderBatchManager.hpp"
+#include "../material/Material.hpp"
 
+#include <vector>
 #include <memory>
 #include <glm/glm.hpp>
 
+class RenderBatch;
+class RenderBatchManager;
+
 class RenderInstance
 {
-    private:
-    friend class RenderBatchManager::RenderBatch;
+    friend class RenderBatch;
     friend class RenderBatchManager;
-    RenderBatchManager::RenderBatch* ownerBatch = nullptr;
-    size_t indexInBatch = 0;
+public:
+    struct BatchRegistration
+    {
+        RenderBatch* batch = nullptr;
+        size_t indexInBatch = 0;
+    };
+private:
+
+    std::vector<BatchRegistration> registrations;
 
 public:
 
@@ -23,22 +32,26 @@ public:
     RenderInstance(
         const glm::vec3& position = glm::vec3(0.0f),
         const glm::vec3& rotation = glm::vec3(0.0f),
-        const glm::vec3& scale    = glm::vec3(1.0f)
+        const glm::vec3& scale = glm::vec3(0.0f)
     );
 
     ~RenderInstance();
 
-    RenderInstance(const RenderInstance&) = default;
-    RenderInstance& operator=(const RenderInstance&) = default;
+    RenderInstance(const RenderInstance&) = delete;
+    RenderInstance& operator=(const RenderInstance&) = delete;
 
     RenderInstance(RenderInstance&&) noexcept = delete;
     RenderInstance& operator=(RenderInstance&&) noexcept = delete;
 
-    const glm::vec3& getPosition() const { return position; }
-    const glm::vec3& getRotation() const { return rotation; }
-    const glm::vec3& getScale() const { return scale; }
-
     void updateModelMatrix();
 
-    const InstanceData& getModelMatrix() const { return ownerBatch->getinstancesData()[indexInBatch]; }
+    std::vector<BatchRegistration> getRegistrations() const { return registrations; }
+
+private:
+    void addRegistration(
+        RenderBatch* batch,
+        size_t index
+    );
+
+    void clearRegistrations();
 };

@@ -6,10 +6,21 @@
 
 struct Vertex {
     glm::vec3 pos;
-    glm::vec4 color;
+    glm::vec3 normal;
+    glm::vec4 tangent; // xyz + w (handedness)
     glm::vec2 texCoord;
 
-    Vertex(const glm::vec3 p, const glm::vec4 c, const glm::vec2 t) : pos(p), color(c), texCoord(t) {}
+    Vertex(
+        const glm::vec3 pos,
+        glm::vec3 normal,
+        glm::vec4 tangent,
+        glm::vec2 texCoord
+    ) :
+        pos(pos),
+        normal(normal),
+        tangent(tangent),
+        texCoord(texCoord)
+    {}
 
     // bindingDescription.binding = 0;
     // bindingDescription.stride = sizeof(Vertex);
@@ -25,12 +36,13 @@ struct Vertex {
     //     attributeDescriptions[0].location = 0;
     //     attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
     //     attributeDescriptions[0].offset = offsetof(Vertex, pos);
-    static const std::array<VkVertexInputAttributeDescription, 3>& getAttributeDescriptions() {
-        static const std::array<VkVertexInputAttributeDescription, 3> attributes{{
-            {0, 0, VK_FORMAT_R32G32B32_SFLOAT,     offsetof(Vertex, pos)},
-            {0, 1, VK_FORMAT_R32G32B32A32_SFLOAT,  offsetof(Vertex, color)},
-            {0, 2, VK_FORMAT_R32G32_SFLOAT,     offsetof(Vertex, texCoord)}
-        }};
-        return attributes;
-    }
+    static const std::array<VkVertexInputAttributeDescription, 4>& getAttributeDescriptions() {
+    static const std::array<VkVertexInputAttributeDescription, 4> attributes{{
+        {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)},
+        {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
+        {2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, tangent)},
+        {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord)}
+    }};
+    return attributes;
+}
 };

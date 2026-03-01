@@ -203,6 +203,74 @@ void BufferManager::copyBufferToImage(
     endImmediate();
 }
 
+void BufferManager::uploadToImageMipLevel(
+    const void* data,
+    VkDeviceSize size,
+    VkImage image,
+    uint32_t width,
+    uint32_t height,
+    uint32_t mipLevel,
+    uint32_t baseArrayLayer,
+    uint32_t layerCount
+)
+{
+    // Criar staging buffer
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingMemory;
+
+    createBuffer(
+        size,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        stagingBuffer
+    );
+
+    allocateBufferMemory(
+        stagingBuffer,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        stagingMemory
+    );
+
+    vkBindBufferMemory(device, stagingBuffer, stagingMemory, 0);
+
+    // Copiar dados CPU → staging
+    void* mapped;
+    vkMapMemory(device, stagingMemory, 0, size, 0, &mapped);
+    memcpy(mapped, data, (size_t)size);
+    vkUnmapMemory(device, stagingMemory);
+
+    // Copy staging → image
+    VkCommandBuffer cmd = beginImmediate();
+
+    VkBufferImageCopy region{};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = mipLevel;
+    region.imageSubresource.baseArrayLayer = baseArrayLayer;
+    region.imageSubresource.layerCount = layerCount;
+
+    region.imageOffset = {0, 0, 0};
+    region.imageExtent = { width, height, 1 };
+
+    vkCmdCopyBufferToImage(
+        cmd,
+        stagingBuffer,
+        image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &region
+    );
+
+    endImmediate();
+
+    // Cleanup
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(device, stagingMemory, nullptr);
+}
+
 BufferManager::~BufferManager() {
     destroyImmediateContext();
 }
