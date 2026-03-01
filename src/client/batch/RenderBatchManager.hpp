@@ -80,9 +80,9 @@ public:
     {
         rebuildSortedBatches();
 
-        for (auto& [key, batchPtr] : batches_map)
+        for (RenderBatch* batch : batches_sorted)
         {
-            func(*batchPtr);
+            func(*batch);
         }
     }
 
@@ -132,5 +132,5 @@ public:
     const RenderBatchManager::BatchKey& getKey() const { return batchKey; }
 
     std::vector<RenderInstance::BatchRegistration*> getRenderInstance() const{ return batchRegistrations; }
-    std::vector<InstanceData> getinstancesData() const { return instancesData; }
+    std::vector<InstanceData>& getinstancesData() { return instancesData; }
 };

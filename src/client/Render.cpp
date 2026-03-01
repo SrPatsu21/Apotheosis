@@ -30,6 +30,31 @@ int Render::run(){
         this->ui->build();
         #ifndef NDEBUG
             // renderBatchManager->batchSize();
+            // renderBatchManager->forEachBatch(
+            //     [&](RenderBatch& batch)
+            //     {
+            //         std::cout << "-------------------" << std::endl;
+            //         auto key = batch.getKey();
+            //         std::cout << "pipelineFlags:" << key.pipelineFlags << std::endl;
+            //         std::cout << "mesh:" << key.mesh << std::endl;
+            //         std::cout << "submesh:" << key.submesh << std::endl;
+            //         std::cout << "material:" << key.material << std::endl;
+            //         std::cout << "instances:" << std::endl;
+            //         for (auto i : batch.getinstancesData())
+            //         {
+            //             std::cout << "==" << std::endl;
+            //             const float* p = (const float*)&i.model;
+            //             for (int i = 0; i < 4; ++i) {
+            //                 for (int j = 0; j < 4; ++j) {
+            //                     std::cout << p[i * 4 + j] << " ";
+            //                 }
+            //                 std::cout << std::endl;
+            //             }
+            //             std::cout << "==" << std::endl;
+            //         }
+            //         std::cout << "-------------------" << std::endl;
+            //     }
+            // );
         #endif
         drawFrame();
     }
@@ -252,7 +277,7 @@ void Render::initInstances(){
         resourceManager->getMesh("models/Maxwell/Untitled.gltf"),
         renderInstance
     );
-    renderInstance->scale = glm::vec3(1.0f);
+    renderInstance->scale = glm::vec3(0.1f);
 }
 
 void Render::drawFrame(){

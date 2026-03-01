@@ -177,7 +177,7 @@ void CommandManager::recordCommandBuffer(
     GraphicsPipeline::PipelineFlags lastPipeline = 0;
     uint32_t currentOffset = 0;
     renderBatchManager->forEachBatch(
-        [&](const RenderBatch& batch)
+        [&](RenderBatch& batch)
         {
             const RenderBatchManager::BatchKey& key = batch.getKey();
             const std::shared_ptr<Mesh>&  mesh = key.mesh;

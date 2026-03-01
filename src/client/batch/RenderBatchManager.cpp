@@ -68,8 +68,9 @@ void RenderBatch::addInstance(
     RenderInstance* instance
 )
 {
+    size_t index = instancesData.size();
     instancesData.emplace_back();
-    instance->addRegistration(this, instancesData.size()-1);
+    instance->addRegistration(this, index);
 
     batchRegistrations.push_back(&instance->registrations.back());
 }
