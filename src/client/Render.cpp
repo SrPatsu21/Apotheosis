@@ -277,7 +277,7 @@ void Render::initInstances(){
         resourceManager->getMesh("models/Maxwell/Untitled.gltf"),
         renderInstance
     );
-    renderInstance->scale = glm::vec3(0.1f);
+    renderInstance->scale = glm::vec3(0.2f);
 }
 
 void Render::drawFrame(){

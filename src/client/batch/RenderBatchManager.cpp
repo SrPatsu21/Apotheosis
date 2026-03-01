@@ -129,6 +129,13 @@ void RenderBatchManager::addInstance(
             resourceManager->getMaterialForSubMesh(*mesh.get(), meshs[i]),
             GraphicsPipeline::PIPE_TOPO_TRIANGLES | GraphicsPipeline::PIPE_CULL_BACK | GraphicsPipeline::PIPE_DEPTH_TEST | GraphicsPipeline::PIPE_DEPTH_WRITE | GraphicsPipeline::PIPE_BLEND
         };
+
+        std::cout << "submesh info:" << std::endl;
+        std::cout << meshs[i].firstIndex << std::endl;
+        std::cout << meshs[i].indexCount << std::endl;
+        std::cout << meshs[i].materialIndex << std::endl;
+        std::cout << meshs[i].vertexOffset << std::endl;
+
         auto it = batches_map.find(key);
         if (it != batches_map.end())
         {

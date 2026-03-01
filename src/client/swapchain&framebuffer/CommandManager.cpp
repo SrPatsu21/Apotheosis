@@ -267,10 +267,10 @@ void CommandManager::recordCommandBuffer(
             // Draw instanciado
             vkCmdDrawIndexed(
                 cmd,
-                mesh->getIndexCount(),
+                submesh->indexCount,
                 instanceCount,
-                0,
-                0,
+                submesh->firstIndex,
+                submesh->vertexOffset,
                 currentOffset
             );
 
