@@ -1,10 +1,16 @@
 services:
     vulkan-compiler:
-        image: srpatsu21/dear-glfw-vulkan-compiler:1.1.0
+        image: srpatsu21/dear-glfw-vulkan-compiler:1.2.0
         container_name: ApotheosisCompiler
         stdin_open: true
         tty: true
         working_dir: /workspace
+        environment:
+            # ssh pass
+            ROOT_PASSWORD: 123
+        ports:
+            # ssh port
+            - "2222:22"
         volumes:
             # create build files
             - ./build:/workspace/build
@@ -28,4 +34,3 @@ services:
 
             # uml
             - .:/workspace
-        command: ["/bin/bash"]
