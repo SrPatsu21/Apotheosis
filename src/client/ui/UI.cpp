@@ -62,13 +62,14 @@ void UI::initSwapchainResources(
     init_info.Queue = GraphicsQueue;
     init_info.PipelineCache = VK_NULL_HANDLE;
     init_info.DescriptorPool = this->descriptorPool;
-    init_info.RenderPass = renderPass;
-    init_info.Subpass = 0;
     init_info.MinImageCount = imageCount;
     init_info.ImageCount = imageCount;
-    init_info.MSAASamples = msaaSamples;
     init_info.Allocator = nullptr;
+    init_info.PipelineInfoMain.Subpass = 0;
+    init_info.PipelineInfoMain.RenderPass = renderPass;
+    init_info.PipelineInfoMain.MSAASamples = msaaSamples;
     ImGui_ImplVulkan_Init(&init_info);
+
 
     // fonts
     ImGui::GetIO().Fonts->AddFontDefault();

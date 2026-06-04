@@ -4,7 +4,11 @@ cmake_minimum_required(VERSION 3.10)
 # Project
 # ============================================================
 set(PROJECT_NAME "Apotheosis")
-project(${PROJECT_NAME} LANGUAGES C CXX)
+project(
+    ${PROJECT_NAME}
+    VERSION 1.0.0
+    LANGUAGES C CXX
+)
 
 # ============================================================
 # C++ Standard
@@ -25,6 +29,25 @@ endif()
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+# ----------------------------
+# Common compiler flags
+# ----------------------------
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DVK_PROTOTYPES")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_PROTOTYPES -static-libgcc -static-libstdc++")
+
+if(WIN32)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lpthread -Wl,--no-whole-archive")
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    message(STATUS "Compiling in Release mode")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+    set(CMAKE_C_FLAGS_RELEASE "-O3")
+    if(UNIX)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=array-bounds")
+    endif()
+endif()
 
 # ============================================================
 # ---------------- COMMON LIBRARY ------------------------------
@@ -64,21 +87,26 @@ endif()
 # ============================================================
 
 # ============================================================
-# Vulkan (CLIENT ONLY)
+# Vulkan
 # ============================================================
 if(UNIX)
     find_package(Vulkan REQUIRED)
 elseif(WIN32)
-    set(VULKAN_SDK_PATH "./lib/vulkan-sdk-win")
+    add_subdirectory(lib/Vulkan-Headers)
+    if(NOT DEFINED VulkanHeaders_VERSION)
+        set(VulkanHeaders_VERSION "1.4.352")
+    endif()
+    add_subdirectory(lib/Vulkan-Loader)
 endif()
 
 # ============================================================
 # GLFW
 # ============================================================
-option(GLFW_BUILD_EXAMPLES OFF)
-option(GLFW_BUILD_TESTS OFF)
-option(GLFW_BUILD_DOCS OFF)
-option(GLFW_INSTALL OFF)
+option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
+option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
+option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
+option(GLFW_INSTALL "Generate installation target" OFF)
+option(GLFW_DOCUMENT_INTERNALS "Include internals in documentation" OFF)
 
 add_subdirectory(lib/glfw)
 
@@ -101,7 +129,7 @@ set(IMGUI_SOURCES
 # ============================================================
 if(WIN32)
     add_library(glm INTERFACE)
-    target_include_directories(glm INTERFACE lib/glm/glm-1.0.1)
+    target_include_directories(glm INTERFACE lib/glm/glm)
 else()
     find_package(glm REQUIRED)
 endif()
@@ -120,6 +148,14 @@ option(ASSIMP_BUILD_ASSIMP_TOOLS OFF)
 option(ASSIMP_BUILD_SAMPLES OFF)
 
 add_subdirectory(lib/assimp)
+
+set(ASSIMP_PATH "${CMAKE_SOURCE_DIR}/lib/assimp")
+
+target_compile_options(
+    assimp
+    PRIVATE
+    -Wno-error=maybe-uninitialized
+)
 
 # ============================================================
 # KTX (Khronos Texture)
@@ -205,16 +241,21 @@ add_dependencies(${PROJECT_NAME}_client Shaders Models)
 # ============================================================
 # Client include directories
 # ============================================================
-target_include_directories(${PROJECT_NAME}_client PRIVATE
+target_include_directories(
+    ${PROJECT_NAME}_client
+    PRIVATE
     src/client
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
     ${STB_DIR}
+    ${ASSIMP_PATH}
 )
 
 if(WIN32)
-    target_include_directories(${PROJECT_NAME}_client PRIVATE
-        ${VULKAN_SDK_PATH}/Include
+    target_include_directories(
+        ${PROJECT_NAME}_client
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/lib/Vulkan-Headers/include
     )
 endif()
 
@@ -226,7 +267,9 @@ target_compile_definitions(${PROJECT_NAME}_client PRIVATE
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    target_compile_definitions(${PROJECT_NAME}_client PRIVATE
+    target_compile_definitions(
+        ${PROJECT_NAME}_client
+        PRIVATE
         NDEBUG
     )
 endif()
@@ -245,7 +288,9 @@ endif()
 # Client libraries
 # ============================================================
 if(WIN32)
-    target_link_directories(${PROJECT_NAME}_client PRIVATE
+    target_link_directories(
+        ${PROJECT_NAME}_client
+        PRIVATE
         ${VULKAN_SDK_PATH}/Lib
     )
 
@@ -253,7 +298,7 @@ if(WIN32)
         game_common
         glfw
         assimp
-        vulkan-1
+        vulkan
         glm
         ktx
     )
@@ -267,6 +312,10 @@ elseif(UNIX)
         ktx
         pthread
         dl
+        X11
+        Xrandr
+        Xi
+        Xcursor
     )
 endif()
 

@@ -55,7 +55,7 @@
     ```shell
     set -e
 
-    IMAGE="srpatsu21/dear-glfw-vulkan-compiler:1.1.0"
+    IMAGE="srpatsu21/dear-glfw-vulkan-compiler:1.3.0"
     DEST="."
 
     mkdir -p "$DEST"
@@ -76,7 +76,7 @@
     ```shell
     $ErrorActionPreference = "Stop"
 
-    $image = "srpatsu21/dear-glfw-vulkan-compiler:1.0.0"
+    $image = "srpatsu21/dear-glfw-vulkan-compiler:1.3.0"
     $dest = "."
 
     if (-not (Test-Path $dest)) {
@@ -114,7 +114,6 @@ Use the scripts container terminal
 ```shell
 docker compose stop
 ```
-
 
 ### Run with wine (Linux)
 
