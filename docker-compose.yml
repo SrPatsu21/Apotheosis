@@ -8,9 +8,9 @@ services:
         environment:
             # ssh pass
             ROOT_PASSWORD: 123asdasdadasd12313asdasdwqe
-        ports:
+        # ports:
             # ssh port
-            - "2222:22"
+            # - "2222:22"
         volumes:
             # create build files
             - ./build:/workspace/build

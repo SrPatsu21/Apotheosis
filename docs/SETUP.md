@@ -36,6 +36,8 @@
     <https://marketplace.visualstudio.com/items?itemName=pinage404.better-readability-extension-pack>
 - file-icons \
     <https://marketplace.visualstudio.com/items?itemName=file-icons.file-icons>
+- Doxygen Documentation Generator \
+    <https://marketplace.visualstudio.com/items?itemName=cschlosser.doxdocgen>
 
 ### Theme (recommendation)
 
