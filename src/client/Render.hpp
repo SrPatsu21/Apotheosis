@@ -21,6 +21,13 @@
 #include "batch/instance/InstanceDescriptorManager.hpp"
 #include "particle/ParticleInstanceDescriptorManager.hpp"
 
+#include "batch/instance/SkinnedRenderInstance.hpp"
+#include "batch/RenderSkinnedBatchManager.hpp"
+#include "batch/animations/AnimationLoader.hpp"
+#include "batch/animations/skeleton/SkeletonLoader.hpp"
+#include "batch/animations/skeleton/Skeleton.hpp"
+#include "batch/animations/Animator.hpp"
+
 class Render {
 public:
     const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
@@ -67,6 +74,14 @@ private:
     InstanceDescriptorManager* instanceDescriptorManager;
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager;
     SamplerManager* samplerManagerForStaticTextures;
+
+
+    //!never deleted
+    RenderSkinnedBatchManager* renderSkinnedBatchManager;
+    RenderSkinnedBatch* renderSkinnedBatch;
+    SkinnedRenderInstance* skinnedRenderInstance;
+    Skeleton* skeleton;
+    std::vector<Animation> animations;
 
     uint32_t maxMaterials = 1024;
     uint32_t maxbindlessTextures = 2048;

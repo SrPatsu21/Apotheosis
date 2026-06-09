@@ -277,9 +277,7 @@ void Render::initInstances(){
         materialDescriptorManager
     );
 
-    renderBatchManager = new RenderBatchManager(
-        resourceManager
-    );
+    renderBatchManager = new RenderBatchManager(resourceManager);
 
     renderInstance = new RenderInstance();
     renderBatchManager->addInstance(
@@ -287,6 +285,30 @@ void Render::initInstances(){
         renderInstance
     );
     renderInstance->scale = glm::vec3(0.2f);
+
+    //!never deleted
+    renderSkinnedBatchManager = new RenderSkinnedBatchManager(resourceManager);
+    skinnedRenderInstance = new SkinnedRenderInstance();
+
+    renderSkinnedBatchManager->addInstance(
+        resourceManager->getMesh("models/Maxwell/Untitled.gltf"),
+        skinnedRenderInstance
+    );
+
+    skeleton = new Skeleton(
+            SkeletonLoader::loadSkeletonFromGLTF(
+                "models/Maxwell/Untitled.gltf"
+            )
+        );
+
+    animations = AnimationLoader::loadFromGLTF
+        (
+            "models/Maxwell/Untitled.gltf",
+            skeleton
+        );
+
+    skinnedRenderInstance->animator = std::make_shared<Animator>(skeleton);
+    skinnedRenderInstance->animator.get()->setAnimation(&(animations[0]));
 }
 
 void Render::drawFrame(){

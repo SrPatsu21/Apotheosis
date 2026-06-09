@@ -28,8 +28,6 @@ private:
 
 public:
 
-    Animator() = default;
-
     explicit Animator(
         Skeleton* skeleton
     );

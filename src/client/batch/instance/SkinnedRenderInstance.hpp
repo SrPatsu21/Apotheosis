@@ -30,7 +30,7 @@ public:
     glm::vec3 rotation; // Euler (radians)
     glm::vec3 scale;
 
-    std::unique_ptr<Animator> animator;
+    std::shared_ptr<Animator> animator;
     uint32_t boneOffset = 0;
 
     SkinnedRenderInstance(

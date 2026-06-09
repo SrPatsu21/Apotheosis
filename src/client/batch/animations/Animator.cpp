@@ -2,6 +2,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <stdexcept>
 
 #include <cmath>
 
@@ -38,10 +39,19 @@ void Animator::setAnimation(
     Animation* animation
 )
 {
+    if (!animation)
+        return;
+
+    if (skeleton && animation->skeletonBoneCount != skeleton->bones.size())
+    {
+        throw std::runtime_error(
+            "Animation incompatible with Skeleton"
+        );
+    }
+
     currentAnimation = animation;
     currentTime = 0.0f;
 }
-
 
 void Animator::reset()
 {
