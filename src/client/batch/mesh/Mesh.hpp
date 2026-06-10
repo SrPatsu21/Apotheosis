@@ -59,7 +59,7 @@ public:
         uint32_t materialIndex;
     };
 
-private:
+protected:
     std::unique_ptr<VertexBufferManager> vertexBufferManager;
     std::unique_ptr<IndexBufferManager> indexBufferManager;
 
@@ -68,7 +68,6 @@ private:
 
     uint32_t indexCount = 0;
 
-protected:
     /**
      * @brief Loads model data from file using Assimp.
      *

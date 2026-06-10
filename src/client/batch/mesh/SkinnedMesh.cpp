@@ -8,14 +8,10 @@ SkinnedMesh::SkinnedMesh(
     VkDevice device,
     BufferManager* bufferManager
 )
-    :
-    Mesh(path, device, bufferManager)
 {
     skeleton =
         std::make_shared<Skeleton>(
-            SkeletonLoader::loadSkeletonFromGLTF(
-                path
-            )
+            SkeletonLoader::loadSkeletonFromGLTF(path)
         );
 
     animations =
@@ -23,11 +19,38 @@ SkinnedMesh::SkinnedMesh(
             path,
             skeleton.get()
         );
-}
 
-void Mesh::load(
+    std::vector<SkinnedVertex> vertices;
+    std::vector<uint32_t> indices;
+
+    load(
+        path,
+        skeleton.get(),
+        vertices,
+        indices
+    );
+
+    skinnedVertexBufferManager =
+        std::make_unique<SkinnedVertexBufferManager>(
+            device,
+            bufferManager,
+            vertices
+        );
+
+    indexBufferManager =
+        std::make_unique<IndexBufferManager>(
+            device,
+            bufferManager,
+            indices
+        );
+
+    indexCount =
+        static_cast<uint32_t>(indices.size());
+}
+void SkinnedMesh::load(
     const std::string& path,
-    std::vector<Vertex>& vertices,
+    const Skeleton* skeleton,
+    std::vector<SkinnedVertex>& vertices,
     std::vector<uint32_t>& indices
 ) {
     Assimp::Importer importer;
@@ -38,8 +61,7 @@ void Mesh::load(
         aiProcess_FlipUVs |
         aiProcess_GenNormals |
         aiProcess_CalcTangentSpace |
-        aiProcess_JoinIdenticalVertices |
-        aiProcess_PreTransformVertices
+        aiProcess_JoinIdenticalVertices
     );
 
     if (!scene || !scene->mRootNode || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)) {
@@ -139,8 +161,72 @@ void Mesh::load(
                 };
             }
 
-            vertices.emplace_back(position, normal, tangent, texCoord);
+            vertices.emplace_back(
+                position,
+                normal,
+                tangent,
+                texCoord,
+                glm::uvec4(0),
+                glm::vec4(0.0f)
+            );
         }
+
+        // BONES
+        for (unsigned int b = 0; b < mesh->mNumBones; b++)
+        {
+            aiBone* aiBone =
+                mesh->mBones[b];
+
+            uint32_t boneIndex =
+                skeleton->findBoneIndex(
+                    aiBone->mName.C_Str()
+                );
+
+            for (unsigned int w = 0;
+                w < aiBone->mNumWeights;
+                w++)
+            {
+                const aiVertexWeight& vw =
+                    aiBone->mWeights[w];
+
+                SkinnedVertex& vertex =
+                    vertices[
+                        baseVertex +
+                        vw.mVertexId
+                    ];
+
+                for (int i = 0; i < 4; i++)
+                {
+                    if (vertex.boneWeights[i] == 0.0f)
+                    {
+                        vertex.boneIndices[i] =
+                            boneIndex;
+
+                        vertex.boneWeights[i] =
+                            vw.mWeight;
+
+                        break;
+                    }
+                }
+            }
+        }
+        // BONE_WEIGHTS
+        for (uint32_t i = baseVertex;
+            i < vertices.size();
+            i++)
+        {
+            float sum =
+                vertices[i].boneWeights.x +
+                vertices[i].boneWeights.y +
+                vertices[i].boneWeights.z +
+                vertices[i].boneWeights.w;
+
+            if (sum > 0.0f)
+            {
+                vertices[i].boneWeights /= sum;
+            }
+        }
+
 
         // INDICES
         for (unsigned int f = 0; f < mesh->mNumFaces; f++) {

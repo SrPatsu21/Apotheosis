@@ -1,4 +1,5 @@
-#include <stream.h>
+#include <string>
+#include <vector>
 
 enum class AnimationPath
 {

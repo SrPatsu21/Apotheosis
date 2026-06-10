@@ -23,4 +23,17 @@ public:
     {
         return bones.size();
     }
+
+    uint32_t Skeleton::findBoneIndex(
+        const std::string& name
+    ) const
+    {
+        for (uint32_t i = 0; i < bones.size(); i++)
+        {
+            if (bones[i].name == name)
+                return i;
+        }
+
+        throw std::runtime_error("Bone not found");
+    }
 };
