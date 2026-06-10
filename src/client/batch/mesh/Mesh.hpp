@@ -68,6 +68,7 @@ private:
 
     uint32_t indexCount = 0;
 
+protected:
     /**
      * @brief Loads model data from file using Assimp.
      *

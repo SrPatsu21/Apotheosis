@@ -37,12 +37,64 @@ struct Vertex {
     //     attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
     //     attributeDescriptions[0].offset = offsetof(Vertex, pos);
     static const std::array<VkVertexInputAttributeDescription, 4>& getAttributeDescriptions() {
-    static const std::array<VkVertexInputAttributeDescription, 4> attributes{{
-        {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)},
-        {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
-        {2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, tangent)},
-        {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord)}
-    }};
-    return attributes;
-}
+        static const std::array<VkVertexInputAttributeDescription, 4> attributes{{
+            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)},
+            {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
+            {2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, tangent)},
+            {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord)}
+        }};
+        return attributes;
+    }
+};
+
+struct SkinnedVertex{
+    glm::vec3 pos;
+    glm::vec3 normal;
+    glm::vec4 tangent; // xyz + w (handedness)
+    glm::vec2 texCoord;
+
+    glm::uvec4 boneIndices;
+    glm::vec4 boneWeights;
+
+    SkinnedVertex(
+        const glm::vec3 pos,
+        glm::vec3 normal,
+        glm::vec4 tangent,
+        glm::vec2 texCoord,
+        glm::uvec4 boneIndices,
+        glm::vec4 boneWeights
+    ) :
+        pos(pos),
+        normal(normal),
+        tangent(tangent),
+        texCoord(texCoord),
+        boneIndices(boneIndices),
+        boneWeights(boneWeights)
+    {}
+
+    // bindingDescription.binding = 0;
+    // bindingDescription.stride = sizeof(Vertex);
+    // bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    static const VkVertexInputBindingDescription getBindingDescription() {
+        static const VkVertexInputBindingDescription bindingDescription{
+            0, sizeof(SkinnedVertex), VK_VERTEX_INPUT_RATE_VERTEX
+        };
+        return bindingDescription;
+    }
+
+    //     attributeDescriptions[0].binding = 0;
+    //     attributeDescriptions[0].location = 0;
+    //     attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    //     attributeDescriptions[0].offset = offsetof(SkinnedVertex, pos);
+    static const std::array<VkVertexInputAttributeDescription, 6>& getAttributeDescriptions() {
+        static const std::array<VkVertexInputAttributeDescription, 6> attributes{{
+            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SkinnedVertex, pos)},
+            {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SkinnedVertex, normal)},
+            {2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(SkinnedVertex, tangent)},
+            {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(SkinnedVertex, texCoord)},
+            {4, 0, VK_FORMAT_R32G32B32A32_UINT, offsetof(SkinnedVertex, boneIndices)},
+            {5, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(SkinnedVertex, boneWeights)}
+        }};
+        return attributes;
+    }
 };
