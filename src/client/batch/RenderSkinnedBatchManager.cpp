@@ -1,5 +1,5 @@
 #include "RenderSkinnedBatchManager.hpp"
-#include "mesh/Mesh.hpp"
+#include "mesh/SkinnedMesh.hpp"
 #include "instance/SkinnedRenderInstance.hpp"
 #include "instance/InstanceData.hpp"
 
@@ -69,10 +69,15 @@ void RenderSkinnedBatch::addInstance(
 )
 {
     size_t index = instancesData.size();
+
     instancesData.emplace_back();
+    boneOffsets.push_back(0);
+
     instance->addRegistration(this, index);
 
-    batchRegistrations.push_back(&instance->registrations.back());
+    batchRegistrations.push_back(
+        &instance->registrations.back()
+    );
 }
 
 void RenderSkinnedBatch::removeInstance(
@@ -86,14 +91,22 @@ void RenderSkinnedBatch::removeInstance(
 
     if (index != lastIndex)
     {
-        batchRegistrations[index] = batchRegistrations[lastIndex];
-        batchRegistrations[index]->indexInBatch = index;
+        batchRegistrations[index] =
+            batchRegistrations[lastIndex];
 
-        instancesData[index] = instancesData[lastIndex];
+        batchRegistrations[index]->indexInBatch =
+            index;
+
+        instancesData[index] =
+            instancesData[lastIndex];
+
+        boneOffsets[index] =
+            boneOffsets[lastIndex];
     }
 
     batchRegistrations.pop_back();
     instancesData.pop_back();
+    boneOffsets.pop_back();
 
     reg.batch = nullptr;
 }
@@ -115,11 +128,11 @@ RenderSkinnedBatchManager::RenderSkinnedBatchManager(
 }
 
 void RenderSkinnedBatchManager::addInstance(
-    std::shared_ptr<Mesh> mesh,
+    std::shared_ptr<SkinnedMesh> mesh,
     SkinnedRenderInstance* instance
 ) {
     // instance->getRegistrations().reserve(mesh->getSubMeshes().size());
-    const std::vector<Mesh::SubMesh>& meshs = mesh->getSubMeshes();
+    const std::vector<SkinnedMesh::SubMesh>& meshs = mesh->getSubMeshes();
 
     for (size_t i = 0; i < meshs.size(); i++)
     {

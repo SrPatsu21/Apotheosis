@@ -287,11 +287,16 @@ void Render::initInstances(){
     renderInstance->scale = glm::vec3(0.2f);
 
     //!never deleted
-    renderSkinnedBatchManager = new RenderSkinnedBatchManager(resourceManager);
+    renderSkinnedBatchManager = new RenderSkinnedBatchManager();
     skinnedRenderInstance = new SkinnedRenderInstance();
+    auto skinnedMesh = new SkinnedMesh(
+        "",
+        coreVulkan->getDevice(),
+        bufferManager
+    );
 
     renderSkinnedBatchManager->addInstance(
-        resourceManager->getMesh("models/Maxwell/Untitled.gltf"),
+        skinnedMesh,
         skinnedRenderInstance
     );
 

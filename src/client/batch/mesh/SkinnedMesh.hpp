@@ -1,6 +1,6 @@
 #pragma once
 
-#include "VertexBufferManager.hpp"
+#include "SkinnedVertexBufferManager.hpp"
 #include "IndexBufferManager.hpp"
 #include "../animations/skeleton/Skeleton.hpp"
 #include "../animations/Animation.hpp"

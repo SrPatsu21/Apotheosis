@@ -27,6 +27,7 @@
 #include "batch/animations/skeleton/SkeletonLoader.hpp"
 #include "batch/animations/skeleton/Skeleton.hpp"
 #include "batch/animations/Animator.hpp"
+#include "batch/mesh/SkinnedMesh.hpp"
 
 class Render {
 public:

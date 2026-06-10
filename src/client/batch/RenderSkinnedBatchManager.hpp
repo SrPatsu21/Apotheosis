@@ -14,8 +14,8 @@ public:
 
     struct BatchKey
     {
-        std::shared_ptr<Mesh> mesh;
-        const Mesh::SubMesh* submesh;
+        std::shared_ptr<SkinnedMesh> mesh;
+        const SkinnedMesh::SubMesh* submesh;
         std::shared_ptr<Material> material;
         GraphicsPipeline::PipelineFlags pipelineFlags;
 
@@ -35,8 +35,8 @@ public:
             };
 
             hash_combine(std::hash<GraphicsPipeline::PipelineFlags>()(key.pipelineFlags));
-            hash_combine(std::hash<Mesh*>()(key.mesh.get()));
-            hash_combine(std::hash<const Mesh::SubMesh*>()(key.submesh));
+            hash_combine(std::hash<SkinnedMesh*>()(key.mesh.get()));
+            hash_combine(std::hash<const SkinnedMesh::SubMesh*>()(key.submesh));
             hash_combine(std::hash<Material*>()(key.material.get()));
 
             return seed;
@@ -49,7 +49,7 @@ private:
     std::vector<RenderSkinnedBatch*> batches_sorted;
     bool batches_dirty = true;
 
-    std::shared_ptr<Mesh> testMesh;
+    std::shared_ptr<SkinnedMesh> testMesh;
     std::shared_ptr<Material> testMaterial;
     std::shared_ptr<SkinnedRenderInstance> testRInstance;
 
@@ -57,7 +57,7 @@ private:
 
 public:
     void addInstance(
-        std::shared_ptr<Mesh> mesh,
+        std::shared_ptr<SkinnedMesh> mesh,
         SkinnedRenderInstance* instance
     );
 
@@ -105,6 +105,7 @@ private:
     RenderSkinnedBatchManager::BatchKey batchKey;
     std::vector<SkinnedRenderInstance::BatchRegistration*> batchRegistrations;
     std::vector<InstanceData> instancesData;
+    std::vector<uint32_t> boneOffsets;
 public:
     explicit RenderSkinnedBatch(
         RenderSkinnedBatchManager::BatchKey batchKey
@@ -133,4 +134,5 @@ public:
 
     std::vector<SkinnedRenderInstance::BatchRegistration*> getSkinnedRenderInstance() const{ return batchRegistrations; }
     std::vector<InstanceData>& getinstancesData() { return instancesData; }
+    std::vector<uint32_t>& getBoneOffsets() { return boneOffsets;}
 };
