@@ -1,12 +1,11 @@
 #pragma once
 
 #include "../../../CoreVulkan.hpp"
-#include <glm/glm.hpp>
+#include "../../../BufferManager.hpp"
+
 #include <vector>
 
-class BufferManager;
-
-class BoneBufferManager
+class BoneOffsetBufferManager
 {
 private:
 
@@ -15,20 +14,20 @@ private:
     VkBuffer buffer;
     VkDeviceMemory memory;
 
-    size_t maxBones;
+    size_t maxInstances;
 
 public:
 
-    BoneBufferManager(
+    BoneOffsetBufferManager(
         VkDevice device,
         BufferManager* bufferManager,
-        size_t maxBones
+        size_t maxInstances
     );
 
-    ~BoneBufferManager();
+    ~BoneOffsetBufferManager();
 
     void update(
-        const std::vector<glm::mat4>& matrices
+        const std::vector<uint32_t>& offsets
     );
 
     VkBuffer getBuffer() const

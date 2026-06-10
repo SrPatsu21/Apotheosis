@@ -17,58 +17,87 @@ layout(std140, set = 0, binding = 0) uniform UniformBufferGlobal
     mat4 proj;
 } ubo;
 
-struct InstanceData
+layout(std430, set = 2, binding = 0)
+readonly buffer InstanceBuffer
 {
-    mat4 model;
+    mat4 models[];
 };
 
-layout(std430, set = 2, binding = 0) readonly buffer InstanceBuffer
+layout(std430, set = 3, binding = 0)
+readonly buffer BoneOffsetBuffer
 {
-    InstanceData instances[];
-} instanceBuffer;
+    uint boneOffsets[];
+};
 
-layout(std430, set = 3, binding = 0) readonly buffer BoneBuffer
+layout(std430, set = 4, binding = 0)
+readonly buffer BoneBuffer
 {
     mat4 bones[];
 };
 
-mat4 skinMatrix =
-      inBoneWeights.x * bones[inBoneIndices.x]
-    + inBoneWeights.y * bones[inBoneIndices.y]
-    + inBoneWeights.z * bones[inBoneIndices.z]
-    + inBoneWeights.w * bones[inBoneIndices.w];
-
-vec4 localPos =
-    skinMatrix *
-    vec4(inPosition, 1.0);
-
+void main()
+{
     mat4 model =
-    instanceBuffer.instances[
-        gl_InstanceIndex
-    ].model;
+        models[gl_InstanceIndex];
 
-vec4 worldPos =
-    model *
-    localPos;
+    uint boneOffset =
+        boneOffsets[gl_InstanceIndex];
 
-gl_Position =
-    ubo.proj *
-    ubo.view *
-    worldPos;
+    mat4 skinMatrix =
+        mat4(0.0);
 
-fragWorldPos = worldPos.xyz;
+    skinMatrix +=
+        bones[boneOffset + inBoneIndices.x] *
+        inBoneWeights.x;
 
-fragTexCoord = inTexCoord;
+    skinMatrix +=
+        bones[boneOffset + inBoneIndices.y] *
+        inBoneWeights.y;
 
-vec3 localNormal =
-    mat3(skinMatrix) *
-    inNormal;
+    skinMatrix +=
+        bones[boneOffset + inBoneIndices.z] *
+        inBoneWeights.z;
 
-mat3 normalMatrix =
-    mat3(transpose(inverse(model)));
+    skinMatrix +=
+        bones[boneOffset + inBoneIndices.w] *
+        inBoneWeights.w;
 
-fragNormal =
-    normalize(
-        normalMatrix *
-        localNormal
-    );
+    vec4 localPos =
+        skinMatrix *
+        vec4(
+            inPosition,
+            1.0
+        );
+
+    vec4 worldPos =
+        model *
+        localPos;
+
+    gl_Position =
+        ubo.proj *
+        ubo.view *
+        worldPos;
+
+    fragWorldPos =
+        worldPos.xyz;
+
+    fragTexCoord =
+        inTexCoord;
+
+    vec3 localNormal =
+        mat3(skinMatrix) *
+        inNormal;
+
+    mat3 normalMatrix =
+        mat3(
+            transpose(
+                inverse(model)
+            )
+        );
+
+    fragNormal =
+        normalize(
+            normalMatrix *
+            localNormal
+        );
+}
