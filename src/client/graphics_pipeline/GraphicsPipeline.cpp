@@ -252,6 +252,16 @@ GraphicsPipeline::GraphicsPipeline(
     // Animated
     delete shaderLoader;
 
+    VkVertexInputBindingDescription skinnedBinding = SkinnedVertex::getBindingDescription();
+
+    auto skinnedAttributes = SkinnedVertex::getAttributeDescriptions();
+
+    VkPipelineVertexInputStateCreateInfo skinnedVertexInput =
+        createSkinnedVertexInputState(
+            skinnedBinding,
+            skinnedAttributes
+        );
+
     shaderLoader = new ShaderLoader(
         device,
         "shaders/skinned.vert.glsl.spv",
@@ -278,7 +288,7 @@ GraphicsPipeline::GraphicsPipeline(
                 GraphicsPipeline::SKINNED
             ],
             shaderStages,
-            vertexInputInfo,
+            skinnedVertexInput,
             createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
             viewportState,
             createRasterizerState(
@@ -305,7 +315,7 @@ GraphicsPipeline::GraphicsPipeline(
                 GraphicsPipeline::SKINNED
             ],
             shaderStages,
-            vertexInputInfo,
+            skinnedVertexInput,
             createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
             viewportState,
             createRasterizerState(
@@ -317,7 +327,6 @@ GraphicsPipeline::GraphicsPipeline(
             colorBlending,
             dynamicState
         );
-
 
     //shaders is not required anymore
     delete(shaderLoader);
@@ -378,6 +387,27 @@ VkPipelineVertexInputStateCreateInfo GraphicsPipeline::createVertexInputState(
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
     vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+
+    return vertexInputInfo;
+}
+
+VkPipelineVertexInputStateCreateInfo
+GraphicsPipeline::createSkinnedVertexInputState(
+    VkVertexInputBindingDescription& bindingDescription,
+    std::array<VkVertexInputAttributeDescription, 6>& attributeDescriptions
+)
+{
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+
+    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+
+    vertexInputInfo.pVertexAttributeDescriptions =
+        attributeDescriptions.data();
 
     return vertexInputInfo;
 }

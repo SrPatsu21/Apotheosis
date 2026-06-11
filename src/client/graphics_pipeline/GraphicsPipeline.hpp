@@ -71,6 +71,11 @@ private:
         VkPipelineColorBlendAttachmentState& colorBlendAttachment
     );
 
+    VkPipelineVertexInputStateCreateInfo createSkinnedVertexInputState(
+        VkVertexInputBindingDescription& bindingDescription,
+        std::array<VkVertexInputAttributeDescription, 6>& attributeDescriptions
+    );
+
     VkPipeline createPipeline(
         const VkRenderPass renderPass,
         const VkPipelineLayout& pipelineLayout,

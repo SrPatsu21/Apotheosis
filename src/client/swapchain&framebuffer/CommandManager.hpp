@@ -8,6 +8,7 @@
 #include "../batch/material/MaterialDescriptorManager.hpp"
 #include "../graphics_pipeline/GlobalDescriptorManager.hpp"
 #include "../particle/ParticleInstanceDescriptorManager.hpp"
+#include "../batch/animations/skeleton/BoneOffsetDescriptorSetLayout.hpp"
 
 /**
  * @brief Manages Vulkan command buffers and their recording lifecycle.
@@ -226,6 +227,9 @@ public:
         InstanceDescriptorManager* instanceDescriptorManager,
         ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
         RenderBatchManager* renderBatchManager,
+        RenderSkinnedBatchManager* renderSkinnedBatchManager,
+        BoneOffsetDescriptorSetLayout* boneOffsetDescriptorSetLayout,
+        BoneDescriptorManager* boneDescriptorManager,
         const std::vector<ParticleData>& particles,
         const std::vector<IClearValueProvider*>& clearProviders,
         const std::vector<IViewportProvider*>& viewportProviders,
