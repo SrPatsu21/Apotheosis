@@ -19,6 +19,7 @@ public:
     {
         RenderSkinnedBatch* batch = nullptr;
         size_t indexInBatch = 0;
+        SkinnedRenderInstance* owner = nullptr;
     };
 private:
 

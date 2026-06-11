@@ -1,4 +1,5 @@
 #include "Render.hpp"
+#include <chrono>
 
 TextureImage::DefaultTextures Render::defaultTextures =
 {
@@ -22,40 +23,22 @@ int Render::run(){
     // The 3D objects
     initInstances();
 
+    std::chrono::_V2::system_clock::time_point lastTime = std::chrono::high_resolution_clock::now();
+
     //main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         // ui new frame
         this->ui->newFrame();
         this->ui->build();
-        #ifndef NDEBUG
-            // renderBatchManager->batchSize();
-            // renderBatchManager->forEachBatch(
-            //     [&](RenderBatch& batch)
-            //     {
-            //         std::cout << "-------------------" << std::endl;
-            //         auto key = batch.getKey();
-            //         std::cout << "pipelineFlags:" << key.pipelineFlags << std::endl;
-            //         std::cout << "mesh:" << key.mesh << std::endl;
-            //         std::cout << "submesh:" << key.submesh << std::endl;
-            //         std::cout << "material:" << key.material << std::endl;
-            //         std::cout << "instances:" << std::endl;
-            //         for (auto i : batch.getinstancesData())
-            //         {
-            //             std::cout << "==" << std::endl;
-            //             const float* p = (const float*)&i.model;
-            //             for (int i = 0; i < 4; ++i) {
-            //                 for (int j = 0; j < 4; ++j) {
-            //                     std::cout << p[i * 4 + j] << " ";
-            //                 }
-            //                 std::cout << std::endl;
-            //             }
-            //             std::cout << "==" << std::endl;
-            //         }
-            //         std::cout << "-------------------" << std::endl;
-            //     }
-            // );
-        #endif
+        {
+            std::chrono::_V2::system_clock::time_point currentTime = std::chrono::high_resolution_clock::now();
+
+            float deltaTime = std::chrono::duration<float>(currentTime - lastTime).count();
+
+            lastTime = currentTime;
+            skinnedRenderInstance->animator->update(deltaTime);
+        }
         drawFrame();
     }
 
@@ -230,6 +213,16 @@ void Render::initVulkan(){
         maxInstances
     );
 
+    boneDescriptorManager = new BoneDescriptorManager(coreVulkan->getDevice());
+
+    boneOffsetBufferManager = new BoneOffsetBufferManager(
+        coreVulkan->getDevice(),
+        bufferManager,
+        1000
+    );
+
+    boneOffsetDescriptorSetLayout = new BoneOffsetDescriptorSetLayout(coreVulkan->getDevice());
+
     // Create graphics pipeline
     graphicsPipeline = new GraphicsPipeline(
         coreVulkan->getDevice(),
@@ -239,6 +232,8 @@ void Render::initVulkan(){
         materialDescriptorManager->getLayout(),
         instanceDescriptorManager->getLayout(),
         particleInstanceDescriptorManager->getLayout(),
+        boneDescriptorManager->getDescriptorSetLayout(),
+        boneOffsetDescriptorSetLayout->getDescriptorSetLayout(),
         coreVulkan->getMsaaSamples(),
         coreVulkan->getSupportedFeatures12()
     );
@@ -286,34 +281,19 @@ void Render::initInstances(){
     );
     renderInstance->scale = glm::vec3(0.2f);
 
-    //!never deleted
-    renderSkinnedBatchManager = new RenderSkinnedBatchManager();
+    gpuBones.clear();
+    renderSkinnedBatchManager = new RenderSkinnedBatchManager(resourceManager);
     skinnedRenderInstance = new SkinnedRenderInstance();
-    auto skinnedMesh = new SkinnedMesh(
-        "",
-        coreVulkan->getDevice(),
-        bufferManager
-    );
 
     renderSkinnedBatchManager->addInstance(
-        skinnedMesh,
+        resourceManager->getskinnedMesh("models/skeleton_animated/scene.gltf"),
         skinnedRenderInstance
     );
 
-    skeleton = new Skeleton(
-            SkeletonLoader::loadSkeletonFromGLTF(
-                "models/Maxwell/Untitled.gltf"
-            )
-        );
+    skinnedRenderInstance->animator = std::make_shared<Animator>(resourceManager->getskinnedMesh("models/skeleton_animated/scene.gltf").get()->getSkeleton());
+    skinnedRenderInstance->animator.get()->setAnimation(&(resourceManager->getskinnedMesh("models/skeleton_animated/scene.gltf").get()->getAnimations()[0]));
 
-    animations = AnimationLoader::loadFromGLTF
-        (
-            "models/Maxwell/Untitled.gltf",
-            skeleton
-        );
-
-    skinnedRenderInstance->animator = std::make_shared<Animator>(skeleton);
-    skinnedRenderInstance->animator.get()->setAnimation(&(animations[0]));
+    boneBufferManager = new BoneBufferManager(coreVulkan->getDevice(), bufferManager, 1000);
 }
 
 void Render::drawFrame(){
@@ -393,6 +373,43 @@ void Render::drawFrame(){
         (phaseB + 1.0f) * 0.5f,
         (phaseC + 1.0f) * 0.5f,
         1.0f
+    );
+
+    // Animations
+    std::vector<glm::mat4> boneMatrices;
+
+    renderSkinnedBatchManager->forEachBatch(
+        [&](RenderSkinnedBatch& batch)
+        {
+            auto& offsets = batch.getBoneOffsets();
+            auto regs = batch.getSkinnedRenderInstance();
+
+            for (size_t i = 0; i < regs.size(); i++)
+            {
+                auto* reg = regs[i];
+
+                auto offset =
+                    static_cast<uint32_t>(
+                        boneMatrices.size()
+                    );
+
+                offsets[i] = offset;
+
+                reg->owner->updateAnimation(offset);
+
+                const auto& mats =
+                    reg->owner->animator->getFinalMatrices();
+
+                boneMatrices.insert(
+                    boneMatrices.end(),
+                    mats.begin(),
+                    mats.end()
+                );
+            }
+        }
+    );
+    boneBufferManager->update(
+        boneMatrices
     );
 
     // Reset + record only the command buffer for this swapchain image
@@ -485,6 +502,9 @@ void Render::cleanup(){
         //    Delete pointers and null them to avoid accidental double free later.
         if (renderInstance ){ delete renderInstance; renderInstance = nullptr; }
         if (renderBatchManager){ delete renderBatchManager; renderBatchManager = nullptr; }
+        if (boneBufferManager){ delete boneBufferManager; boneBufferManager = nullptr; }
+        if (renderSkinnedBatch){ delete renderSkinnedBatch; renderSkinnedBatch = nullptr; }
+        if (skinnedRenderInstance){ delete skinnedRenderInstance; skinnedRenderInstance = nullptr; }
         if (samplerManagerForStaticTextures) { delete samplerManagerForStaticTextures; samplerManagerForStaticTextures = nullptr; }
         if (defaultTextures.metallic)
         {
@@ -502,6 +522,9 @@ void Render::cleanup(){
         if (materialDescriptorManager){ delete materialDescriptorManager; materialDescriptorManager = nullptr; }
         if (instanceDescriptorManager){ delete instanceDescriptorManager; instanceDescriptorManager = nullptr; }
         if (particleInstanceDescriptorManager){ delete particleInstanceDescriptorManager; particleInstanceDescriptorManager = nullptr; }
+        if (boneOffsetDescriptorSetLayout){ delete boneOffsetDescriptorSetLayout; boneOffsetDescriptorSetLayout = nullptr; }
+        if (boneDescriptorManager){ delete boneDescriptorManager; boneDescriptorManager = nullptr; }
+        if (boneOffsetBufferManager){ delete boneOffsetBufferManager; boneOffsetBufferManager = nullptr; }
         if (iCameraProvider){ delete iCameraProvider; iCameraProvider = nullptr; }
         if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
         if (this->ui) { this->ui->cleanup(); delete this->ui; this->ui = nullptr; }
@@ -626,6 +649,8 @@ void Render::recreateSwapChain() {
         materialDescriptorManager->getLayout(),
         instanceDescriptorManager->getLayout(),
         particleInstanceDescriptorManager->getLayout(),
+        boneDescriptorManager->getDescriptorSetLayout(),
+        boneOffsetDescriptorSetLayout->getDescriptorSetLayout(),
         coreVulkan->getMsaaSamples(),
         coreVulkan->getSupportedFeatures12()
     );

@@ -9,6 +9,8 @@ GraphicsPipeline::GraphicsPipeline(
     VkDescriptorSetLayout materialLayout,
     VkDescriptorSetLayout instanceLayout,
     VkDescriptorSetLayout particleLayout,
+    VkDescriptorSetLayout boneOffsetLayout,
+    VkDescriptorSetLayout boneLayout,
     VkSampleCountFlagBits msaaSamples,
     VkPhysicalDeviceVulkan12Features SupportedFeatures12
 ) :
@@ -33,7 +35,7 @@ GraphicsPipeline::GraphicsPipeline(
 //* create layouts
     VkDescriptorSetLayout meshMaterialLayout = materialLayout; // bindlessMode ? bindlessLayout :
     pipelineLayouts[GraphicsPipeline::PIPE_TOPO_TRIANGLES] = createPipelineLayout(
-        sizeof(InstanceData),
+        static_cast<uint32_t>(sizeof(InstanceData)),
         {
             globalLayout,
             meshMaterialLayout,
@@ -46,6 +48,21 @@ GraphicsPipeline::GraphicsPipeline(
         {
             globalLayout,
             particleLayout
+        }
+    );
+
+    pipelineLayouts[
+        GraphicsPipeline::PIPE_TOPO_TRIANGLES |
+        GraphicsPipeline::SKINNED
+    ] =
+    createPipelineLayout(
+        0,
+        {
+            globalLayout,
+            meshMaterialLayout,
+            instanceLayout,
+            boneOffsetLayout,
+            boneLayout
         }
     );
 
@@ -231,6 +248,76 @@ GraphicsPipeline::GraphicsPipeline(
             particleColorBlending,
             dynamicState
         );
+
+    // Animated
+    delete shaderLoader;
+
+    shaderLoader = new ShaderLoader(
+        device,
+        "shaders/skinned.vert.glsl.spv",
+        "shaders/triangle.frag.glsl.spv"
+    );
+
+    vertShaderStageInfo.module = shaderLoader->getVertModule();
+    fragShaderStageInfo.module = shaderLoader->getFragModule();
+
+    shaderStages[0] = vertShaderStageInfo;
+    shaderStages[1] = fragShaderStageInfo;
+
+    graphicsPipelines[
+        GraphicsPipeline::PIPE_TOPO_TRIANGLES |
+        GraphicsPipeline::PIPE_CULL_BACK |
+        GraphicsPipeline::PIPE_DEPTH_TEST |
+        GraphicsPipeline::PIPE_DEPTH_WRITE |
+        GraphicsPipeline::PIPE_BLEND |
+        GraphicsPipeline::SKINNED
+    ] = createPipeline(
+            renderPass,
+            pipelineLayouts[
+                GraphicsPipeline::PIPE_TOPO_TRIANGLES |
+                GraphicsPipeline::SKINNED
+            ],
+            shaderStages,
+            vertexInputInfo,
+            createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
+            viewportState,
+            createRasterizerState(
+                VK_CULL_MODE_BACK_BIT,
+                VK_POLYGON_MODE_FILL
+            ),
+            multisampling,
+            depthStencil,
+            colorBlending,
+            dynamicState
+        );
+
+    graphicsPipelines[
+        GraphicsPipeline::PIPE_TOPO_TRIANGLES |
+        GraphicsPipeline::PIPE_CULL_FRONT |
+        GraphicsPipeline::PIPE_DEPTH_TEST |
+        GraphicsPipeline::PIPE_DEPTH_WRITE |
+        GraphicsPipeline::PIPE_BLEND |
+        GraphicsPipeline::SKINNED
+    ] = createPipeline(
+            renderPass,
+            pipelineLayouts[
+                GraphicsPipeline::PIPE_TOPO_TRIANGLES |
+                GraphicsPipeline::SKINNED
+            ],
+            shaderStages,
+            vertexInputInfo,
+            createInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
+            viewportState,
+            createRasterizerState(
+                VK_CULL_MODE_FRONT_BIT,
+                VK_POLYGON_MODE_FILL
+            ),
+            multisampling,
+            depthStencil,
+            colorBlending,
+            dynamicState
+        );
+
 
     //shaders is not required anymore
     delete(shaderLoader);

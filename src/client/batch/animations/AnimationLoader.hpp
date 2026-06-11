@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Animation.hpp"
 #include <vector>
 #include <string>

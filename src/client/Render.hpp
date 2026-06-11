@@ -28,6 +28,11 @@
 #include "batch/animations/skeleton/Skeleton.hpp"
 #include "batch/animations/Animator.hpp"
 #include "batch/mesh/SkinnedMesh.hpp"
+#include "batch/animations/skeleton/BoneBufferManager.hpp"
+#include "batch/animations/skeleton/BoneDescriptorManager.hpp"
+#include "batch/animations/skeleton/BoneOffsetBufferManager.hpp"
+#include "batch/animations/skeleton/BoneOffsetDescriptorSetLayout.hpp"
+
 
 class Render {
 public:
@@ -81,8 +86,13 @@ private:
     RenderSkinnedBatchManager* renderSkinnedBatchManager;
     RenderSkinnedBatch* renderSkinnedBatch;
     SkinnedRenderInstance* skinnedRenderInstance;
-    Skeleton* skeleton;
     std::vector<Animation> animations;
+    std::vector<glm::mat4> gpuBones;
+    uint32_t currentOffset = 0;
+    BoneBufferManager* boneBufferManager;
+    BoneDescriptorManager* boneDescriptorManager;
+    BoneOffsetBufferManager* boneOffsetBufferManager;
+    BoneOffsetDescriptorSetLayout* boneOffsetDescriptorSetLayout;
 
     uint32_t maxMaterials = 1024;
     uint32_t maxbindlessTextures = 2048;

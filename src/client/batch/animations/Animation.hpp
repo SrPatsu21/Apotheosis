@@ -1,5 +1,9 @@
+#pragma once
+
 #include <string>
 #include <vector>
+#include <cstdint>
+#include <glm/glm.hpp>
 
 enum class AnimationPath
 {

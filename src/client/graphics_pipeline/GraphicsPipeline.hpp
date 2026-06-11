@@ -27,7 +27,8 @@ public:
         PIPE_DEPTH_TEST = 1 << 4,
         PIPE_DEPTH_WRITE = 1 << 5,
         PIPE_BLEND = 1 << 6,
-        //next 7-15
+        SKINNED = 1 << 7
+        //next 8-15
     };
 
 private:
@@ -94,6 +95,8 @@ public:
         VkDescriptorSetLayout materialLayout,
         VkDescriptorSetLayout instanceLayout,
         VkDescriptorSetLayout particleLayout,
+        VkDescriptorSetLayout boneOffsetLayout,
+        VkDescriptorSetLayout boneLayout,
         VkSampleCountFlagBits msaaSamples,
         VkPhysicalDeviceVulkan12Features SupportedFeatures12
     );

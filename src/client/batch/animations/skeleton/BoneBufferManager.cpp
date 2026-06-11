@@ -1,6 +1,6 @@
 #include "BoneBufferManager.hpp"
 
-#include "../../BufferManager.hpp"
+#include "../../../BufferManager.hpp"
 
 BoneBufferManager::BoneBufferManager(
     VkDevice device,

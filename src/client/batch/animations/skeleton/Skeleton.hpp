@@ -1,6 +1,9 @@
+#pragma once
+
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
+#include <stdexcept>
 #include "BoneTransform.hpp"
 
 struct Bone
@@ -24,7 +27,7 @@ public:
         return bones.size();
     }
 
-    uint32_t Skeleton::findBoneIndex(
+    uint32_t findBoneIndex(
         const std::string& name
     ) const
     {

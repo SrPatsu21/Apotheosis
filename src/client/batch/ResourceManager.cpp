@@ -35,6 +35,27 @@ std::shared_ptr<Mesh> ResourceManager::getMesh(
     return mesh;
 }
 
+std::shared_ptr<SkinnedMesh> ResourceManager::getskinnedMesh(
+    const std::string& meshPath
+) {
+    auto it = skinnedMeshs.find(meshPath);
+
+    if (it != skinnedMeshs.end())
+    {
+        if (auto mesh = it->second.lock())
+            return mesh;
+    }
+
+    auto mesh = std::make_shared<SkinnedMesh>(
+        meshPath,
+        device,
+        bufferManager
+    );
+    skinnedMeshs[meshPath] = mesh;
+
+    return mesh;
+}
+
 std::vector<std::shared_ptr<Material>>
 ResourceManager::getMaterialsForMesh(const Mesh& mesh)
 {
@@ -91,6 +112,59 @@ std::shared_ptr<Material>
 ResourceManager::getMaterialForSubMesh(
     const Mesh& mesh,
     const Mesh::SubMesh& subMesh
+)
+{
+    const auto& materialsData = mesh.getMaterials();
+
+    if (subMesh.materialIndex >= materialsData.size())
+        throw std::runtime_error("Invalid material index in SubMesh");
+
+    const auto& matData = materialsData[subMesh.materialIndex];
+
+    std::string key =
+        matData.baseColorPath + "|" +
+        matData.normalPath + "|" +
+        matData.metallicRoughnessPath;
+
+    std::shared_ptr<Material> material = nullptr;
+
+    auto it = materials.find(key);
+    if (it != materials.end())
+        material = it->second.lock();
+
+    if (!material)
+    {
+        std::shared_ptr<TextureImage> baseColorHandle = nullptr;
+        std::shared_ptr<TextureImage> normalHandle = nullptr;
+        std::shared_ptr<TextureImage> mrHandle = nullptr;
+
+        if (!matData.baseColorPath.empty())
+            baseColorHandle = getTexture(matData.baseColorPath);
+
+        if (!matData.normalPath.empty())
+            normalHandle = getTexture(matData.normalPath);
+
+        if (!matData.metallicRoughnessPath.empty())
+            mrHandle = getTexture(matData.metallicRoughnessPath);
+
+        material = std::make_shared<Material>(
+            device,
+            descriptorManager,
+            baseColorHandle,
+            normalHandle,
+            mrHandle
+        );
+
+        materials[key] = material;
+    }
+
+    return material;
+}
+
+std::shared_ptr<Material>
+ResourceManager::getMaterialForSkinnedSubMesh(
+    const SkinnedMesh& mesh,
+    const SkinnedMesh::SubMesh& subMesh
 )
 {
     const auto& materialsData = mesh.getMaterials();

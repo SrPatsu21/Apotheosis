@@ -1,8 +1,8 @@
-#include "BoneDescriptorSetLayout.hpp"
+#include "BoneDescriptorManager.hpp"
 
 #include <stdexcept>
 
-BoneDescriptorSetLayout::BoneDescriptorSetLayout(
+BoneDescriptorManager::BoneDescriptorManager(
     VkDevice device
 )
     :
@@ -43,12 +43,12 @@ BoneDescriptorSetLayout::BoneDescriptorSetLayout(
     )
     {
         throw std::runtime_error(
-            "Failed to create BoneDescriptorSetLayout."
+            "Failed to create BoneDescriptorManager."
         );
     }
 }
 
-BoneDescriptorSetLayout::~BoneDescriptorSetLayout()
+BoneDescriptorManager::~BoneDescriptorManager()
 {
     vkDestroyDescriptorSetLayout(
         device,

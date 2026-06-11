@@ -52,7 +52,17 @@ void BoneOffsetBufferManager::update(
     const std::vector<uint32_t>& offsets
 )
 {
+    if (offsets.empty())
+        return;
+
     void* data;
+
+    if (offsets.size() > maxInstances)
+    {
+        throw std::runtime_error(
+            "BoneOffsetBufferManager overflow."
+        );
+    }
 
     vkMapMemory(
         device,

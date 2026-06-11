@@ -42,12 +42,12 @@ void Animator::setAnimation(
     if (!animation)
         return;
 
-    if (skeleton && animation->skeletonBoneCount != skeleton->bones.size())
-    {
-        throw std::runtime_error(
-            "Animation incompatible with Skeleton"
-        );
-    }
+    // if (skeleton && animation->skeletonBoneCount != skeleton->bones.size())
+    // {
+    //     throw std::runtime_error(
+    //         "Animation incompatible with Skeleton"
+    //     );
+    // }
 
     currentAnimation = animation;
     currentTime = 0.0f;

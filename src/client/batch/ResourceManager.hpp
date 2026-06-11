@@ -8,6 +8,7 @@
 #include "material/Material.hpp"
 #include "texture/SamplerManager.hpp"
 #include "texture/TextureImage.hpp"
+#include "mesh/SkinnedMesh.hpp"
 
 class ResourceManager
 {
@@ -19,6 +20,7 @@ private:
     MaterialDescriptorManager* descriptorManager;
 
     std::unordered_map<std::string, std::weak_ptr<Mesh>> meshes;
+    std::unordered_map<std::string, std::weak_ptr<SkinnedMesh>> skinnedMeshs;
     std::unordered_map<std::string, std::weak_ptr<TextureImage>> textures;
     std::unordered_map<std::string, std::weak_ptr<Material>> materials;
 public:
@@ -33,6 +35,11 @@ public:
     std::shared_ptr<Mesh> getMesh(
         const std::string& meshPath
     );
+
+    std::shared_ptr<SkinnedMesh> getskinnedMesh(
+        const std::string& meshPath
+    );
+
     std::vector<std::shared_ptr<Material>> getMaterialsForMesh(
         const Mesh& mesh
     );
@@ -40,6 +47,11 @@ public:
     std::shared_ptr<Material> getMaterialForSubMesh(
         const Mesh& mesh,
         const Mesh::SubMesh& subMesh
+    );
+
+    std::shared_ptr<Material> getMaterialForSkinnedSubMesh(
+        const SkinnedMesh& mesh,
+        const SkinnedMesh::SubMesh& subMesh
     );
 
     std::shared_ptr<TextureImage> getTexture(

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "SkeletonPose.hpp"
+#include "skeleton/SkeletonPose.hpp"
 #include "Animation.hpp"
-#include "Skeleton.hpp"
+#include "skeleton/Skeleton.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -45,4 +45,9 @@ public:
     void update(
         float dt
     );
+
+    const std::vector<glm::mat4>& getFinalMatrices() const
+    {
+        return globalMatrices;
+    }
 };
