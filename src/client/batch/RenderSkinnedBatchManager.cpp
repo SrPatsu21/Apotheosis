@@ -140,7 +140,7 @@ void RenderSkinnedBatchManager::addInstance(
             mesh,
             &meshs[i],
             resourceManager->getMaterialForSkinnedSubMesh(*mesh.get(), meshs[i]),
-            GraphicsPipeline::PIPE_TOPO_TRIANGLES | GraphicsPipeline::PIPE_CULL_BACK | GraphicsPipeline::PIPE_DEPTH_TEST | GraphicsPipeline::PIPE_DEPTH_WRITE | GraphicsPipeline::PIPE_BLEND
+            GraphicsPipeline::PIPE_TOPO_TRIANGLES | GraphicsPipeline::PIPE_CULL_BACK | GraphicsPipeline::PIPE_DEPTH_TEST | GraphicsPipeline::PIPE_DEPTH_WRITE | GraphicsPipeline::PIPE_BLEND | GraphicsPipeline::SKINNED
         };
 
         auto it = batches_map.find(key);

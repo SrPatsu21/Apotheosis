@@ -1,58 +1,99 @@
 #include "BoneDescriptorManager.hpp"
 
-#include <stdexcept>
-
 BoneDescriptorManager::BoneDescriptorManager(
-    VkDevice device
+    VkDevice device,
+    BoneDescriptorSetLayout* layout,
+    BoneBufferManager* boneBuffer,
+    uint32_t framesInFlight
 )
-    :
-    device(device)
+:
+device(device),
+layout(layout)
 {
-    VkDescriptorSetLayoutBinding binding{};
-
-    binding.binding = 0;
-
-    binding.descriptorType =
+    VkDescriptorPoolSize poolSize{};
+    poolSize.type =
         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    poolSize.descriptorCount =
+        framesInFlight;
 
-    binding.descriptorCount = 1;
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType =
+        VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.maxSets =
+        framesInFlight;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &poolSize;
 
-    binding.stageFlags =
-        VK_SHADER_STAGE_VERTEX_BIT;
+    vkCreateDescriptorPool(
+        device,
+        &poolInfo,
+        nullptr,
+        &descriptorPool
+    );
 
-    binding.pImmutableSamplers =
-        nullptr;
+    std::vector<VkDescriptorSetLayout> layouts(
+        framesInFlight,
+        layout->getDescriptorSetLayout()
+    );
 
-    VkDescriptorSetLayoutCreateInfo createInfo{};
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType =
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool =
+        descriptorPool;
+    allocInfo.descriptorSetCount =
+        framesInFlight;
+    allocInfo.pSetLayouts =
+        layouts.data();
 
-    createInfo.sType =
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSets.resize(framesInFlight);
 
-    createInfo.bindingCount = 1;
+    vkAllocateDescriptorSets(
+        device,
+        &allocInfo,
+        descriptorSets.data()
+    );
 
-    createInfo.pBindings =
-        &binding;
-
-    if (
-        vkCreateDescriptorSetLayout(
-            device,
-            &createInfo,
-            nullptr,
-            &descriptorSetLayout
-        ) != VK_SUCCESS
-    )
+    for (uint32_t i = 0; i < framesInFlight; i++)
     {
-        throw std::runtime_error(
-            "Failed to create BoneDescriptorManager."
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer =
+            boneBuffer->getBuffer();
+        bufferInfo.offset = 0;
+        bufferInfo.range =
+            VK_WHOLE_SIZE;
+
+        VkWriteDescriptorSet write{};
+        write.sType =
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet =
+            descriptorSets[i];
+        write.dstBinding = 0;
+        write.descriptorCount = 1;
+        write.descriptorType =
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        write.pBufferInfo =
+            &bufferInfo;
+
+        vkUpdateDescriptorSets(
+            device,
+            1,
+            &write,
+            0,
+            nullptr
         );
     }
 }
 
 BoneDescriptorManager::~BoneDescriptorManager()
 {
-    vkDestroyDescriptorSetLayout(
-        device,
-        descriptorSetLayout,
-        nullptr
-    );
+    if (descriptorPool != VK_NULL_HANDLE)
+    {
+        vkDestroyDescriptorPool(
+            device,
+            descriptorPool,
+            nullptr
+        );
+    }
+    descriptorSets.clear();
 }

@@ -213,12 +213,27 @@ void Render::initVulkan(){
         maxInstances
     );
 
-    boneDescriptorManager = new BoneDescriptorManager(coreVulkan->getDevice());
+    boneDescriptorSetLayout = new BoneDescriptorSetLayout(coreVulkan->getDevice());
 
     boneOffsetBufferManager = new BoneOffsetBufferManager(
         coreVulkan->getDevice(),
         bufferManager,
+        1000,
+        boneDescriptorSetLayout,
+        Render::MAX_FRAMES_IN_FLIGHT
+    );
+
+    boneBufferManager = new BoneBufferManager(
+        coreVulkan->getDevice(),
+        bufferManager,
         1000
+    );
+
+    boneDescriptorManager = new BoneDescriptorManager(
+        coreVulkan->getDevice(),
+        boneDescriptorSetLayout,
+        boneBufferManager,
+        Render::MAX_FRAMES_IN_FLIGHT
     );
 
     boneOffsetDescriptorSetLayout = new BoneOffsetDescriptorSetLayout(coreVulkan->getDevice());
@@ -232,7 +247,7 @@ void Render::initVulkan(){
         materialDescriptorManager->getLayout(),
         instanceDescriptorManager->getLayout(),
         particleInstanceDescriptorManager->getLayout(),
-        boneDescriptorManager->getDescriptorSetLayout(),
+        boneDescriptorSetLayout->getDescriptorSetLayout(),
         boneOffsetDescriptorSetLayout->getDescriptorSetLayout(),
         coreVulkan->getMsaaSamples(),
         coreVulkan->getSupportedFeatures12()
@@ -275,10 +290,10 @@ void Render::initInstances(){
     renderBatchManager = new RenderBatchManager(resourceManager);
 
     renderInstance = new RenderInstance();
-    renderBatchManager->addInstance(
-        resourceManager->getMesh("models/Maxwell/Untitled.gltf"),
-        renderInstance
-    );
+    // renderBatchManager->addInstance(
+    //     resourceManager->getMesh("models/Maxwell/Untitled.gltf"),
+    //     renderInstance
+    // );
     renderInstance->scale = glm::vec3(0.2f);
 
     gpuBones.clear();
@@ -292,8 +307,6 @@ void Render::initInstances(){
 
     skinnedRenderInstance->animator = std::make_shared<Animator>(resourceManager->getskinnedMesh("models/skeleton_animated/scene.gltf").get()->getSkeleton());
     skinnedRenderInstance->animator.get()->setAnimation(&(resourceManager->getskinnedMesh("models/skeleton_animated/scene.gltf").get()->getAnimations()[0]));
-
-    boneBufferManager = new BoneBufferManager(coreVulkan->getDevice(), bufferManager, 1000);
 }
 
 void Render::drawFrame(){
@@ -426,7 +439,11 @@ void Render::drawFrame(){
         instanceDescriptorManager,
         particleInstanceDescriptorManager,
         renderBatchManager,
-        {particle, particle1},
+        renderSkinnedBatchManager,
+        boneOffsetBufferManager,
+        boneDescriptorManager,
+        // {particle, particle1},
+        {},
         {},
         {},
         {},
@@ -505,6 +522,11 @@ void Render::cleanup(){
         if (boneBufferManager){ delete boneBufferManager; boneBufferManager = nullptr; }
         if (renderSkinnedBatch){ delete renderSkinnedBatch; renderSkinnedBatch = nullptr; }
         if (skinnedRenderInstance){ delete skinnedRenderInstance; skinnedRenderInstance = nullptr; }
+        if (renderSkinnedBatchManager) { delete renderSkinnedBatchManager; renderSkinnedBatchManager = nullptr; }
+        if (boneDescriptorManager) { delete boneDescriptorManager; boneDescriptorManager = nullptr;}
+        if (boneOffsetBufferManager) { delete boneOffsetBufferManager; boneOffsetBufferManager = nullptr; }
+        if (boneOffsetDescriptorSetLayout) { delete boneOffsetDescriptorSetLayout; boneOffsetDescriptorSetLayout = nullptr;}
+        if (boneDescriptorSetLayout) { delete boneDescriptorSetLayout; boneDescriptorSetLayout = nullptr; }
         if (samplerManagerForStaticTextures) { delete samplerManagerForStaticTextures; samplerManagerForStaticTextures = nullptr; }
         if (defaultTextures.metallic)
         {
@@ -523,7 +545,7 @@ void Render::cleanup(){
         if (instanceDescriptorManager){ delete instanceDescriptorManager; instanceDescriptorManager = nullptr; }
         if (particleInstanceDescriptorManager){ delete particleInstanceDescriptorManager; particleInstanceDescriptorManager = nullptr; }
         if (boneOffsetDescriptorSetLayout){ delete boneOffsetDescriptorSetLayout; boneOffsetDescriptorSetLayout = nullptr; }
-        if (boneDescriptorManager){ delete boneDescriptorManager; boneDescriptorManager = nullptr; }
+        if (boneDescriptorSetLayout){ delete boneDescriptorSetLayout; boneDescriptorSetLayout = nullptr; }
         if (boneOffsetBufferManager){ delete boneOffsetBufferManager; boneOffsetBufferManager = nullptr; }
         if (iCameraProvider){ delete iCameraProvider; iCameraProvider = nullptr; }
         if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
@@ -649,7 +671,7 @@ void Render::recreateSwapChain() {
         materialDescriptorManager->getLayout(),
         instanceDescriptorManager->getLayout(),
         particleInstanceDescriptorManager->getLayout(),
-        boneDescriptorManager->getDescriptorSetLayout(),
+        boneDescriptorSetLayout->getDescriptorSetLayout(),
         boneOffsetDescriptorSetLayout->getDescriptorSetLayout(),
         coreVulkan->getMsaaSamples(),
         coreVulkan->getSupportedFeatures12()

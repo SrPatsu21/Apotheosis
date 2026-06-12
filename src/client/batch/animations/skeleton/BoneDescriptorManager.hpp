@@ -1,41 +1,31 @@
 #pragma once
-
-#include <vulkan/vulkan.h>
+#include "../../../CoreVulkan.hpp"
+#include "BoneDescriptorSetLayout.hpp"
+#include "BoneBufferManager.hpp"
 
 class BoneDescriptorManager
 {
 private:
-
     VkDevice device;
 
-    VkDescriptorSetLayout descriptorSetLayout;
+    BoneDescriptorSetLayout* layout;
+
+    VkDescriptorPool descriptorPool;
+
+    std::vector<VkDescriptorSet> descriptorSets;
 
 public:
 
     BoneDescriptorManager(
-        VkDevice device
+        VkDevice device,
+        BoneDescriptorSetLayout* layout,
+        BoneBufferManager* boneBuffer,
+        uint32_t framesInFlight
     );
 
     ~BoneDescriptorManager();
 
-    BoneDescriptorManager(
-        const BoneDescriptorManager&
-    ) = delete;
+    VkDescriptorSetLayout getDescriptorSetLayout() const;
 
-    BoneDescriptorManager& operator=(
-        const BoneDescriptorManager&
-    ) = delete;
-
-    BoneDescriptorManager(
-        BoneDescriptorManager&&
-    ) = delete;
-
-    BoneDescriptorManager& operator=(
-        BoneDescriptorManager&&
-    ) = delete;
-
-    VkDescriptorSetLayout getDescriptorSetLayout() const
-    {
-        return descriptorSetLayout;
-    }
+    const std::vector<VkDescriptorSet>& getDescriptorSets() const { return descriptorSets; }
 };

@@ -29,10 +29,10 @@
 #include "batch/animations/Animator.hpp"
 #include "batch/mesh/SkinnedMesh.hpp"
 #include "batch/animations/skeleton/BoneBufferManager.hpp"
-#include "batch/animations/skeleton/BoneDescriptorManager.hpp"
+#include "batch/animations/skeleton/BoneDescriptorSetLayout.hpp"
 #include "batch/animations/skeleton/BoneOffsetBufferManager.hpp"
 #include "batch/animations/skeleton/BoneOffsetDescriptorSetLayout.hpp"
-
+#include "batch/animations/skeleton/BoneDescriptorManager.hpp"
 
 class Render {
 public:
@@ -90,9 +90,10 @@ private:
     std::vector<glm::mat4> gpuBones;
     uint32_t currentOffset = 0;
     BoneBufferManager* boneBufferManager;
-    BoneDescriptorManager* boneDescriptorManager;
+    BoneDescriptorSetLayout* boneDescriptorSetLayout;
     BoneOffsetBufferManager* boneOffsetBufferManager;
     BoneOffsetDescriptorSetLayout* boneOffsetDescriptorSetLayout;
+    BoneDescriptorManager* boneDescriptorManager;
 
     uint32_t maxMaterials = 1024;
     uint32_t maxbindlessTextures = 2048;

@@ -134,7 +134,7 @@ void CommandManager::recordCommandBuffer(
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager,
     RenderBatchManager* renderBatchManager,
     RenderSkinnedBatchManager* renderSkinnedBatchManager,
-    BoneOffsetDescriptorSetLayout* boneOffsetDescriptorSetLayout,
+    BoneOffsetBufferManager* boneOffsetBufferManager,
     BoneDescriptorManager* boneDescriptorManager,
     const std::vector<ParticleData>& particles,
     const std::vector<IClearValueProvider*>& clearProviders,
@@ -278,6 +278,136 @@ void CommandManager::recordCommandBuffer(
             );
 
             currentOffset += instanceCount;
+        }
+    );
+
+// * === SKINNED ===
+
+    VkDescriptorSet boneSet = boneDescriptorManager->getDescriptorSets()[currentFrame];
+
+    VkDescriptorSet boneOffsetSet = boneOffsetBufferManager->getDescriptorSets()[currentFrame];
+
+    uint32_t currentBoneOffset = 0;
+    SkinnedMesh* lastSkinnedMesh = nullptr;
+
+
+    renderSkinnedBatchManager->forEachBatch(
+        [&](RenderSkinnedBatch& batch)
+        {
+            const auto& key = batch.getKey();
+
+            auto mesh = key.mesh;
+            auto submesh = key.submesh;
+            auto material = key.material;
+            auto pipelineFlags = key.pipelineFlags;
+
+            auto& instancesData = batch.getinstancesData();
+            auto& boneOffsets = batch.getBoneOffsets();
+
+            uint32_t instanceCount =
+                static_cast<uint32_t>(instancesData.size());
+
+            GraphicsPipeline::PipelineFlags skinnedPipeline = pipelineFlags;
+
+            if (lastPipeline != skinnedPipeline)
+            {
+                lastPipeline = skinnedPipeline;
+
+                layout = graphicsPipeline->getLayout(skinnedPipeline & (0x3 | GraphicsPipeline::SKINNED));
+
+                vkCmdBindPipeline(
+                    cmd,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    graphicsPipeline->getPipeline(skinnedPipeline)
+                );
+            }
+
+            if (mesh.get() != lastSkinnedMesh)
+            {
+                lastSkinnedMesh = mesh.get();
+
+                VkBuffer vb = mesh->getSkinnedVertexBufferManager();
+
+                VkDeviceSize offsets[] = {0};
+
+                vkCmdBindVertexBuffers(
+                    cmd,
+                    0,
+                    1,
+                    &vb,
+                    offsets
+                );
+
+                vkCmdBindIndexBuffer(
+                    cmd,
+                    mesh->getIndexBuffer(),
+                    0,
+                    VK_INDEX_TYPE_UINT32
+                );
+            }
+
+            if (material.get() != lastMaterial)
+            {
+                lastMaterial = material.get();
+
+                VkDescriptorSet sets[] =
+                {
+                    globalSet,
+                    material->getDescriptorSet()
+                };
+
+                vkCmdBindDescriptorSets(
+                    cmd,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    layout,
+                    0,
+                    2,
+                    sets,
+                    0,
+                    nullptr
+                );
+            }
+
+            instanceDescriptorManager->update(
+                currentFrame,
+                currentOffset,
+                instancesData
+            );
+
+            boneOffsetBufferManager->update(
+                currentBoneOffset,
+                boneOffsets
+            );
+
+            VkDescriptorSet sets[] =
+            {
+                instanceSet,
+                boneOffsetSet,
+                boneSet
+            };
+
+            vkCmdBindDescriptorSets(
+                cmd,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                layout,
+                2,
+                3,
+                sets,
+                0,
+                nullptr
+            );
+
+            vkCmdDrawIndexed(
+                cmd,
+                submesh->indexCount,
+                instanceCount,
+                submesh->firstIndex,
+                submesh->vertexOffset,
+                currentOffset
+            );
+
+            currentOffset += instanceCount;
+            currentBoneOffset += instanceCount;
         }
     );
 
