@@ -227,7 +227,6 @@ void SkinnedMesh::load(
             }
         }
 
-
         // INDICES
         for (unsigned int f = 0; f < mesh->mNumFaces; f++) {
             const aiFace& face = mesh->mFaces[f];

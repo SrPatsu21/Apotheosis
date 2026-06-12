@@ -1,4 +1,6 @@
 #include "SkeletonLoader.hpp"
+#include <iostream>
+
 
 static void processNode(
     aiNode* node,
