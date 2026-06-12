@@ -42,12 +42,12 @@ void Animator::setAnimation(
     if (!animation)
         return;
 
-    // if (skeleton && animation->skeletonBoneCount != skeleton->bones.size())
-    // {
-    //     throw std::runtime_error(
-    //         "Animation incompatible with Skeleton"
-    //     );
-    // }
+    if (skeleton && animation->skeletonBoneCount != skeleton->bones.size())
+    {
+        throw std::runtime_error(
+            "Animation incompatible with Skeleton"
+        );
+    }
 
     currentAnimation = animation;
     currentTime = 0.0f;
@@ -322,8 +322,7 @@ void Animator::update(float dt)
                 transform.scale
             );
 
-        glm::mat4 localMatrix =
-            T * R * S;
+        glm::mat4 localMatrix = T * R * S;
 
         const int parent =
             skeleton->bones[i]

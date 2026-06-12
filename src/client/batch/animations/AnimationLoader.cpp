@@ -35,18 +35,21 @@ std::vector<Animation> AnimationLoader::loadFromGLTF(
 
     for (unsigned int animIndex = 0; animIndex < scene->mNumAnimations; animIndex++)
     {
-        aiAnimation* aiAnim =
-            scene->mAnimations[animIndex];
+        aiAnimation* aiAnim = scene->mAnimations[animIndex];
 
         Animation animation;
 
-        animation.name =
-            aiAnim->mName.C_Str();
+        animation.name = aiAnim->mName.C_Str();
 
         animation.duration =
             static_cast<float>(
                 aiAnim->mDuration /
                 aiAnim->mTicksPerSecond
+            );
+        
+        animation.skeletonBoneCount =
+            static_cast<uint32_t>(
+                skeleton->getBoneCount()
             );
 
         animation.channels.resize(
