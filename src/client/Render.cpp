@@ -401,14 +401,10 @@ void Render::drawFrame(){
             {
                 auto* reg = regs[i];
 
-                auto offset =
-                    static_cast<uint32_t>(
-                        boneMatrices.size()
-                    );
+                uint32_t offset = static_cast<uint32_t>(boneMatrices.size());
 
                 offsets[i] = offset;
 
-                reg->owner->updateAnimation(offset);
 
                 const auto& mats =
                     reg->owner->animator->getFinalMatrices();
@@ -421,9 +417,8 @@ void Render::drawFrame(){
             }
         }
     );
-    boneBufferManager->update(
-        boneMatrices
-    );
+
+    boneBufferManager->update(boneMatrices);
 
     // Reset + record only the command buffer for this swapchain image
     VkCommandBuffer cmd = this->commandManager->getCommandBuffers()[imageIndex];
