@@ -2,6 +2,7 @@
 #include "mesh/SkinnedMesh.hpp"
 #include "instance/SkinnedRenderInstance.hpp"
 #include "instance/InstanceData.hpp"
+#include "animations/Animator.hpp"
 
 #include <algorithm>
 
@@ -45,7 +46,8 @@ RenderSkinnedBatch::RenderSkinnedBatch(
 ) noexcept :
     batchKey(std::move(other.batchKey)),
     batchRegistrations(std::move(other.batchRegistrations)),
-    instancesData(std::move(other.instancesData))
+    instancesData(std::move(other.instancesData)),
+    boneOffsets(std::move(other.boneOffsets))
 {}
 
 RenderSkinnedBatch&
@@ -58,6 +60,7 @@ RenderSkinnedBatch::operator=(
         batchKey = std::move(other.batchKey);
         batchRegistrations = std::move(other.batchRegistrations);
         instancesData = std::move(other.instancesData);
+        boneOffsets = std::move(other.boneOffsets);
     }
     return *this;
 }
@@ -75,9 +78,7 @@ void RenderSkinnedBatch::addInstance(
 
     instance->addRegistration(this, index);
 
-    batchRegistrations.push_back(
-        &instance->registrations.back()
-    );
+    batchRegistrations.push_back(&instance->registrations.back());
 }
 
 void RenderSkinnedBatch::removeInstance(
@@ -91,17 +92,11 @@ void RenderSkinnedBatch::removeInstance(
 
     if (index != lastIndex)
     {
-        batchRegistrations[index] =
-            batchRegistrations[lastIndex];
+        batchRegistrations[index] = batchRegistrations[lastIndex];
+        batchRegistrations[index]->indexInBatch = index;
 
-        batchRegistrations[index]->indexInBatch =
-            index;
-
-        instancesData[index] =
-            instancesData[lastIndex];
-
-        boneOffsets[index] =
-            boneOffsets[lastIndex];
+        instancesData[index] = instancesData[lastIndex];
+        boneOffsets[index] = boneOffsets[lastIndex];
     }
 
     batchRegistrations.pop_back();
@@ -131,8 +126,10 @@ void RenderSkinnedBatchManager::addInstance(
     std::shared_ptr<SkinnedMesh> mesh,
     SkinnedRenderInstance* instance
 ) {
-    // instance->getRegistrations().reserve(mesh->getSubMeshes().size());
-    const std::vector<SkinnedMesh::SubMesh>& meshs = mesh->getSubMeshes();
+    instance->getRegistrations().reserve(mesh->getSubMeshes().size());
+    const std::vector<SkinnedMesh::SubMesh>& meshs = mesh.get()->getSubMeshes();
+    instance->animator = std::make_shared<Animator>(mesh.get()->getSkeleton());
+    instance->animator.get()->setAnimation(&(mesh.get()->getAnimations()[0]));
 
     for (size_t i = 0; i < meshs.size(); i++)
     {
@@ -235,7 +232,8 @@ void RenderSkinnedBatchManager::findBatchKey(
         GraphicsPipeline::PIPE_CULL_BACK |
         GraphicsPipeline::PIPE_DEPTH_TEST |
         GraphicsPipeline::PIPE_DEPTH_WRITE |
-        GraphicsPipeline::PIPE_BLEND;
+        GraphicsPipeline::PIPE_BLEND |
+        GraphicsPipeline::SKINNED;
 }
 
 RenderSkinnedBatchManager::BatchKey
@@ -253,6 +251,7 @@ RenderSkinnedBatchManager::findBatchKey(
         GraphicsPipeline::PIPE_CULL_BACK |
         GraphicsPipeline::PIPE_DEPTH_TEST |
         GraphicsPipeline::PIPE_DEPTH_WRITE |
-        GraphicsPipeline::PIPE_BLEND;
+        GraphicsPipeline::PIPE_BLEND |
+        GraphicsPipeline::SKINNED;
     return key;
 }

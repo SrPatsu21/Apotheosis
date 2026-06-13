@@ -118,7 +118,7 @@ void RenderBatchManager::addInstance(
     std::shared_ptr<Mesh> mesh,
     RenderInstance* instance
 ) {
-    // instance->getRegistrations().reserve(mesh->getSubMeshes().size());
+    instance->getRegistrations().reserve(mesh->getSubMeshes().size());
     const std::vector<Mesh::SubMesh>& meshs = mesh->getSubMeshes();
 
     for (size_t i = 0; i < meshs.size(); i++)

@@ -290,23 +290,23 @@ void Render::initInstances(){
     renderBatchManager = new RenderBatchManager(resourceManager);
 
     renderInstance = new RenderInstance();
-    // renderBatchManager->addInstance(
-    //     resourceManager->getMesh("models/Maxwell/Untitled.gltf"),
-    //     renderInstance
-    // );
+    renderBatchManager->addInstance(
+        resourceManager->getMesh("models/Maxwell/Untitled.gltf"),
+        renderInstance
+    );
     renderInstance->scale = glm::vec3(0.2f);
+    renderInstance->position += glm::vec3(1.5f, 0, 0);
 
     gpuBones.clear();
     renderSkinnedBatchManager = new RenderSkinnedBatchManager(resourceManager);
     skinnedRenderInstance = new SkinnedRenderInstance();
 
     renderSkinnedBatchManager->addInstance(
-        resourceManager->getskinnedMesh("models/skeleton_animated/scene.gltf"),
+        resourceManager->getskinnedMesh("models/an_animated_cat/scene.gltf"),
         skinnedRenderInstance
     );
-
-    skinnedRenderInstance->animator = std::make_shared<Animator>(resourceManager->getskinnedMesh("models/skeleton_animated/scene.gltf").get()->getSkeleton());
-    skinnedRenderInstance->animator.get()->setAnimation(&(resourceManager->getskinnedMesh("models/skeleton_animated/scene.gltf").get()->getAnimations()[0]));
+    skinnedRenderInstance->scale = glm::vec3(0.01f);
+    skinnedRenderInstance->updateModelMatrix();
 }
 
 void Render::drawFrame(){
@@ -405,9 +405,7 @@ void Render::drawFrame(){
 
                 offsets[i] = offset;
 
-
-                const auto& mats =
-                    reg->owner->animator->getFinalMatrices();
+                const auto& mats = reg->owner->animator.get()->getFinalMatrices();
 
                 boneMatrices.insert(
                     boneMatrices.end(),

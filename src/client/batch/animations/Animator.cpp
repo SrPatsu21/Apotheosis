@@ -252,8 +252,7 @@ void Animator::update(float dt)
 
     for (const auto& channel : currentAnimation->channels)
     {
-        const uint32_t boneIndex =
-            channel.boneIndex;
+        const uint32_t boneIndex = channel.boneIndex;
 
         if (boneIndex >= boneCount)
             continue;
@@ -350,5 +349,6 @@ void Animator::update(float dt)
     for (size_t i = 0; i < boneCount; i++)
     {
         pose.finalMatrices[i] = globalMatrices[i] * skeleton->bones[i].inverseBindMatrix;
+        // pose.finalMatrices[i] = skeleton->bones[i].inverseBindMatrix;
     }
 }

@@ -177,10 +177,7 @@ void SkinnedMesh::load(
             aiBone* aiBone =
                 mesh->mBones[b];
 
-            uint32_t boneIndex =
-                skeleton->findBoneIndex(
-                    aiBone->mName.C_Str()
-                );
+            uint32_t boneIndex = b;
 
             for (unsigned int w = 0;
                 w < aiBone->mNumWeights;
@@ -199,11 +196,9 @@ void SkinnedMesh::load(
                 {
                     if (vertex.boneWeights[i] == 0.0f)
                     {
-                        vertex.boneIndices[i] =
-                            boneIndex;
+                        vertex.boneIndices[i] = boneIndex;
 
-                        vertex.boneWeights[i] =
-                            vw.mWeight;
+                        vertex.boneWeights[i] = vw.mWeight;
 
                         break;
                     }
@@ -239,7 +234,7 @@ void SkinnedMesh::load(
         SubMesh sub{};
         sub.firstIndex = indexOffset;
         sub.indexCount = mesh->mNumFaces * 3;
-        sub.vertexOffset = 0;
+        sub.vertexOffset = baseVertex;
         sub.materialIndex = mesh->mMaterialIndex;
 
         subMeshes.push_back(sub);

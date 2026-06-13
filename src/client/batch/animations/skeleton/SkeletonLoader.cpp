@@ -6,67 +6,78 @@ static void processNode(
     aiNode* node,
     int parent,
     Skeleton& skeleton,
-    std::unordered_map<std::string, uint32_t>& boneMap
+    std::unordered_map<std::string, uint32_t>& boneMap,
+    const std::unordered_set<std::string>& usedBones
 )
 {
-    Bone bone;
+    int currentParent = parent;
 
-    bone.name = node->mName.C_Str();
-    bone.parentIndex = parent;
-    bone.inverseBindMatrix = glm::mat4(1.0f);
+    auto it = usedBones.find(node->mName.C_Str());
 
-    uint32_t index =
-        static_cast<uint32_t>(
-            skeleton.bones.size()
+    if (it != usedBones.end())
+    {
+        Bone bone;
+
+        bone.name = node->mName.C_Str();
+        bone.parentIndex = parent;
+        bone.inverseBindMatrix = glm::mat4(1.0f);
+
+        uint32_t index =
+            static_cast<uint32_t>(
+                skeleton.bones.size()
+            );
+
+        skeleton.bones.push_back(bone);
+
+        boneMap[bone.name] = index;
+
+        BoneTransform bind;
+
+        aiVector3D scaling;
+        aiQuaternion rotation;
+        aiVector3D translation;
+
+        node->mTransformation.Decompose(
+            scaling,
+            rotation,
+            translation
         );
 
-    skeleton.bones.push_back(bone);
+        bind.translation =
+            glm::vec3(
+                translation.x,
+                translation.y,
+                translation.z
+            );
 
-    boneMap[bone.name] = index;
+        bind.rotation =
+            glm::quat(
+                rotation.w,
+                rotation.x,
+                rotation.y,
+                rotation.z
+            );
 
-    BoneTransform bind;
+        bind.scale =
+            glm::vec3(
+                scaling.x,
+                scaling.y,
+                scaling.z
+            );
 
-    aiVector3D scaling;
-    aiQuaternion rotation;
-    aiVector3D translation;
+        skeleton.bindPose.push_back(bind);
 
-    node->mTransformation.Decompose(
-        scaling,
-        rotation,
-        translation
-    );
-
-    bind.translation =
-        glm::vec3(
-            translation.x,
-            translation.y,
-            translation.z
-        );
-
-    bind.rotation =
-        glm::quat(
-            rotation.w,
-            rotation.x,
-            rotation.y,
-            rotation.z
-        );
-
-    bind.scale =
-        glm::vec3(
-            scaling.x,
-            scaling.y,
-            scaling.z
-        );
-
-    skeleton.bindPose.push_back(bind);
+        currentParent = index;
+    }
 
     for (unsigned int i = 0; i < node->mNumChildren; i++)
     {
         processNode(
             node->mChildren[i],
-            index,
+            currentParent,
             skeleton,
-            boneMap
+            boneMap,
+            usedBones
         );
     }
 }
@@ -97,11 +108,26 @@ Skeleton SkeletonLoader::loadSkeletonFromGLTF(
         uint32_t
     > boneMap;
 
+    std::unordered_set<std::string> usedBones;
+
+    for (unsigned int m = 0; m < scene->mNumMeshes; m++)
+    {
+        aiMesh* mesh = scene->mMeshes[m];
+
+        for (unsigned int b = 0; b < mesh->mNumBones; b++)
+        {
+            usedBones.insert(
+                mesh->mBones[b]->mName.C_Str()
+            );
+        }
+    }
+
     processNode(
         scene->mRootNode,
         -1,
         skeleton,
-        boneMap
+        boneMap,
+        usedBones
     );
 
     //--------------------------------------------------
@@ -129,19 +155,41 @@ Skeleton SkeletonLoader::loadSkeletonFromGLTF(
             uint32_t index =
                 it->second;
 
-            const aiMatrix4x4& mat =
-                aiBone->mOffsetMatrix;
+            const aiMatrix4x4& mat = aiBone->mOffsetMatrix;
 
-            skeleton.bones[index]
-                .inverseBindMatrix =
-            glm::transpose(
-                glm::mat4(
-                    mat.a1, mat.a2, mat.a3, mat.a4,
-                    mat.b1, mat.b2, mat.b3, mat.b4,
-                    mat.c1, mat.c2, mat.c3, mat.c4,
-                    mat.d1, mat.d2, mat.d3, mat.d4
-                )
-            );
+            // glm::mat4 m;
+
+            // m[0][0] = mat.a1;
+            // m[1][0] = mat.a2;
+            // m[2][0] = mat.a3;
+            // m[3][0] = mat.a4;
+
+            // m[0][1] = mat.b1;
+            // m[1][1] = mat.b2;
+            // m[2][1] = mat.b3;
+            // m[3][1] = mat.b4;
+
+            // m[0][2] = mat.c1;
+            // m[1][2] = mat.c2;
+            // m[2][2] = mat.c3;
+            // m[3][2] = mat.c4;
+
+            // m[0][3] = mat.d1;
+            // m[1][3] = mat.d2;
+            // m[2][3] = mat.d3;
+            // m[3][3] = mat.d4;
+
+            // skeleton.bones[index].inverseBindMatrix = m;
+
+
+            skeleton.bones[index].inverseBindMatrix = glm::transpose(
+                    glm::mat4(
+                        mat.a1, mat.a2, mat.a3, mat.a4,
+                        mat.b1, mat.b2, mat.b3, mat.b4,
+                        mat.c1, mat.c2, mat.c3, mat.c4,
+                        mat.d1, mat.d2, mat.d3, mat.d4
+                    )
+                );
         }
     }
 

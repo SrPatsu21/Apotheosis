@@ -52,7 +52,7 @@ public:
 
     void updateAnimation(float dt);
 
-    std::vector<BatchRegistration> getRegistrations() const { return registrations; }
+    std::vector<BatchRegistration>& getRegistrations() { return registrations; }
 
 private:
     void addRegistration(

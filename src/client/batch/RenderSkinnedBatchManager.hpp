@@ -43,7 +43,7 @@ public:
         }
     };
 
-private:
+// private:
 
     std::unordered_map<BatchKey, std::unique_ptr<RenderSkinnedBatch>, BatchKeyHasher> batches_map;
     std::vector<RenderSkinnedBatch*> batches_sorted;

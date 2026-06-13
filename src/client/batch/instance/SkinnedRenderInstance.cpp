@@ -19,7 +19,7 @@ void SkinnedRenderInstance::addRegistration(
     size_t index
 )
 {
-    registrations.push_back({ batch, index, this});
+    registrations.push_back({batch, index, this});
 }
 
 void SkinnedRenderInstance::clearRegistrations()
