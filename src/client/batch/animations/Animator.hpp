@@ -48,6 +48,6 @@ public:
 
     const std::vector<glm::mat4>& getFinalMatrices() const
     {
-        return globalMatrices;
+        return pose.finalMatrices;
     }
 };

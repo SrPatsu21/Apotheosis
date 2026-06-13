@@ -10,7 +10,7 @@ void CameraBufferManager::DefaultCameraProvider::fill(
     ubg.view = glm::lookAt(
         glm::vec3(2.0f, 2.0f, 2.0f),
         glm::vec3(0.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f)
+        glm::vec3(0.0f, 1.0f, 0.0f)
     );
 
     float aspect = extent.width / float(extent.height);

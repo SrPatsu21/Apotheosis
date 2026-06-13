@@ -244,7 +244,13 @@ void Animator::update(float dt)
     // Começa da bind pose
     //--------------------------------------------------
 
-    localPose = skeleton->bindPose;
+    // localPose = skeleton->bindPose;
+    for (auto& t : localPose)
+    {
+        t.translation = glm::vec3(0.0f);
+        t.rotation = glm::quat(1,0,0,0);
+        t.scale = glm::vec3(1.0f);
+    }
 
     //--------------------------------------------------
     // Aplica canais animados
@@ -350,5 +356,7 @@ void Animator::update(float dt)
     {
         pose.finalMatrices[i] = globalMatrices[i] * skeleton->bones[i].inverseBindMatrix;
         // pose.finalMatrices[i] = skeleton->bones[i].inverseBindMatrix;
+        // pose.finalMatrices[i] = globalMatrices[i];
+        // pose.finalMatrices[i] = glm::mat4(1.0f);
     }
 }

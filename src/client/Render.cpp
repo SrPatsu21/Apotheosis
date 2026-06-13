@@ -302,7 +302,7 @@ void Render::initInstances(){
     skinnedRenderInstance = new SkinnedRenderInstance();
 
     renderSkinnedBatchManager->addInstance(
-        resourceManager->getskinnedMesh("models/an_animated_cat/scene.gltf"),
+        resourceManager->getskinnedMesh("models/skeleton_animated/scene.gltf"),
         skinnedRenderInstance
     );
     skinnedRenderInstance->scale = glm::vec3(0.01f);
@@ -390,6 +390,7 @@ void Render::drawFrame(){
 
     // Animations
     std::vector<glm::mat4> boneMatrices;
+    boneMatrices.clear();
 
     renderSkinnedBatchManager->forEachBatch(
         [&](RenderSkinnedBatch& batch)

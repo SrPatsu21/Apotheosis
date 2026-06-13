@@ -157,31 +157,6 @@ Skeleton SkeletonLoader::loadSkeletonFromGLTF(
 
             const aiMatrix4x4& mat = aiBone->mOffsetMatrix;
 
-            // glm::mat4 m;
-
-            // m[0][0] = mat.a1;
-            // m[1][0] = mat.a2;
-            // m[2][0] = mat.a3;
-            // m[3][0] = mat.a4;
-
-            // m[0][1] = mat.b1;
-            // m[1][1] = mat.b2;
-            // m[2][1] = mat.b3;
-            // m[3][1] = mat.b4;
-
-            // m[0][2] = mat.c1;
-            // m[1][2] = mat.c2;
-            // m[2][2] = mat.c3;
-            // m[3][2] = mat.c4;
-
-            // m[0][3] = mat.d1;
-            // m[1][3] = mat.d2;
-            // m[2][3] = mat.d3;
-            // m[3][3] = mat.d4;
-
-            // skeleton.bones[index].inverseBindMatrix = m;
-
-
             skeleton.bones[index].inverseBindMatrix = glm::transpose(
                     glm::mat4(
                         mat.a1, mat.a2, mat.a3, mat.a4,

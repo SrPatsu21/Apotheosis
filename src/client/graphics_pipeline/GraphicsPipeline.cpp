@@ -254,7 +254,7 @@ GraphicsPipeline::GraphicsPipeline(
 
     VkVertexInputBindingDescription skinnedBinding = SkinnedVertex::getBindingDescription();
 
-    auto skinnedAttributes = SkinnedVertex::getAttributeDescriptions();
+    std::array<VkVertexInputAttributeDescription, 6> skinnedAttributes = SkinnedVertex::getAttributeDescriptions();
 
     VkPipelineVertexInputStateCreateInfo skinnedVertexInput =
         createSkinnedVertexInputState(

@@ -177,7 +177,8 @@ void SkinnedMesh::load(
             aiBone* aiBone =
                 mesh->mBones[b];
 
-            uint32_t boneIndex = b;
+            // * could be just [b], its is the same
+            uint32_t boneIndex = skeleton->findBoneIndex(aiBone->mName.C_Str());
 
             for (unsigned int w = 0;
                 w < aiBone->mNumWeights;
