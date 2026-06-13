@@ -305,7 +305,9 @@ void Render::initInstances(){
         resourceManager->getskinnedMesh("models/skeleton_animated/scene.gltf"),
         skinnedRenderInstance
     );
-    skinnedRenderInstance->scale = glm::vec3(0.01f);
+
+    skinnedRenderInstance->position += glm::vec3(0, 0, 0);
+    skinnedRenderInstance->scale = glm::vec3(0.5f);
     skinnedRenderInstance->updateModelMatrix();
 }
 

@@ -1,6 +1,24 @@
 #include "SkeletonLoader.hpp"
 #include <iostream>
+#include <string>
 
+
+static bool containsBone(
+    aiNode* node,
+    const std::unordered_set<std::string>& usedBones
+)
+{
+    if (usedBones.contains(node->mName.C_Str()))
+        return true;
+
+    for (unsigned int i = 0; i < node->mNumChildren; i++)
+    {
+        if (containsBone(node->mChildren[i], usedBones))
+            return true;
+    }
+
+    return false;
+}
 
 static void processNode(
     aiNode* node,
@@ -10,71 +28,66 @@ static void processNode(
     const std::unordered_set<std::string>& usedBones
 )
 {
-    int currentParent = parent;
+    // ignora subárvores sem nenhum bone
+    if (!containsBone(node, usedBones))
+        return;
 
-    auto it = usedBones.find(node->mName.C_Str());
+    Bone bone;
 
-    if (it != usedBones.end())
-    {
-        Bone bone;
+    bone.name = node->mName.C_Str();
+    bone.parentIndex = parent;
+    bone.inverseBindMatrix = glm::mat4(1.0f);
 
-        bone.name = node->mName.C_Str();
-        bone.parentIndex = parent;
-        bone.inverseBindMatrix = glm::mat4(1.0f);
-
-        uint32_t index =
-            static_cast<uint32_t>(
-                skeleton.bones.size()
-            );
-
-        skeleton.bones.push_back(bone);
-
-        boneMap[bone.name] = index;
-
-        BoneTransform bind;
-
-        aiVector3D scaling;
-        aiQuaternion rotation;
-        aiVector3D translation;
-
-        node->mTransformation.Decompose(
-            scaling,
-            rotation,
-            translation
+    uint32_t index =
+        static_cast<uint32_t>(
+            skeleton.bones.size()
         );
 
-        bind.translation =
-            glm::vec3(
-                translation.x,
-                translation.y,
-                translation.z
-            );
+    skeleton.bones.push_back(bone);
 
-        bind.rotation =
-            glm::quat(
-                rotation.w,
-                rotation.x,
-                rotation.y,
-                rotation.z
-            );
+    boneMap[bone.name] = index;
 
-        bind.scale =
-            glm::vec3(
-                scaling.x,
-                scaling.y,
-                scaling.z
-            );
+    BoneTransform bind;
 
-        skeleton.bindPose.push_back(bind);
+    aiVector3D scaling;
+    aiQuaternion rotation;
+    aiVector3D translation;
 
-        currentParent = index;
-    }
+    node->mTransformation.Decompose(
+        scaling,
+        rotation,
+        translation
+    );
+
+    bind.translation =
+        glm::vec3(
+            translation.x,
+            translation.y,
+            translation.z
+        );
+
+    bind.rotation =
+        glm::quat(
+            rotation.w,
+            rotation.x,
+            rotation.y,
+            rotation.z
+        );
+
+    bind.scale =
+        glm::vec3(
+            scaling.x,
+            scaling.y,
+            scaling.z
+        );
+
+    skeleton.bindPose.push_back(bind);
 
     for (unsigned int i = 0; i < node->mNumChildren; i++)
     {
         processNode(
             node->mChildren[i],
-            currentParent,
+            index,
             skeleton,
             boneMap,
             usedBones
@@ -130,6 +143,18 @@ Skeleton SkeletonLoader::loadSkeletonFromGLTF(
         usedBones
     );
 
+
+    // find rootBone
+    // for (uint32_t i = 0; i < skeleton.bones.size(); i++)
+    // {
+    //     // std::cout << skeleton.bones[i].parentIndex << " = " << skeleton.bones[i].name << std::endl;
+    //     if (skeleton.bones[i].parentIndex == -1)
+    //     {
+    //         skeleton.rootBoneIndex = i;
+    //         break;
+    //     }
+    // }
+
     //--------------------------------------------------
     // Carrega inverse bind matrices
     //--------------------------------------------------
@@ -167,6 +192,13 @@ Skeleton SkeletonLoader::loadSkeletonFromGLTF(
                 );
         }
     }
+
+    std::cout << "==== Bones =====" << std::endl;
+    for (auto &&i : skeleton.bones)
+    {
+        std::cout << i.name << std::endl;
+    }
+    std::cout << "================" << std::endl;
 
     return skeleton;
 }

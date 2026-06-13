@@ -352,11 +352,11 @@ void Animator::update(float dt)
     // Global -> Final Skinning
     //--------------------------------------------------
 
+    // glm::mat4 rootInv = globalMatrices[skeleton->rootBoneIndex];
+
     for (size_t i = 0; i < boneCount; i++)
     {
+        // glm::mat4 correctedGlobal = rootInv * globalMatrices[i];
         pose.finalMatrices[i] = globalMatrices[i] * skeleton->bones[i].inverseBindMatrix;
-        // pose.finalMatrices[i] = skeleton->bones[i].inverseBindMatrix;
-        // pose.finalMatrices[i] = globalMatrices[i];
-        // pose.finalMatrices[i] = glm::mat4(1.0f);
     }
 }

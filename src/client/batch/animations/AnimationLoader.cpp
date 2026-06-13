@@ -46,7 +46,7 @@ std::vector<Animation> AnimationLoader::loadFromGLTF(
                 aiAnim->mDuration /
                 aiAnim->mTicksPerSecond
             );
-        
+
         animation.skeletonBoneCount =
             static_cast<uint32_t>(
                 skeleton->getBoneCount()
@@ -55,6 +55,29 @@ std::vector<Animation> AnimationLoader::loadFromGLTF(
         animation.channels.resize(
             skeleton->getBoneCount()
         );
+
+        for (unsigned int c = 0; c < aiAnim->mNumChannels; c++)
+        {
+            aiNodeAnim* node = aiAnim->mChannels[c];
+
+            auto it = boneMap.find(node->mNodeName.C_Str());
+
+            if (it == boneMap.end())
+            {
+                std::cout
+                    << node->mNodeName.C_Str()
+                    << " -> NOT FOUND"
+                    << std::endl;
+            }
+            else
+            {
+                std::cout
+                    << node->mNodeName.C_Str()
+                    << " -> bone "
+                    << it->second
+                    << std::endl;
+            }
+        }
 
         for (unsigned int c = 0; c < aiAnim->mNumChannels; c++)
         {
