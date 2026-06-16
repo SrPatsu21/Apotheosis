@@ -137,7 +137,7 @@ void RenderSkinnedBatchManager::addInstance(
             mesh,
             &meshs[i],
             resourceManager->getMaterialForSkinnedSubMesh(*mesh.get(), meshs[i]),
-            GraphicsPipeline::PIPE_TOPO_TRIANGLES | GraphicsPipeline::PIPE_CULL_BACK | GraphicsPipeline::PIPE_DEPTH_TEST | GraphicsPipeline::PIPE_DEPTH_WRITE | GraphicsPipeline::PIPE_BLEND | GraphicsPipeline::SKINNED
+            GraphicsPipeline::PIPE_TOPO_TRIANGLES | GraphicsPipeline::PIPE_CULL_NONE | GraphicsPipeline::PIPE_DEPTH_TEST | GraphicsPipeline::PIPE_DEPTH_WRITE | GraphicsPipeline::PIPE_BLEND | GraphicsPipeline::SKINNED
         };
 
         auto it = batches_map.find(key);
@@ -229,7 +229,7 @@ void RenderSkinnedBatchManager::findBatchKey(
     key.material = resourceManager->getMaterialForSkinnedSubMesh(*key.mesh.get(), *key.submesh);
     key.pipelineFlags =
         GraphicsPipeline::PIPE_TOPO_TRIANGLES |
-        GraphicsPipeline::PIPE_CULL_BACK |
+        GraphicsPipeline::PIPE_CULL_NONE |
         GraphicsPipeline::PIPE_DEPTH_TEST |
         GraphicsPipeline::PIPE_DEPTH_WRITE |
         GraphicsPipeline::PIPE_BLEND |
@@ -248,7 +248,7 @@ RenderSkinnedBatchManager::findBatchKey(
     key.material = resourceManager->getMaterialForSkinnedSubMesh(*key.mesh.get(), *key.submesh);
     key.pipelineFlags =
         GraphicsPipeline::PIPE_TOPO_TRIANGLES |
-        GraphicsPipeline::PIPE_CULL_BACK |
+        GraphicsPipeline::PIPE_CULL_NONE |
         GraphicsPipeline::PIPE_DEPTH_TEST |
         GraphicsPipeline::PIPE_DEPTH_WRITE |
         GraphicsPipeline::PIPE_BLEND |

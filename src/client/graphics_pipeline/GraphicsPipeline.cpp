@@ -276,7 +276,7 @@ GraphicsPipeline::GraphicsPipeline(
 
     graphicsPipelines[
         GraphicsPipeline::PIPE_TOPO_TRIANGLES |
-        GraphicsPipeline::PIPE_CULL_BACK |
+        GraphicsPipeline::PIPE_CULL_NONE |
         GraphicsPipeline::PIPE_DEPTH_TEST |
         GraphicsPipeline::PIPE_DEPTH_WRITE |
         GraphicsPipeline::PIPE_BLEND |
