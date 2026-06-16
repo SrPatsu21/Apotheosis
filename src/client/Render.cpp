@@ -36,7 +36,7 @@ int Render::run(){
             {
                 if(!skinnedRenderInstance->animator.get()->currentAnimation)
                 {
-                    skinnedRenderInstance->animator.get()->setAnimation(&resourceManager->getskinnedMesh("models/knight_with_sword__shield/scene.gltf").get()->getAnimations()[0]);
+                    skinnedRenderInstance->animator.get()->setAnimation(&resourceManager->getskinnedMesh("models/skeleton_animated/scene.gltf").get()->getAnimations()[0]);
                 } else
                 {
                     skinnedRenderInstance->animator.get()->currentTime = 0;
@@ -313,7 +313,7 @@ void Render::initInstances(){
     skinnedRenderInstance = new SkinnedRenderInstance();
 
     renderSkinnedBatchManager->addInstance(
-        resourceManager->getskinnedMesh("models/knight_with_sword__shield/scene.gltf"),
+        resourceManager->getskinnedMesh("models/skeleton_animated/scene.gltf"),
         skinnedRenderInstance
     );
 

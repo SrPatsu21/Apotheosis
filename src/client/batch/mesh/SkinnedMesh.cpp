@@ -85,24 +85,36 @@ void SkinnedMesh::load(
 
         aiString pathStr;
 
-        if (mat->GetTextureCount(aiTextureType_BASE_COLOR) > 0) {
+        // Base Color / Diffuse
+        if (mat->GetTextureCount(aiTextureType_BASE_COLOR) > 0)
+        {
             mat->GetTexture(aiTextureType_BASE_COLOR, 0, &pathStr);
-            material.baseColorPath =
-                (directory / pathStr.C_Str()).string();
+            material.baseColorPath = (directory / pathStr.C_Str()).string();
+        }
+        else if (mat->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+        {
+            mat->GetTexture(aiTextureType_DIFFUSE, 0, &pathStr);
+            material.baseColorPath = (directory / pathStr.C_Str()).string();
         }
 
-        if (mat->GetTextureCount(aiTextureType_NORMALS) > 0) {
+        // Normal
+        if (mat->GetTextureCount(aiTextureType_NORMALS) > 0)
+        {
             mat->GetTexture(aiTextureType_NORMALS, 0, &pathStr);
-            material.normalPath =
-                (directory / pathStr.C_Str()).string();
+            material.normalPath = (directory / pathStr.C_Str()).string();
         }
 
-        if (mat->GetTextureCount(aiTextureType_METALNESS) > 0) {
+        // Metallic ou Specular
+        if (mat->GetTextureCount(aiTextureType_METALNESS) > 0)
+        {
             mat->GetTexture(aiTextureType_METALNESS, 0, &pathStr);
-            material.metallicRoughnessPath =
-                (directory / pathStr.C_Str()).string();
+            material.metallicRoughnessPath = (directory / pathStr.C_Str()).string();
         }
-
+        else if (mat->GetTextureCount(aiTextureType_SPECULAR) > 0)
+        {
+            mat->GetTexture(aiTextureType_SPECULAR, 0, &pathStr);
+            material.metallicRoughnessPath = (directory / pathStr.C_Str()).string();
+        }
         materials[i] = material;
     }
 
