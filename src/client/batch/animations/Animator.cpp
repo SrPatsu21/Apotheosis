@@ -58,35 +58,36 @@ void Animator::reset()
 {
     currentTime = 0.0f;
 
-    for (auto& transform : localPose)
+    localPose = skeleton->bindPose;
+
+    const size_t boneCount = skeleton->getBoneCount();
+
+    for (size_t i = 0; i < boneCount; i++)
     {
-        transform.translation =
-            glm::vec3(0.0f);
+        const BoneTransform& t = localPose[i];
 
-        transform.rotation =
-            glm::quat(
-                1.0f,
-                0.0f,
-                0.0f,
-                0.0f
-            );
+        glm::mat4 T = glm::translate(glm::mat4(1.0f), t.translation);
+        glm::mat4 R = glm::toMat4(t.rotation);
+        glm::mat4 S = glm::scale(glm::mat4(1.0f), t.scale);
 
-        transform.scale =
-            glm::vec3(1.0f);
+        glm::mat4 local = T * R * S;
+
+        int parent = skeleton->bones[i].parentIndex;
+
+        if (parent < 0)
+            globalMatrices[i] = local;
+        else
+            globalMatrices[i] = globalMatrices[parent] * local;
     }
 
-    for (auto& matrix : globalMatrices)
+    for (size_t i = 0; i < boneCount; i++)
     {
-        matrix = glm::mat4(1.0f);
+        pose.finalMatrices[i] =
+            globalMatrices[i] *
+            skeleton->bones[i].inverseBindMatrix;
     }
-
-    pose.reset();
 }
 
-
-// ***************************
-// * helpers
-// ***************************
 template<typename T>
 static T sampleLinear(
     const std::vector<KeyFrame<T>>& keys,
@@ -193,9 +194,7 @@ static glm::vec3 sampleScale(
     return sampleLinear(keys, time);
 }
 
-// ***************************
 // * update
-// ***************************
 void Animator::update(float dt)
 {
     if (!skeleton)
@@ -225,36 +224,23 @@ void Animator::update(float dt)
         pose.resize(boneCount);
     }
 
-    //--------------------------------------------------
-    // Atualiza tempo
-    //--------------------------------------------------
-
     currentTime += dt;
 
-    if (currentAnimation->duration > 0.0f)
+    if (currentAnimation->duration > 0.0f &&
+        currentTime >= currentAnimation->duration)
     {
-        currentTime =
-            std::fmod(
-                currentTime,
-                currentAnimation->duration
-            );
+        currentAnimation = nullptr;
+        reset();
+        return;
     }
 
-    //--------------------------------------------------
-    // Começa da bind pose
-    //--------------------------------------------------
-
-    // localPose = skeleton->bindPose;
-    for (auto& t : localPose)
-    {
-        t.translation = glm::vec3(0.0f);
-        t.rotation = glm::quat(1,0,0,0);
-        t.scale = glm::vec3(1.0f);
-    }
-
-    //--------------------------------------------------
-    // Aplica canais animados
-    //--------------------------------------------------
+    localPose = skeleton->bindPose;
+    // for (auto& t : localPose)
+    // {
+    //     t.translation = glm::vec3(0.0f);
+    //     t.rotation = glm::quat(1,0,0,0);
+    //     t.scale = glm::vec3(1.0f);
+    // }
 
     for (const auto& channel : currentAnimation->channels)
     {
@@ -263,10 +249,7 @@ void Animator::update(float dt)
         if (boneIndex >= boneCount)
             continue;
 
-        //--------------------------------------------------
         // Translation
-        //--------------------------------------------------
-
         if (!channel.translations.empty())
         {
             localPose[boneIndex].translation =
@@ -276,10 +259,7 @@ void Animator::update(float dt)
                 );
         }
 
-        //--------------------------------------------------
         // Rotation
-        //--------------------------------------------------
-
         if (!channel.rotations.empty())
         {
             localPose[boneIndex].rotation =
@@ -289,10 +269,7 @@ void Animator::update(float dt)
                 );
         }
 
-        //--------------------------------------------------
         // Scale
-        //--------------------------------------------------
-
         if (!channel.scales.empty())
         {
             localPose[boneIndex].scale =
@@ -302,10 +279,6 @@ void Animator::update(float dt)
                 );
         }
     }
-
-    //--------------------------------------------------
-    // Local -> Global
-    //--------------------------------------------------
 
     for (size_t i = 0; i < boneCount; i++)
     {
@@ -348,15 +321,10 @@ void Animator::update(float dt)
         }
     }
 
-    //--------------------------------------------------
     // Global -> Final Skinning
-    //--------------------------------------------------
-
-    // glm::mat4 rootInv = globalMatrices[skeleton->rootBoneIndex];
 
     for (size_t i = 0; i < boneCount; i++)
     {
-        // glm::mat4 correctedGlobal = rootInv * globalMatrices[i];
         pose.finalMatrices[i] = globalMatrices[i] * skeleton->bones[i].inverseBindMatrix;
     }
 }

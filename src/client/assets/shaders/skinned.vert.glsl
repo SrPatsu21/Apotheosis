@@ -10,6 +10,7 @@ layout(location = 5) in vec4 inBoneWeights;
 layout(location = 0) out vec2 fragTexCoord;
 layout(location = 1) out vec3 fragNormal;
 layout(location = 2) out vec3 fragWorldPos;
+layout(location = 3) out vec4 fragTangent;
 
 layout(std140, set = 0, binding = 0) uniform UniformBufferGlobal
 {
@@ -37,56 +38,33 @@ readonly buffer BoneBuffer
 
 void main()
 {
-    mat4 model =
-        models[gl_InstanceIndex];
+    fragTangent = inTangent;
 
-    uint boneOffset =
-        boneOffsets[gl_InstanceIndex];
+    mat4 model = models[gl_InstanceIndex];
 
-    mat4 skinMatrix =
-        mat4(0.0);
+    uint boneOffset = boneOffsets[gl_InstanceIndex];
 
-    skinMatrix +=
-        bones[boneOffset + inBoneIndices.x] *
-        inBoneWeights.x;
+    mat4 skinMatrix = mat4(0.0);
 
-    skinMatrix +=
-        bones[boneOffset + inBoneIndices.y] *
-        inBoneWeights.y;
+    skinMatrix += bones[boneOffset + inBoneIndices.x] * inBoneWeights.x;
 
-    skinMatrix +=
-        bones[boneOffset + inBoneIndices.z] *
-        inBoneWeights.z;
+    skinMatrix += bones[boneOffset + inBoneIndices.y] * inBoneWeights.y;
 
-    skinMatrix +=
-        bones[boneOffset + inBoneIndices.w] *
-        inBoneWeights.w;
+    skinMatrix += bones[boneOffset + inBoneIndices.z] * inBoneWeights.z;
 
-    vec4 localPos =
-        skinMatrix *
-        vec4(
-            inPosition,
-            1.0
-        );
+    skinMatrix += bones[boneOffset + inBoneIndices.w] * inBoneWeights.w;
 
-    vec4 worldPos =
-        model *
-        localPos;
+    vec4 localPos = skinMatrix * vec4(inPosition, 1.0);
 
-    gl_Position =
-        ubo.proj *
-        ubo.view *
-        worldPos;
+    vec4 worldPos = model * localPos;
 
-    fragWorldPos =
-        worldPos.xyz;
+    gl_Position = ubo.proj * ubo.view * worldPos;
 
-    fragTexCoord =
-        inTexCoord;
+    fragWorldPos = worldPos.xyz;
 
-    vec3 localNormal =
-        mat3(skinMatrix) *
-        inNormal;
+    fragTexCoord = inTexCoord;
+
+    vec3 localNormal = mat3(skinMatrix) * inNormal;
 
     mat3 normalMatrix =
         mat3(

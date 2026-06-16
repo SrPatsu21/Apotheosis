@@ -158,7 +158,7 @@ Only acept __.ktx2__; download [here on GitHub](https://github.com/KhronosGroup/
 - Metallic/Roughness (linear):
 
     ```shell
-    toktx --t2 --genmipmap --encode uastc --uastc_quality 2 --zcmp mrOut.ktx2 mrInput.png
+    toktx --t2 --genmipmap --encode uastc --uastc_quality 2 --zcmp 18 mrOut.ktx2 mrInput.png
     ```
 
 ### Models

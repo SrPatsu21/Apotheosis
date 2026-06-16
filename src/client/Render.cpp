@@ -32,12 +32,23 @@ int Render::run(){
         this->ui->newFrame();
         this->ui->build();
         {
+            if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+            {
+                if(!skinnedRenderInstance->animator.get()->currentAnimation)
+                {
+                    skinnedRenderInstance->animator.get()->setAnimation(&resourceManager->getskinnedMesh("models/knight_with_sword__shield/scene.gltf").get()->getAnimations()[0]);
+                } else
+                {
+                    skinnedRenderInstance->animator.get()->currentTime = 0;
+                }
+            }
             std::chrono::_V2::system_clock::time_point currentTime = std::chrono::high_resolution_clock::now();
 
             float deltaTime = std::chrono::duration<float>(currentTime - lastTime).count();
 
             lastTime = currentTime;
             skinnedRenderInstance->animator->update(deltaTime);
+            skinnedRenderInstance->updateModelMatrix();
         }
         drawFrame();
     }
@@ -302,7 +313,7 @@ void Render::initInstances(){
     skinnedRenderInstance = new SkinnedRenderInstance();
 
     renderSkinnedBatchManager->addInstance(
-        resourceManager->getskinnedMesh("models/skeleton_animated/scene.gltf"),
+        resourceManager->getskinnedMesh("models/knight_with_sword__shield/scene.gltf"),
         skinnedRenderInstance
     );
 

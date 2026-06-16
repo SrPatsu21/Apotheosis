@@ -56,7 +56,7 @@ struct SkinnedVertex{
     glm::uvec4 boneIndices;
     glm::vec4 boneWeights;
 
-    SkinnedVertex(
+SkinnedVertex(
         const glm::vec3 pos,
         glm::vec3 normal,
         glm::vec4 tangent,
