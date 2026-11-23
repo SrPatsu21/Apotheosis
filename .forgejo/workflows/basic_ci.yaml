@@ -1,0 +1,214 @@
+name: Basic CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate project
+    runs-on: basic-ci-img
+
+    steps:
+      - name: Checkout repository
+        run: |
+          git init .
+          git remote add origin "https://10.147.18.1/forgejo/${GITHUB_REPOSITORY}.git"
+
+          AUTH_HEADER="$(printf '%s:%s' "$GITHUB_ACTOR" "$FORGEJO_TOKEN" | base64 | tr -d '\n')"
+
+          git -c http.sslVerify=false \
+            -c http.extraheader="AUTHORIZATION: basic ${AUTH_HEADER}" \
+            fetch --no-tags --depth=1 origin "$GITHUB_SHA"
+
+          git checkout --detach FETCH_HEAD
+
+      # -----------------------------------------
+      # Secrets
+      # -----------------------------------------
+
+      - name: Detect secrets
+        run: |
+          set -eu
+
+          mkdir -p /tmp/basic-ci
+
+          detect-secrets scan \
+            --all-files \
+            --exclude-files '(^|/)\.git/.*' \
+            --exclude-files '(^|/)node_modules/.*' \
+            > /tmp/basic-ci/secrets.json
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = Path("/tmp/basic-ci/secrets.json")
+          results = json.loads(report.read_text()).get("results", {})
+
+          findings = []
+
+          for path, items in results.items():
+              for item in items:
+                  findings.append(
+                      (path, item.get("line_number", "?"), item.get("type", "Unknown"))
+                  )
+
+          print("=== Secret detection ===")
+
+          if findings:
+              for path, line, secret_type in findings:
+                  print(f"WARNING: {path}:{line} ({secret_type})")
+
+              print(f"\nFound {len(findings)} potential secret(s).")
+          else:
+              print("No secrets detected.")
+          PY
+
+      # -----------------------------------------
+      # YAML
+      # -----------------------------------------
+
+      - name: Validate YAML files
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import yaml
+          import sys
+
+          files = [
+              *Path(".").rglob("*.yml"),
+              *Path(".").rglob("*.yaml")
+          ]
+
+          files = [
+              f for f in files
+              if ".git" not in f.parts
+              and "node_modules" not in f.parts
+          ]
+
+          errors = []
+
+          for file in files:
+              try:
+                  with file.open() as stream:
+                      list(yaml.safe_load_all(stream))
+                  print(f"OK: {file}")
+              except Exception as error:
+                  errors.append((file, error))
+                  print(f"ERROR: {file}: {error}")
+
+          if errors:
+              sys.exit(1)
+
+          print(f"\nValidated {len(files)} YAML files.")
+          PY
+
+      # -----------------------------------------
+      # HTML
+      # -----------------------------------------
+
+      - name: Validate HTML files
+        run: |
+          mapfile -d '' files < <(
+            find . -type f -iname "*.html" \
+              -not -path "./.git/*" \
+              -not -path "*/node_modules/*" \
+              -print0
+          )
+
+          for file in "${files[@]}"; do
+            echo "Checking $file"
+            tidy -qe "$file"
+          done
+
+          echo "HTML validation completed."
+
+      # -----------------------------------------
+      # Markdown
+      # -----------------------------------------
+
+      - name: Validate Markdown files
+        run: |
+          markdownlint-cli2 \
+            "**/*.md" \
+            "!**/node_modules/**" \
+            "!**/.git/**"
+
+      # -----------------------------------------
+      # Nginx
+      # -----------------------------------------
+
+      - name: Validate Nginx templates
+        run: |
+          mapfile -d '' files < <(
+            find . -type f -name "default.conf.template" \
+              -not -path "./.git/*" \
+              -not -path "*/node_modules/*" \
+              -print0
+          )
+
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No Nginx templates found."
+            exit 0
+          fi
+
+          mkdir -p /tmp/nginx-ci
+
+          openssl req -x509 -nodes \
+            -newkey rsa:2048 \
+            -keyout /tmp/nginx-ci/ci.key \
+            -out /tmp/nginx-ci/ci.crt \
+            -days 1 \
+            -subj "/CN=localhost"
+
+          for file in "${files[@]}"; do
+            echo "Checking $file"
+
+            while IFS= read -r variable; do
+              case "$variable" in
+                *_PORT)
+                  value=8080
+                  ;;
+                *_IP|*_ID)
+                  value=127.0.0.1
+                  ;;
+                *_PATH)
+                  value=/tmp/nginx-ci/
+                  ;;
+                *_DOMAIN)
+                  value=localhost
+                  ;;
+                *)
+                  value=ci-placeholder
+                  ;;
+              esac
+
+              export "$variable=$value"
+            done < <(
+              grep -oE '\$\{[A-Za-z_][A-Za-z0-9_]*\}' "$file" \
+                | tr -d '${}' \
+                | sort -u
+            )
+
+            envsubst "$(grep -oE '\$\{[A-Za-z_][A-Za-z0-9_]*\}' "$file" | sort -u | tr '\n' ' ')" \
+              < "$file" \
+              > /tmp/nginx-ci/rendered.conf
+
+            sed -i \
+              -e 's|^[[:space:]]*ssl_certificate[[:space:]].*;|    ssl_certificate /tmp/nginx-ci/ci.crt;|' \
+              -e 's|^[[:space:]]*ssl_certificate_key[[:space:]].*;|    ssl_certificate_key /tmp/nginx-ci/ci.key;|' \
+              /tmp/nginx-ci/rendered.conf
+
+            {
+              echo "events {}"
+              echo "http {"
+              cat /tmp/nginx-ci/rendered.conf
+              echo "}"
+            } > /tmp/nginx-ci/nginx.conf
+
+            nginx -t -c /tmp/nginx-ci/nginx.conf
+          done
+
+          echo "Nginx validation completed."
