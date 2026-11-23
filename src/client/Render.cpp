@@ -318,7 +318,7 @@ void Render::initInstances(){
     );
 
     skinnedRenderInstance->position += glm::vec3(0, 0, 0);
-    skinnedRenderInstance->scale = glm::vec3(0.5f);
+    skinnedRenderInstance->scale = glm::vec3(0.7f);
     skinnedRenderInstance->updateModelMatrix();
 }
 
