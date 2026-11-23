@@ -21,7 +21,7 @@ The name "Apotheosis", the project name, logo, and all associated branding are t
 
 This project is open source, but the trademark is not licensed.
 
-[more](docs/TRADEMARK.md)
+[more in the file](docs/TRADEMARK.md)
 
 ## Server Policy
 
@@ -29,13 +29,13 @@ This project allows the creation and operation of third-party, community-run mul
 
 The project does not support or endorse gambling-related mechanics in third-party servers.
 
-[more](docs/SERVER_POLICY.md)
+[more in the file](docs/SERVER_POLICY.md)
 
 ## Modding Policy
 
 This project supports and encourages modding.
 
-[more](docs/MODDING.md)
+[more in the file](docs/MODDING.md)
 
 ## Start Contributing
 
