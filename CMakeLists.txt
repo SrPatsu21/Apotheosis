@@ -13,8 +13,15 @@ project(
 # ============================================================
 # C++ Standard
 # ============================================================
-set(CMAKE_CXX_STANDARD 17)
+# C++26 needs GCC 14+. The MinGW-w64 compiler shipped with the image is older
+# (GCC 13), so Windows builds fall back to C++23 automatically.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14)
+    set(CMAKE_CXX_STANDARD 23)
+else()
+    set(CMAKE_CXX_STANDARD 26)
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD} (compiler ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION})")
 
 # ============================================================
 # Default build type
@@ -30,9 +37,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-# ----------------------------
+# ============================================================
 # Common compiler flags
-# ----------------------------
+# ============================================================
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DVK_PROTOTYPES")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_PROTOTYPES -static-libgcc -static-libstdc++")
 
@@ -40,8 +47,14 @@ if(WIN32)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lpthread -Wl,--no-whole-archive")
 endif()
 
+# Validation layers are only available in Debug builds on Linux
+if(CMAKE_BUILD_TYPE STREQUAL "Release" OR WIN32)
+    add_compile_definitions(DISABLE_VALIDATION_LAYERS)
+endif()
+
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     message(STATUS "Compiling in Release mode")
+    add_compile_definitions(NDEBUG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
     set(CMAKE_C_FLAGS_RELEASE "-O3")
     if(UNIX)
@@ -57,8 +70,15 @@ file(GLOB_RECURSE COMMON_SOURCES
     src/common/*.cpp
 )
 
-add_library(game_common STATIC ${COMMON_SOURCES})
-target_include_directories(game_common PUBLIC src/common)
+# The common library only exists when src/common has sources
+set(COMMON_LIB "")
+if(COMMON_SOURCES)
+    add_library(game_common STATIC ${COMMON_SOURCES})
+    target_include_directories(game_common PUBLIC src/common)
+    set(COMMON_LIB game_common)
+else()
+    message(STATUS "src/common has no sources: skipping game_common")
+endif()
 
 # ============================================================
 # ---------------- SERVER EXECUTABLE ---------------------------
@@ -68,17 +88,24 @@ file(GLOB_RECURSE SERVER_SOURCES
     src/server/*.cpp
 )
 
-add_executable(${PROJECT_NAME}_server ${SERVER_SOURCES})
+# The server only exists when src/server has sources
+if(SERVER_SOURCES)
+    add_executable(${PROJECT_NAME}_server ${SERVER_SOURCES})
 
-target_link_libraries(${PROJECT_NAME}_server
-    game_common
-)
-
-if(UNIX)
     target_link_libraries(${PROJECT_NAME}_server
-        pthread
-        dl
+        ${COMMON_LIB}
     )
+
+    if(UNIX)
+        target_link_libraries(${PROJECT_NAME}_server
+            pthread
+            dl
+        )
+    endif()
+
+    set_target_properties(${PROJECT_NAME}_server PROPERTIES OUTPUT_NAME "${PROJECT_NAME}_server")
+else()
+    message(STATUS "src/server has no sources: skipping ${PROJECT_NAME}_server")
 endif()
 
 # ============================================================
@@ -94,7 +121,11 @@ if(UNIX)
 elseif(WIN32)
     add_subdirectory(lib/Vulkan-Headers)
     if(NOT DEFINED VulkanHeaders_VERSION)
-        set(VulkanHeaders_VERSION "1.4.352")
+        file(STRINGS ${CMAKE_SOURCE_DIR}/lib/Vulkan-Headers/include/vulkan/vulkan_core.h
+             VK_HEADER_LINE REGEX "^#define VK_HEADER_VERSION[ \t]+[0-9]+")
+        string(REGEX MATCH "[0-9]+" VK_HEADER_PATCH "${VK_HEADER_LINE}")
+        set(VulkanHeaders_VERSION "1.4.${VK_HEADER_PATCH}")
+        message(STATUS "VulkanHeaders_VERSION: ${VulkanHeaders_VERSION}")
     endif()
     add_subdirectory(lib/Vulkan-Loader)
 endif()
@@ -120,6 +151,7 @@ set(IMGUI_SOURCES
     ${IMGUI_DIR}/imgui_draw.cpp
     ${IMGUI_DIR}/imgui_tables.cpp
     ${IMGUI_DIR}/imgui_widgets.cpp
+    ${IMGUI_DIR}/imgui_demo.cpp
     ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
     ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
 )
@@ -174,6 +206,7 @@ find_program(GLSLANG_VALIDATOR glslangValidator)
 if(NOT GLSLANG_VALIDATOR)
     message(FATAL_ERROR "glslangValidator not found")
 endif()
+message(STATUS "glslangValidator found: ${GLSLANG_VALIDATOR}")
 
 set(SHADER_DIR ${CMAKE_SOURCE_DIR}/src/client/assets/shaders)
 set(COMPILED_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
@@ -191,6 +224,7 @@ foreach(SHADER_NAME IN LISTS SHADERS)
     set(SHADER ${SHADER_DIR}/${SHADER_NAME})
     set(SPV ${COMPILED_SHADER_DIR}/${SHADER_NAME}.spv)
 
+    # Stage is deduced from the file name: vertex.glsl / *.vert.glsl, fragment.glsl / *.frag.glsl
     if(SHADER_NAME MATCHES "\\.vert\\.glsl$")
         set(STAGE vert)
     elseif(SHADER_NAME MATCHES "\\.frag\\.glsl$")
@@ -203,6 +237,8 @@ foreach(SHADER_NAME IN LISTS SHADERS)
         OUTPUT ${SPV}
         COMMAND ${GLSLANG_VALIDATOR} -V --target-env vulkan1.3 -S ${STAGE} ${SHADER} -o ${SPV}
         DEPENDS ${SHADER}
+        COMMENT "Compiling ${SHADER_NAME} to SPIR-V"
+        VERBATIM
     )
 
     list(APPEND SHADER_OUTPUTS ${SPV})
@@ -218,10 +254,14 @@ set(MODELS_DST_DIR ${CMAKE_BINARY_DIR}/models)
 
 add_custom_target(Models ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory ${MODELS_DST_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${MODELS_SRC_DIR}
-            ${MODELS_DST_DIR}
 )
+# Only copy when the project actually has a models folder
+if(EXISTS ${MODELS_SRC_DIR})
+    add_custom_command(
+        TARGET Models
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${MODELS_SRC_DIR} ${MODELS_DST_DIR}
+    )
+endif()
 
 # ============================================================
 # Client sources & executable
@@ -229,6 +269,9 @@ add_custom_target(Models ALL
 file(GLOB_RECURSE CLIENT_SOURCES
     src/client/*.cpp
 )
+if(NOT CLIENT_SOURCES)
+    message(FATAL_ERROR "No sources found in src/client (put main.cpp in src/client)")
+endif()
 
 add_executable(${PROJECT_NAME}_client
     ${CLIENT_SOURCES}
@@ -266,14 +309,6 @@ target_compile_definitions(${PROJECT_NAME}_client PRIVATE
     VK_PROTOTYPES
 )
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    target_compile_definitions(
-        ${PROJECT_NAME}_client
-        PRIVATE
-        NDEBUG
-    )
-endif()
-
 if(WIN32)
     target_compile_definitions(${PROJECT_NAME}_client PRIVATE
         VK_USE_PLATFORM_WIN32_KHR
@@ -288,14 +323,8 @@ endif()
 # Client libraries
 # ============================================================
 if(WIN32)
-    target_link_directories(
-        ${PROJECT_NAME}_client
-        PRIVATE
-        ${VULKAN_SDK_PATH}/Lib
-    )
-
     target_link_libraries(${PROJECT_NAME}_client
-        game_common
+        ${COMMON_LIB}
         glfw
         assimp
         vulkan
@@ -304,7 +333,7 @@ if(WIN32)
     )
 elseif(UNIX)
     target_link_libraries(${PROJECT_NAME}_client
-        game_common
+        ${COMMON_LIB}
         glfw
         Vulkan::Vulkan
         glm::glm
@@ -316,6 +345,12 @@ elseif(UNIX)
         Xrandr
         Xi
         Xcursor
+    )
+
+    # Shared libs (e.g. libktx) are looked up in lib/ next to the executable
+    set_target_properties(${PROJECT_NAME}_client PROPERTIES
+        INSTALL_RPATH "$ORIGIN/lib"
+        BUILD_WITH_INSTALL_RPATH TRUE
     )
 endif()
 
