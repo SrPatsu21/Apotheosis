@@ -63,6 +63,16 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 # ============================================================
+# MinGW Debug workaround
+# ============================================================
+if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O1")
+        message(STATUS "MinGW Debug: enabling -O1 to avoid type_info linker conflict")
+    endif()
+endif()
+
+# ============================================================
 # ---------------- COMMON LIBRARY ------------------------------
 # Shared code between client and server
 # ============================================================
