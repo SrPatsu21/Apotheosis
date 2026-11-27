@@ -199,37 +199,24 @@ void CameraBufferManager::updateCamera(
     const VkExtent2D& extent
 )
 {
-    // -------------------------------------------------------------------------
-    // Automatic 360° camera rotation
-    // -------------------------------------------------------------------------
-
-    static float rotationAngle = 0.0f;
-
-    constexpr float rotationDuration = 20.0f;
-    constexpr float fullRotation = glm::two_pi<float>();
-
-    rotationAngle +=
-        (fullRotation / rotationDuration) * deltaTime;
-
-    if (rotationAngle >= fullRotation)
-        rotationAngle -= fullRotation;
+    if (extent.width == 0 || extent.height == 0)
+        return;
 
     // -------------------------------------------------------------------------
-    // Camera position
+    // Input
     // -------------------------------------------------------------------------
 
-    glm::vec3 center = glm::vec3(0.0f);
+    processInput(deltaTime);
 
-    float radius = glm::length(position - center);
+    // -------------------------------------------------------------------------
+    // Camera direction
+    // -------------------------------------------------------------------------
 
-    position.x = center.x + std::sin(rotationAngle) * radius;
-    position.z = center.z + std::cos(rotationAngle) * radius;
+    glm::vec3 forward = getForward();
 
     // -------------------------------------------------------------------------
     // View matrix
     // -------------------------------------------------------------------------
-
-    glm::vec3 forward = glm::normalize(center - position);
 
     UniformBufferGlobal ubg{};
 
@@ -244,7 +231,7 @@ void CameraBufferManager::updateCamera(
     // -------------------------------------------------------------------------
 
     float aspect =
-        extent.width /
+        static_cast<float>(extent.width) /
         static_cast<float>(extent.height);
 
     ubg.proj = glm::perspective(
@@ -261,7 +248,10 @@ void CameraBufferManager::updateCamera(
     // Camera position
     // -------------------------------------------------------------------------
 
-    ubg.cameraPosition = glm::vec4(position, 1.0f);
+    ubg.cameraPosition = glm::vec4(
+        position,
+        1.0f
+    );
 
     // -------------------------------------------------------------------------
     // Upload to GPU

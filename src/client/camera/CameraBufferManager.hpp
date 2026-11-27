@@ -37,25 +37,30 @@
 class CameraBufferManager
 {
 private:
-    VkDevice device;
-    GLFWwindow* window;
+    VkDevice device = VK_NULL_HANDLE;
+    GLFWwindow* window = nullptr;
 
-    // One uniform buffer per frame-in-flight
+    // -------------------------------------------------------------------------
+    // Uniform buffers
+    // -------------------------------------------------------------------------
+
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
-
-    // Persistently mapped pointers for fast CPU updates
     std::vector<void*> uniformBuffersMapped;
 
     // -------------------------------------------------------------------------
     // Camera state
     // -------------------------------------------------------------------------
 
-    glm::vec3 position = glm::vec3(2.0f, 2.0f, 2.0f);
+    glm::vec3 position = glm::vec3(
+        0.0f,
+        0.0f,
+        3.0f
+    );
 
     // Rotation in degrees
-    float yaw = -135.0f;
-    float pitch = -25.0f;
+    float yaw = -90.0f;
+    float pitch = 0.0f;
 
     // Camera movement speed in world units per second
     float movementSpeed = 5.0f;
@@ -72,43 +77,30 @@ private:
     double lastMouseX = 0.0;
     double lastMouseY = 0.0;
 
-private:
-    /**
-     * @brief Returns the camera's forward direction.
-     */
+    // -------------------------------------------------------------------------
+    // Camera direction
+    // -------------------------------------------------------------------------
+
     glm::vec3 getForward() const;
 
-    /**
-     * @brief Returns the camera's right direction.
-     */
     glm::vec3 getRight() const;
 
-    /**
-     * @brief Processes mouse input and updates camera rotation.
-     */
+    // -------------------------------------------------------------------------
+    // Input
+    // -------------------------------------------------------------------------
+
     void processMouse();
 
-    /**
-     * @brief Processes keyboard input and updates camera position.
-     *
-     * @param deltaTime Time elapsed since the previous frame.
-     */
     void processKeyboard(float deltaTime);
 
-    /**
-     * @brief Updates the camera state from GLFW input.
-     */
     void processInput(float deltaTime);
 
 public:
-    /**
-     * @brief Creates uniform buffers and initializes the camera.
-     *
-     * @param device Logical Vulkan device.
-     * @param bufferManager BufferManager used for buffer creation/allocation.
-     * @param max_frames_in_flight Number of concurrent frames.
-     * @param window GLFW window used for camera input.
-     */
+
+    // -------------------------------------------------------------------------
+    // Constructor
+    // -------------------------------------------------------------------------
+
     CameraBufferManager(
         VkDevice device,
         BufferManager* bufferManager,
@@ -116,94 +108,74 @@ public:
         GLFWwindow* window
     );
 
-    /**
-     * @brief Releases all uniform buffers and associated memory.
-     */
+    // -------------------------------------------------------------------------
+    // Destructor
+    // -------------------------------------------------------------------------
+
     ~CameraBufferManager();
 
-    /**
-     * @brief Updates camera state and generates the camera UBO.
-     *
-     * This function:
-     * - Reads mouse input
-     * - Reads WASD / Space / Ctrl
-     * - Updates camera position
-     * - Updates camera rotation
-     * - Generates view matrix
-     * - Generates projection matrix
-     * - Uploads the UBO for the current frame
-     *
-     * @param currentFrame Current frame-in-flight index.
-     * @param deltaTime Time elapsed since the previous frame.
-     * @param extent Current swapchain extent.
-     */
+    // -------------------------------------------------------------------------
+    // Camera update
+    // -------------------------------------------------------------------------
+
     void updateCamera(
         uint32_t currentFrame,
         float deltaTime,
         const VkExtent2D& extent
     );
 
-    /**
-     * @brief Updates the uniform buffer for the given frame.
-     *
-     * @param currentFrame Frame index.
-     * @param ubg Uniform buffer data to upload.
-     */
+    // -------------------------------------------------------------------------
+    // Update UBO
+    // -------------------------------------------------------------------------
+
     void update(
         uint32_t currentFrame,
         const UniformBufferGlobal& ubg
     );
+
+    // -------------------------------------------------------------------------
+    // Getters
+    // -------------------------------------------------------------------------
 
     const std::vector<VkBuffer>& getUniformBuffers() const
     {
         return uniformBuffers;
     }
 
-    std::vector<VkDeviceMemory> getUniformBufferMemorys() const
+    const std::vector<VkDeviceMemory>& getUniformBufferMemorys() const
     {
         return uniformBuffersMemory;
     }
 
-    std::vector<void*> getUniformBuffersMapped() const
+    const std::vector<void*>& getUniformBuffersMapped() const
     {
         return uniformBuffersMapped;
     }
 
-    /**
-     * @brief Returns the current camera position.
-     */
     const glm::vec3& getPosition() const
     {
         return position;
     }
 
-    /**
-     * @brief Returns the current camera yaw.
-     */
     float getYaw() const
     {
         return yaw;
     }
 
-    /**
-     * @brief Returns the current camera pitch.
-     */
     float getPitch() const
     {
         return pitch;
     }
 
-    /**
-     * @brief Sets camera movement speed.
-     */
+    // -------------------------------------------------------------------------
+    // Setters
+    // -------------------------------------------------------------------------
+
     void setMovementSpeed(float speed)
     {
         movementSpeed = speed;
     }
 
-    /**
-     * @brief Sets mouse sensitivity.
-     */
     void setMouseSensitivity(float sensitivity)
     {
         mouseSensitivity = sensitivity;
