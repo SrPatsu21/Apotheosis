@@ -49,16 +49,16 @@ VkSurfaceFormatKHR SwapchainManager::chooseSwapSurfaceFormat(const std::vector<V
 
 VkPresentModeKHR SwapchainManager::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
     //TODO create a limiter to enable other modes
-    // for (const auto& availablePresentMode : availablePresentModes) {
-    //     if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-    //         return availablePresentMode;
-    //     }
-    // }
-    // for (const auto& availablePresentMode : availablePresentModes) {
-    //     if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
-    //         return availablePresentMode;
-    //     }
-    // }
+    for (const auto& availablePresentMode : availablePresentModes) {
+        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+            return availablePresentMode;
+        }
+    }
+    for (const auto& availablePresentMode : availablePresentModes) {
+        if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+            return availablePresentMode;
+        }
+    }
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
@@ -167,6 +167,7 @@ void SwapchainManager::createImageViews() {
         swapchainImageViews[i] = createImageView(device, swapchainImages[i], swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
     }
 }
+
 void SwapchainManager::recreate(
     const QueueFamilyIndices& queueFamilies,
     const SwapchainSupportDetails& swapchainSupportDetails,

@@ -131,7 +131,7 @@ MeshImportData AssimpModelLoader::load(
             {
                 material.alphaMode = 2;
             }
-            else if (mode == "BLEND")
+            else if (mode == "BLEND_MODE")
             {
                 material.alphaMode = 4;
             }

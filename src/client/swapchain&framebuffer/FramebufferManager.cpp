@@ -1,61 +1,105 @@
 #include "FramebufferManager.hpp"
-#include <array>
+
+#include <cassert>
+#include <stdexcept>
 
 FramebufferManager::FramebufferManager(
     VkDevice device,
     VkRenderPass renderPass,
-    std::vector<VkImageView> swapchainImageViews,
-    const VkImageView colorImageView,
-    const VkImageView depthImageView,
-    const VkExtent2D swapChainExtent,
-    bool useMSAA
-) :
-    device(device)
+    std::size_t swapchainImageViewsSize,
+    VkExtent2D swapchainExtent,
+    std::vector<std::vector<VkImageView>>& attachmentsVector
+)
+    : device(device)
 {
-    this->swapchainFramebuffers.resize(swapchainImageViews.size());
-
-    for (size_t i = 0; i < swapchainImageViews.size(); ++i) {
-
-        std::vector<VkImageView> attachments;
-        if (useMSAA) {
-            attachments = {
-                colorImageView, // MSAA color
-                depthImageView, // depth/stencil
-                swapchainImageViews[i]  // resolve / present
-            };
-        } else {
-            attachments = {
-                swapchainImageViews[i], // resolve / present
-                depthImageView // depth/stencil
-            };
+    #ifndef NDEBUG
+        if (device == VK_NULL_HANDLE)
+        {
+            throw std::runtime_error(
+                "FramebufferManager: invalid Vulkan device"
+            );
         }
 
-        #ifndef NDEBUG
-            assert(renderPass != VK_NULL_HANDLE);
-            assert(colorImageView != VK_NULL_HANDLE);
-            assert(depthImageView != VK_NULL_HANDLE);
-            assert(!swapchainImageViews.empty());
-        #endif
+        if (renderPass == VK_NULL_HANDLE)
+        {
+            throw std::runtime_error(
+                "FramebufferManager: invalid render pass"
+            );
+        }
+
+        if (swapchainImageViewsSize == 0)
+        {
+            throw std::runtime_error(
+                "FramebufferManager: no swapchain image views"
+            );
+        }
+
+        if (swapchainExtent.width == 0 ||
+            swapchainExtent.height == 0)
+        {
+            throw std::runtime_error(
+                "FramebufferManager: invalid framebuffer extent"
+            );
+        }
+
+        if (attachmentsVector.size() != swapchainImageViewsSize)
+        {
+            throw std::runtime_error(
+                "FramebufferManager: attachment vector size does not match swapchain image count"
+            );
+        }
+    #endif
+
+    framebuffers.resize(swapchainImageViewsSize);
+
+    for (size_t i = 0; i < swapchainImageViewsSize; ++i)
+    {
+        std::vector<VkImageView> attachments = attachmentsVector[i];
 
         VkFramebufferCreateInfo framebufferInfo{};
-        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+
+        framebufferInfo.sType =VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = renderPass;
         framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
         framebufferInfo.pAttachments = attachments.data();
-        framebufferInfo.width = swapChainExtent.width;
-        framebufferInfo.height = swapChainExtent.height;
+        framebufferInfo.width = swapchainExtent.width;
+        framebufferInfo.height = swapchainExtent.height;
         framebufferInfo.layers = 1;
 
-        if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &this->swapchainFramebuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create framebuffer!");
+        if (vkCreateFramebuffer(
+                device,
+                &framebufferInfo,
+                nullptr,
+                &framebuffers[i]
+            ) != VK_SUCCESS)
+        {
+            throw std::runtime_error(
+                "FramebufferManager: "
+                "failed to create framebuffer"
+            );
         }
     }
 }
 
-FramebufferManager::~FramebufferManager() {
-    for (VkFramebuffer& framebuffer : this->swapchainFramebuffers) {
-        vkDestroyFramebuffer(device, framebuffer, nullptr);
-        framebuffer = VK_NULL_HANDLE;
+// ================================================================
+// Destructor
+// ================================================================
+
+FramebufferManager::~FramebufferManager()
+{
+    for (VkFramebuffer& framebuffer : framebuffers)
+    {
+        if (framebuffer != VK_NULL_HANDLE)
+        {
+            vkDestroyFramebuffer(
+                device,
+                framebuffer,
+                nullptr
+            );
+
+            framebuffer = VK_NULL_HANDLE;
+        }
     }
-    swapchainFramebuffers.clear();
+
+    framebuffers.clear();
 }

@@ -81,20 +81,20 @@ void RenderInstanceManager::addInstance(
 
         switch (material->alphaMode)
         {
-            case MaterialData::AlphaMode::OPAQUE:
+            case MaterialData::AlphaMode::OPAQUE_MODE:
                 pipelineFlags |=
                     GraphicsPipelineManager::PIPE_CULL_BACK |
                     GraphicsPipelineManager::PIPE_DEPTH_WRITE;
                 break;
 
-            case MaterialData::AlphaMode::MASK:
+            case MaterialData::AlphaMode::MASK_MODE:
                 pipelineFlags |=
                     GraphicsPipelineManager::PIPE_CULL_BACK |
                     GraphicsPipelineManager::PIPE_DEPTH_WRITE |
                     GraphicsPipelineManager::PIPE_ALPHA_TEST;
                 break;
 
-            case MaterialData::AlphaMode::BLEND:
+            case MaterialData::AlphaMode::BLEND_MODE:
                 pipelineFlags |=
                     GraphicsPipelineManager::PIPE_CULL_NONE |
                     GraphicsPipelineManager::PIPE_BLEND;

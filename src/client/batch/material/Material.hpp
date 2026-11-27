@@ -1,76 +1,60 @@
 #pragma once
 
-#include "../texture/TextureImage.hpp"
-#include "MaterialDescriptorManager.hpp"
 #include <memory>
+#include <cstdint>
+#include "../texture/TextureImage.hpp"
 
-/**
- * @brief CPU-side representation of a material for bindless rendering.
- *
- * A Material stores indices into global bindless descriptor arrays.
- *
- * These indices are used in the shader to fetch textures.
- */
-class Material
+#include <vulkan/vulkan.h>
+#include <glm/vec4.hpp>
+
+struct MaterialData
 {
-private:
-    std::shared_ptr<TextureImage> baseColorHandle;
-    std::shared_ptr<TextureImage> normalHandle;
-    std::shared_ptr<TextureImage> metallicRoughnessHandle;
-    VkDescriptorSet descriptorSet;
-
-public:
-    Material(
-        VkDevice device,
-        MaterialDescriptorManager* descriptorManager,
-        std::shared_ptr<TextureImage> baseColorHandle,
-        std::shared_ptr<TextureImage> normalHandle,
-        std::shared_ptr<TextureImage> metallicRoughnessHandle
-    );
-
-    Material(const Material& other) :
-        baseColorHandle(other.baseColorHandle),
-        normalHandle(other.normalHandle),
-        metallicRoughnessHandle(other.metallicRoughnessHandle),
-        descriptorSet(other.descriptorSet)
-    {}
-    Material& operator=(const Material& other)
+    enum class AlphaMode : uint32_t
     {
-        if (this != &other)
-        {
-            baseColorHandle = other.baseColorHandle;
-            normalHandle = other.normalHandle;
-            metallicRoughnessHandle = other.metallicRoughnessHandle;
-            descriptorSet = other.descriptorSet;
-        }
-        return *this;
-    }
+        OPAQUE_MODE = 1,
+        MASK_MODE   = 2,
+        BLEND_MODE  = 4
+    };
 
-    Material(Material&& other) noexcept :
-        baseColorHandle(std::move(other.baseColorHandle)),
-        normalHandle(std::move(other.normalHandle)),
-        metallicRoughnessHandle(std::move(other.metallicRoughnessHandle)),
-        descriptorSet(other.descriptorSet)
-    {
-        other.descriptorSet = VK_NULL_HANDLE;
-    }
-    Material& operator=(Material&& other) noexcept
-    {
-        if (this != &other)
-        {
-            baseColorHandle = std::move(other.baseColorHandle);
-            normalHandle = std::move(other.normalHandle);
-            metallicRoughnessHandle = std::move(other.metallicRoughnessHandle);
-            descriptorSet = other.descriptorSet;
+    glm::vec4 baseColorFactor{1.0f};
 
-            other.descriptorSet = VK_NULL_HANDLE;
-        }
-        return *this;
-    }
+    float metallicFactor = 1.0f;
+    float roughnessFactor = 1.0f;
 
+    AlphaMode alphaMode = AlphaMode::OPAQUE_MODE;
+    float alphaCutoff = 0.5f;
 
-    std::shared_ptr<TextureImage> getBaseColorHandle() const { return baseColorHandle; }
-    std::shared_ptr<TextureImage> getNnormalHandle() const { return normalHandle; }
-    std::shared_ptr<TextureImage> getMetallicRoughnessHandle() const { return metallicRoughnessHandle; }
-    const VkDescriptorSet getDescriptorSet() const { return descriptorSet; }
+    bool doubleSided = false;
+
+    uint32_t baseColor;
+    uint32_t normal;
+    uint32_t metallicRoughness;
 };
+
+struct MaterialCPU
+{
+    uint32_t materialOffset;
+
+    MaterialData::AlphaMode alphaMode = MaterialData::AlphaMode::OPAQUE_MODE;
+
+    uint32_t baseColor;
+    uint32_t normal;
+    uint32_t metallicRoughness;
+};
+
+struct MaterialGPU
+{
+    glm::vec4 baseColorFactor; // 16
+
+    float metallicFactor; // 4
+    float roughnessFactor; // 4
+
+    uint32_t alphaMode; // 4
+    float alphaCutoff; // 4
+
+    uint32_t baseColorTexture; // 4
+    uint32_t normalTexture; // 4
+    uint32_t metallicRoughnessTexture; // 4
+
+    uint32_t doubleSided; // 4
+}; // 48

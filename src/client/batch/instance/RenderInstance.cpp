@@ -1,16 +1,72 @@
 #include "RenderInstance.hpp"
-#include "../RenderBatchManager.hpp"
+#include "../RenderInstanceManager.hpp"
 #include <glm/gtc/matrix_transform.hpp>
+#include "../RenderBatch.hpp"
 
 RenderInstance::RenderInstance(
     const glm::vec3& position,
-    const glm::vec3& rotation,
+    const glm::quat& rotation,
     const glm::vec3& scale
 ) :
     position(position),
     rotation(rotation),
     scale(scale)
 {
+}
+
+//copy
+RenderInstance::RenderInstance(const RenderInstance& other) noexcept
+    :
+    model(other.model),
+    registrations(other.registrations),
+    position(other.position),
+    rotation(other.rotation),
+    scale(other.scale),
+    renderInstanceRegistration(other.renderInstanceRegistration),
+    blas(other.blas)
+{
+}
+
+RenderInstance& RenderInstance::operator=(const RenderInstance& other) noexcept
+{
+    if (this != &other)
+    {
+        model = other.model;
+        rotation = other.rotation;
+        position = other.position;
+        scale = other.scale;
+        registrations = other.registrations;
+        renderInstanceRegistration = other.renderInstanceRegistration;
+        blas = other.blas;
+    }
+    return *this;
+}
+
+// move
+RenderInstance::RenderInstance(RenderInstance&& other) noexcept
+    : model(std::move(other.model))
+    , registrations(std::move(other.registrations))
+    , position(other.position)
+    , rotation(other.rotation)
+    , scale(other.scale)
+    , renderInstanceRegistration(other.renderInstanceRegistration)
+    , blas(other.blas)
+{
+}
+
+RenderInstance& RenderInstance::operator=(RenderInstance&& other) noexcept
+{
+    if (this != &other)
+    {
+        model = std::move(other.model);
+        rotation = std::move(other.rotation);
+        position = std::move(other.position);
+        scale = std::move(other.scale);
+        registrations = std::move(other.registrations);
+        renderInstanceRegistration = other.renderInstanceRegistration;
+        blas = other.blas;
+    }
+    return *this;
 }
 
 void RenderInstance::addRegistration(
@@ -28,25 +84,17 @@ void RenderInstance::clearRegistrations()
 
 void RenderInstance::updateModelMatrix()
 {
-    glm::mat4 model(1.0f);
-
-    model = glm::translate(model, position);
-    model = glm::rotate(model, rotation.x, glm::vec3(1, 0, 0));
-    model = glm::rotate(model, rotation.y, glm::vec3(0, 1, 0));
-    model = glm::rotate(model, rotation.z, glm::vec3(0, 0, 1));
-    model = glm::scale(model, scale);
+    model =
+        glm::translate(glm::mat4(1.0f), position) *
+        glm::mat4_cast(rotation) *
+        glm::scale(glm::mat4(1.0f), scale);
 
     for (auto& reg : registrations)
     {
-        reg.batch->getinstancesData()[reg.indexInBatch] = model;
+        reg.renderBatch->getInstanceData(reg.indexInBatch) = model;
     }
 }
 
 RenderInstance::~RenderInstance()
 {
-    for (auto& reg : registrations)
-    {
-        if (reg.batch)
-            reg.batch->removeInstance(this, reg.indexInBatch);
-    }
 }

@@ -2,30 +2,32 @@
 
 #include "CoreVulkan.hpp"
 #include "CoreVulkan.hpp"
-#include "ui/UI.hpp"
 #include "swapchain&framebuffer/SwapchainManager.hpp"
-#include "graphics_pipeline/RenderPass.hpp"
+#include "render_pass/RenderPassManager.hpp"
 #include "graphics_pipeline/GlobalDescriptorManager.hpp"
 #include "camera/CameraBufferManager.hpp"
-#include "graphics_pipeline/GraphicsPipeline.hpp"
-#include "swapchain&framebuffer/DepthBufferManager.hpp"
+#include "graphics_pipeline/GraphicsPipelineManager.hpp"
 #include "swapchain&framebuffer/FramebufferManager.hpp"
-//todo fix mash name :)
-#include "swapchain&framebuffer/CommandManager.hpp"
+#include "command_buffer/CommandManager.hpp"
 #include "camera/UniformBufferGlobal.hpp"
-#include "image/ImageColor.hpp"
 #include "batch/material/MaterialDescriptorManager.hpp"
-#include "batch/RenderBatchManager.hpp"
+#include "batch/RenderInstanceManager.hpp"
+#include "batch/instance/RenderInstanceRegistration.hpp"
 #include "batch/ResourceManager.hpp"
 #include "batch/instance/RenderInstance.hpp"
 #include "batch/instance/InstanceDescriptorManager.hpp"
 #include "particle/ParticleInstanceDescriptorManager.hpp"
+#include "ConfigTable.hpp"
+#include "raytracing/buffers/GBufferDescriptorManager.hpp"
+#include "raytracing/buffers/TransparentGBufferDescriptorManager.hpp"
+#include "raytracing/buffers/DeferredLightingDescriptorManager.hpp"
+#include "light/LightInstanceManager.hpp"
 
 class Render {
 public:
     const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
-    static TextureImage::DefaultTextures defaultTextures;
     bool framebufferResized = false;
+    Config::ConfigTable config;
 
     Render();
     int run();
@@ -34,43 +36,54 @@ public:
 private:
 
     //screen width in px
-    uint32_t width = 800;
+    uint32_t width = 1920;
 
     // screen height in px
-    uint32_t height = 600;
+    uint32_t height = 1080;
 
     uint32_t currentFrame = 0;
 
     GLFWwindow* window;
     CoreVulkan* coreVulkan;
     SwapchainManager* swapchainManager;
-    UI* ui;
 
-    RenderPass* renderPass;
+    RenderPassManager* gBufferRenderPassManager, *deferredLightRenderPassManager, *transparentRenderPassManager, *compositeRenderPassManager;
     CameraBufferManager* cameraBufferManager;
     GlobalDescriptorManager* globalDescriptorManager;
+    GBuffer* gBuffer;
+    DeferredLightingBuffer* deferredLightingBuffer;
+    DeferredLightingDescriptorManager* deferredLightingDescriptorManager;
+    TransparentGBuffer* transparentGBuffer;
+    GBufferDescriptorManager* gBufferDescriptorManager;
+    TransparentGBufferDescriptorManager* transparentGBufferDescriptorManager;
     MaterialDescriptorManager* materialDescriptorManager;
-    GraphicsPipeline* graphicsPipeline;
-    ImageColor* imageColor;
-    DepthBufferManager* depthBufferManager;
-    FramebufferManager* framebufferManager;
+
+    GraphicsPipelineManager* graphicsPipeline;
+
+    FramebufferManager* gBufferFramebufferManager, *deferredLightingFramebufferManager, *transparentFramebufferManager, *compositeFramebufferManager;
+
     CommandManager* commandManager;
-    CameraBufferManager::ICameraProvider* iCameraProvider;
+
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
-    RenderBatchManager* renderBatchManager;
+
+    RenderInstanceManager* renderInstanceManager;
+    LightInstanceManager* lightInstanceManager;
     ResourceManager* resourceManager;
-    RenderInstance* renderInstance;
+    RenderInstanceRegistration* renderInstanceRegistration;
     BufferManager* bufferManager;
     InstanceDescriptorManager* instanceDescriptorManager;
     ParticleInstanceDescriptorManager* particleInstanceDescriptorManager;
     SamplerManager* samplerManagerForStaticTextures;
 
+    std::vector<ParticleData> particlesData = {};
+
     uint32_t maxMaterials = 1024;
     uint32_t maxbindlessTextures = 2048;
     uint32_t maxInstances = 21080;
+    uint32_t maxLightInstances = 32;
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
@@ -81,9 +94,27 @@ private:
     void drawFrame();
     void cleanup();
 
+    void createCoreVulkan();
+    void createSwapchain();
+    void createCameraAndSamplers();
+    void createDescriptorManagers();
+    void createCommandAndSyncObjects();
+    void createRenderPasses();
+    void createSwapchainDependentResources();
+    void createGraphicsPipelineObjects();
     void createSyncObjects();
+
     void initImagesInFlight(uint32_t swapchainImageCount);
 
-    void cleanupSwapChain();
+    void updateInstances(
+        double time,
+        double deltaTime
+    );
+
+    void destroySwapchainDependentResources();
     void recreateSwapChain();
+
+    //tmp
+    // Original (spawn) position of every render instance, captured on the first update.
+    std::vector<glm::vec3> instanceBasePositions;
 };

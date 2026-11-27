@@ -1,51 +1,60 @@
 #pragma once
 
 #include "../material/Material.hpp"
+#include "BatchRegistration.hpp"
+#include "../../raytracing/acceleration_structure/utils/accelerationStructureConfig.hpp"
+#include "../../raytracing/acceleration_structure/cpu/AS.hpp"
+#include "../../raytracing/acceleration_structure/cpu/node/BLASInstance.hpp"
+#include "RenderInstanceRegistration.hpp"
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <vector>
 #include <memory>
 #include <glm/glm.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 class RenderBatch;
-class RenderBatchManager;
+class RenderInstanceManager;
 
 class RenderInstance
 {
     friend class RenderBatch;
-    friend class RenderBatchManager;
-public:
-    struct BatchRegistration
-    {
-        RenderBatch* batch = nullptr;
-        size_t indexInBatch = 0;
-    };
+    friend class RenderInstanceManager;
 private:
-
-    std::vector<BatchRegistration> registrations;
+    glm::mat4 model; //64
+public:
+    glm::quat rotation; //16
+    glm::vec3 position; //12
+    glm::vec3 scale; //12
+private:
+    std::vector<BatchRegistration> registrations; //12
+public:
+    RenderInstanceRegistration* renderInstanceRegistration; //8
+private:
+    std::shared_ptr<AS<DefaultBLASNode, BLASInstance>> blas; //8
 
 public:
+    // bool dirtyTransform = true; // 1
 
-    glm::vec3 position;
-    glm::vec3 rotation; // Euler (radians)
-    glm::vec3 scale;
+    //144 bytes -> 152
 
     RenderInstance(
         const glm::vec3& position = glm::vec3(0.0f),
-        const glm::vec3& rotation = glm::vec3(0.0f),
+        const glm::quat& rotation = glm::vec3(0.0f),
         const glm::vec3& scale = glm::vec3(0.0f)
     );
 
     ~RenderInstance();
 
-    RenderInstance(const RenderInstance&) = delete;
-    RenderInstance& operator=(const RenderInstance&) = delete;
+    RenderInstance(const RenderInstance&) noexcept;
+    RenderInstance& operator=(const RenderInstance&) noexcept;
 
-    RenderInstance(RenderInstance&&) noexcept = delete;
-    RenderInstance& operator=(RenderInstance&&) noexcept = delete;
+    RenderInstance(RenderInstance&&) noexcept;
+    RenderInstance& operator=(RenderInstance&&) noexcept;
 
     void updateModelMatrix();
 
-    std::vector<BatchRegistration> getRegistrations() const { return registrations; }
+    std::vector<BatchRegistration>& getRegistrations() { return registrations; }
 
 private:
     void addRegistration(
@@ -54,4 +63,15 @@ private:
     );
 
     void clearRegistrations();
+
+public:
+    AS<DefaultBLASNode, BLASInstance>* getBLAS() const
+    {
+        return blas.get();
+    }
+
+    const glm::mat4& getModelMatrix() const
+    {
+        return model;
+    }
 };

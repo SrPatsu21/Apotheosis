@@ -1,68 +1,109 @@
 #include "Render.hpp"
+#include "graphics_pipeline/pipelines/IPipelineProvider.hpp"
+#include "raytracing/render_pass/GeometryGBufferRenderPassProvider.hpp"
+#include "raytracing/render_pass/TransparentGBufferRenderPassProvider.hpp"
+#include "raytracing/render_pass/DeferredLightingRenderPassProvider.hpp"
+#include "raytracing/render_pass/CompositeRenderPassProvider.hpp"
+#include "raytracing/frame_buffer/GBufferFramebufferProvider.hpp"
+#include "raytracing/frame_buffer/DeferredLightingFramebufferProvider.hpp"
+#include "raytracing/frame_buffer/CompositeFramebufferProvider.hpp"
 
-TextureImage::DefaultTextures Render::defaultTextures =
-{
-    nullptr,
-    nullptr,
-    nullptr
+#include <chrono>
+
+Render::Render(){
+
+    config.lighting.flags =
+        Config::ConfigTable::Bit(Config::LightingBits::Shadows) |
+        Config::ConfigTable::Bit(Config::LightingBits::RayTracing);
 };
-
-Render::Render(){};
 
 int Render::run(){
     //GLFW things
     initWindow();
-
     // Basic all vulkan setup
     initVulkan();
-
-    // The UI
-    initImGui();
-
     // The 3D objects
+    #ifndef NDEBUG
+        // g_actualCommandBuffer = commandManager->getCommandBuffers()[currentFrame];
+        // initVulkanDebugMarkers(coreVulkan->getDevice());
+    #endif
+
     initInstances();
 
-    //main loop
+    // const double targetFPS = 1200.0;
+    // const double targetFrameTime = 1.0 / targetFPS;
+
+    double lastFrameTime = glfwGetTime();
+    // double nextFrameTime = lastFrameTime + targetFrameTime;
+
+    // double fpsTimer = lastFrameTime;
+
+    // int frameCount = 0;
+    // double fps = 0.0;
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        // ui new frame
-        this->ui->newFrame();
-        this->ui->build();
+
         #ifndef NDEBUG
-            // renderBatchManager->batchSize();
-            // renderBatchManager->forEachBatch(
-            //     [&](RenderBatch& batch)
-            //     {
-            //         std::cout << "-------------------" << std::endl;
-            //         auto key = batch.getKey();
-            //         std::cout << "pipelineFlags:" << key.pipelineFlags << std::endl;
-            //         std::cout << "mesh:" << key.mesh << std::endl;
-            //         std::cout << "submesh:" << key.submesh << std::endl;
-            //         std::cout << "material:" << key.material << std::endl;
-            //         std::cout << "instances:" << std::endl;
-            //         for (auto i : batch.getinstancesData())
-            //         {
-            //             std::cout << "==" << std::endl;
-            //             const float* p = (const float*)&i.model;
-            //             for (int i = 0; i < 4; ++i) {
-            //                 for (int j = 0; j < 4; ++j) {
-            //                     std::cout << p[i * 4 + j] << " ";
-            //                 }
-            //                 std::cout << std::endl;
-            //             }
-            //             std::cout << "==" << std::endl;
-            //         }
-            //         std::cout << "-------------------" << std::endl;
-            //     }
-            // );
+            // g_actualCommandBuffer = commandManager->getCommandBuffers()[currentFrame];
         #endif
+
+        // while (true) {
+        //     double now = glfwGetTime();
+        //     double remaining = nextFrameTime - now;
+
+        //     if (remaining <= 0.0)
+        //         break;
+
+        //     if (remaining > 0.001) {
+        //         std::this_thread::sleep_for(
+        //             std::chrono::microseconds(
+        //                 static_cast<long long>((remaining - 0.0005) * 1'000'000.0)
+        //             )
+        //         );
+        //     } else {
+        //         std::this_thread::yield();
+        //     }
+        // }
+
+        double currentTime = glfwGetTime();
+        double elapsed = currentTime - lastFrameTime;
+        lastFrameTime = currentTime;
+
+
+        // nextFrameTime += targetFrameTime;
+
+        // if (currentTime > nextFrameTime + targetFrameTime) {
+        //     nextFrameTime = currentTime + targetFrameTime;
+        // }
+
+        updateInstances(
+            currentTime,
+            elapsed
+        );
+
         drawFrame();
+
+        // frameCount++;
+
+        // if (currentTime - fpsTimer >= 1.0) {
+        //     fps = frameCount / (currentTime - fpsTimer);
+
+        //     std::cout
+        //         << "time: " << currentTime
+        //         << " | Delta: " << elapsed << " s"
+        //         << " | FPS: " << fps
+        //         << std::endl;
+
+        //     frameCount = 0;
+        //     fpsTimer = currentTime;
+        // }
     }
 
-    //free memory (secure)
     cleanup();
     return 0;
-};
+}
+
 
 void Render::initWindow(){
     if (!glfwInit()) {
@@ -81,7 +122,43 @@ void Render::initWindow(){
 
 void Render::initVulkan(){
     //* Core Vulkan
-    //Create Vulkan
+    createCoreVulkan();
+
+    // Create swapchain
+    createSwapchain();
+
+    // Create render pass
+    createRenderPasses();
+
+    // Create camera buffer, sampler e default textures
+    createCameraAndSamplers();
+
+    // Create framebuffers / gBuffer / gBufferDescriptorManager
+    createSwapchainDependentResources();
+
+    // Create sync objects + command manager
+    createCommandAndSyncObjects();
+
+    // Create descriptor managers
+    createDescriptorManagers();
+
+    // Create graphics pipeline
+    createGraphicsPipelineObjects();
+
+    #ifndef NDEBUG
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(
+            coreVulkan->getPhysicalDevice(),
+            &deviceProperties
+        );
+
+        std::cout << "Push Constant Max Size: " << deviceProperties.limits.maxPushConstantsSize << " bytes\n";
+    #endif
+
+    vkDeviceWaitIdle(coreVulkan->getDevice());
+};
+
+void Render::createCoreVulkan(){
     coreVulkan = new CoreVulkan(
         window,
         {},
@@ -96,8 +173,9 @@ void Render::initVulkan(){
         coreVulkan->getGraphicsQueue(),
         coreVulkan->getGraphicsQueueFamilyIndices().graphicsFamily.value()
     );
+}
 
-    // Create swapchain
+void Render::createSwapchain(){
     swapchainManager = new SwapchainManager(
         coreVulkan->getDevice(),
         coreVulkan->getGraphicsQueueFamilyIndices(),
@@ -106,88 +184,67 @@ void Render::initVulkan(){
         window,
         {}
     );
+}
 
-    // Create render pass
-    renderPass = new RenderPass(
-        coreVulkan->getDevice(),
-        swapchainManager->getImageFormat(),
-        coreVulkan->getMsaaSamples(),
-        coreVulkan->getDepthFormat(),
-        {}
-    );
-
+void Render::createCameraAndSamplers(){
     // Create camera buff with uniformBuffer
-    iCameraProvider = new CameraBufferManager::DefaultCameraProvider();
-
     cameraBufferManager = new CameraBufferManager(
         coreVulkan->getDevice(),
         bufferManager,
-        Render::MAX_FRAMES_IN_FLIGHT
+        Render::MAX_FRAMES_IN_FLIGHT,
+        window
     );
 
-    //Multisampling implementation
-    imageColor = new ImageColor(
-        coreVulkan->getPhysicalDevice(),
-        coreVulkan->getDevice(),
-        swapchainManager->getImageFormat(),
-        swapchainManager->getExtent(),
-        coreVulkan->getMsaaSamples()
-    );
-
+    //MultiSampling implementation
     samplerManagerForStaticTextures = new SamplerManager(
         coreVulkan->getPhysicalDevice(),
         coreVulkan->getDevice()
     );
+}
 
+void Render::createDescriptorManagers(){
 
-    Render::defaultTextures.white = TextureFactory::createSolidRGBA8(
+    resourceManager = new ResourceManager(
         coreVulkan->getPhysicalDevice(),
+        coreVulkan->getDevice(),
+        bufferManager
+    );
+
+    auto accelerationStructureManager = resourceManager->getAccelerationStructureManager();
+    globalDescriptorManager = new GlobalDescriptorManager(
+        coreVulkan->getDevice(),
+        this->cameraBufferManager,
+        accelerationStructureManager->getBLASBuffer(),
+        accelerationStructureManager->getBLASInstanceBuffer(),
+        accelerationStructureManager->getTLASGPU(),
+        accelerationStructureManager->getTLASInstanceGPU(),
+        Render::MAX_FRAMES_IN_FLIGHT
+    );
+
+    instanceDescriptorManager = new InstanceDescriptorManager(
         coreVulkan->getDevice(),
         bufferManager,
-        samplerManagerForStaticTextures,
-        VK_FORMAT_R8G8B8A8_SRGB,
-        255, 255, 255, 255
+        coreVulkan->getAtomSize(),
+        Render::MAX_FRAMES_IN_FLIGHT,
+        maxInstances
     );
-
-    Render::defaultTextures.normal = TextureFactory::createSolidRGBA8(
-        coreVulkan->getPhysicalDevice(),
+    particleInstanceDescriptorManager = new ParticleInstanceDescriptorManager(
         coreVulkan->getDevice(),
         bufferManager,
-        samplerManagerForStaticTextures,
-        VK_FORMAT_R8G8B8A8_UNORM,
-        128, 128, 255, 255
+        coreVulkan->getAtomSize(),
+        Render::MAX_FRAMES_IN_FLIGHT,
+        maxInstances
     );
-
-    Render::defaultTextures.metallic = TextureFactory::createSolidRGBA8(
-        coreVulkan->getPhysicalDevice(),
+    lightInstanceManager = new LightInstanceManager(
         coreVulkan->getDevice(),
         bufferManager,
-        samplerManagerForStaticTextures,
-        VK_FORMAT_R8G8B8A8_UNORM,
-        0, 255, 0, 255
+        coreVulkan->getAtomSize(),
+        Render::MAX_FRAMES_IN_FLIGHT,
+        maxLightInstances
     );
+}
 
-    //Create DepthResources
-    depthBufferManager = new DepthBufferManager(
-        coreVulkan->getPhysicalDevice(),
-        coreVulkan->getDevice(),
-        swapchainManager->getExtent(),
-        coreVulkan->getMsaaSamples(),
-        coreVulkan->getDepthFormat(),
-        VK_IMAGE_ASPECT_DEPTH_BIT
-    );
-
-    //Create framebuffers
-    framebufferManager = new FramebufferManager(
-        coreVulkan->getDevice(),
-        renderPass->get(),
-        swapchainManager->getImageViews(),
-        imageColor->getColorImageView(),
-        depthBufferManager->getDepthImageView(),
-        swapchainManager->getExtent(),
-        (coreVulkan->getMsaaSamples() != VK_SAMPLE_COUNT_1_BIT)
-    );
-
+void Render::createCommandAndSyncObjects(){
     // create semaphore and fence
     createSyncObjects();
     initImagesInFlight(
@@ -198,108 +255,430 @@ void Render::initVulkan(){
     commandManager = new CommandManager(
         coreVulkan->getDevice(),
         coreVulkan->getGraphicsQueueFamilyIndices().graphicsFamily.value(),
-        this->framebufferManager->getFramebuffers()
-    );
-
-    // Create descript
-    globalDescriptorManager = new GlobalDescriptorManager(
-        coreVulkan->getDevice(),
-        this->cameraBufferManager,
-        Render::MAX_FRAMES_IN_FLIGHT
-    );
-
-    materialDescriptorManager = new MaterialDescriptorManager(
-        coreVulkan->getDevice(),
-        maxMaterials,
-        {}
-    );
-
-    instanceDescriptorManager = new InstanceDescriptorManager(
-        coreVulkan->getDevice(),
-        bufferManager,
-        coreVulkan->getAtomSize(),
-        Render::MAX_FRAMES_IN_FLIGHT,
-        maxInstances
-    );
-
-    particleInstanceDescriptorManager = new ParticleInstanceDescriptorManager(
-        coreVulkan->getDevice(),
-        bufferManager,
-        coreVulkan->getAtomSize(),
-        Render::MAX_FRAMES_IN_FLIGHT,
-        maxInstances
-    );
-
-    // Create graphics pipeline
-    graphicsPipeline = new GraphicsPipeline(
-        coreVulkan->getDevice(),
-        swapchainManager->getExtent(),
-        renderPass->get(),
-        globalDescriptorManager->getLayout(),
-        materialDescriptorManager->getLayout(),
-        instanceDescriptorManager->getLayout(),
-        particleInstanceDescriptorManager->getLayout(),
-        coreVulkan->getMsaaSamples(),
-        coreVulkan->getSupportedFeatures12()
-    );
-
-    #ifndef NDEBUG
-        // VkPhysicalDeviceProperties deviceProperties;
-        // vkGetPhysicalDeviceProperties(CoreVulkan::getPhysicalDevice(), &deviceProperties);
-
-        // std::cout << "Push Constant Max Size: " << deviceProperties.limits.maxPushConstantsSize << " bytes\n";
-    #endif
-
-    vkDeviceWaitIdle(coreVulkan->getDevice());
-};
-
-void Render::initImGui(){
-    this->ui = new UI;
-    this->ui->init(
-        this->window,
-        coreVulkan->getInstance(),
-        coreVulkan->getPhysicalDevice(),
-        coreVulkan->getDevice(),
-        coreVulkan->getGraphicsQueueFamilyIndices(),
-        coreVulkan->getGraphicsQueue(),
-        this->renderPass->get(),
+        this->gBufferFramebufferManager->getFramebuffers(),
         this->swapchainManager->getImages().size(),
-        coreVulkan->getMsaaSamples()
+        4
     );
 }
 
-void Render::initInstances(){
+void Render::createRenderPasses(){
+    RenderPassManager::Description description1, description2, description3;
 
-    resourceManager = new ResourceManager(
-        coreVulkan->getPhysicalDevice(),
+    GeometryGBufferRenderPassProvider::build(
+        description1,
+        coreVulkan->getMsaaSamples(),
+        coreVulkan->getDepthFormat()
+    );
+    gBufferRenderPassManager = new RenderPassManager(
         coreVulkan->getDevice(),
-        bufferManager,
-        materialDescriptorManager
+        std::move(description1)
     );
 
-    renderBatchManager = new RenderBatchManager(
-        resourceManager
+    TransparentGBufferRenderPassProvider::build(
+        description2,
+        coreVulkan->getMsaaSamples(),
+        coreVulkan->getDepthFormat()
+    );
+    transparentRenderPassManager = new RenderPassManager(
+        coreVulkan->getDevice(),
+        std::move(description2)
     );
 
-    renderInstance = new RenderInstance();
-    renderBatchManager->addInstance(
-        resourceManager->getMesh("models/Maxwell/Untitled.gltf"),
-        renderInstance
+    DeferredLightingRenderPassProvider::build(
+        description3,
+        coreVulkan->getMsaaSamples()
     );
-    renderInstance->scale = glm::vec3(0.2f);
+    deferredLightRenderPassManager = new RenderPassManager(
+        coreVulkan->getDevice(),
+        std::move(description3)
+    );
+
+    RenderPassManager::Description compositeDescription;
+    CompositeRenderPassProvider::build(
+        compositeDescription,
+        swapchainManager->getImageFormat()
+    );
+    compositeRenderPassManager = new RenderPassManager(
+        coreVulkan->getDevice(),
+        std::move(compositeDescription)
+    );
+}
+
+void Render::createSwapchainDependentResources(){
+    std::vector<std::vector<VkImageView>> attachmentsVector;
+
+    // ==========================
+    // GBuffer
+    // ==========================
+    gBuffer = new GBuffer;
+    gBuffer->create(
+        coreVulkan->getDevice(),
+        coreVulkan->getPhysicalDevice(),
+        swapchainManager->getExtent(),
+        coreVulkan->getDepthFormat(),
+        coreVulkan->getMsaaSamples()
+    );
+
+    gBufferDescriptorManager = new GBufferDescriptorManager(
+        coreVulkan->getDevice(),
+        gBuffer
+    );
+
+    GBufferFramebufferProvider::GBufferAttachments gBufferAttachments{
+        .position = gBuffer->getView(GBuffer::Attachment::Position),
+        .albedo = gBuffer->getView(GBuffer::Attachment::Albedo),
+        .normal = gBuffer->getView(GBuffer::Attachment::Normal),
+        .material = gBuffer->getView(GBuffer::Attachment::Material),
+        .depth = gBuffer->getView(GBuffer::Attachment::Depth)
+    };
+
+    GBufferFramebufferProvider::build(
+        gBufferAttachments,
+        swapchainManager->getImageViews().size(),
+        attachmentsVector
+    );
+
+    gBufferFramebufferManager = new FramebufferManager(
+        coreVulkan->getDevice(),
+        gBufferRenderPassManager->get(),
+        swapchainManager->getImageViews().size(),
+        swapchainManager->getExtent(),
+        attachmentsVector
+    );
+
+    // ==========================
+    // Transparent GBuffer
+    // ==========================
+    attachmentsVector.clear();
+    transparentGBuffer = new TransparentGBuffer;
+    transparentGBuffer->create(
+        coreVulkan->getDevice(),
+        coreVulkan->getPhysicalDevice(),
+        swapchainManager->getExtent(),
+        coreVulkan->getMsaaSamples()
+    );
+
+    transparentGBufferDescriptorManager = new TransparentGBufferDescriptorManager(
+        coreVulkan->getDevice(),
+        transparentGBuffer
+    );
+
+    GBufferFramebufferProvider::GBufferAttachments transparentGBufferAttachments{
+        .position = transparentGBuffer->getView(TransparentGBuffer::Attachment::Position),
+        .albedo = transparentGBuffer->getView(TransparentGBuffer::Attachment::Albedo),
+        .normal = transparentGBuffer->getView(TransparentGBuffer::Attachment::Normal),
+        .material = transparentGBuffer->getView(TransparentGBuffer::Attachment::Material),
+
+        .depth = gBuffer->getView(GBuffer::Attachment::Depth)
+    };
+    GBufferFramebufferProvider::build(
+        transparentGBufferAttachments,
+        swapchainManager->getImageViews().size(),
+        attachmentsVector
+    );
+
+    transparentFramebufferManager = new FramebufferManager(
+        coreVulkan->getDevice(),
+        transparentRenderPassManager->get(),
+        swapchainManager->getImageViews().size(),
+        swapchainManager->getExtent(),
+        attachmentsVector
+    );
+
+    // ==========================
+    // Lighting
+    // ==========================
+    deferredLightingBuffer = new DeferredLightingBuffer;
+
+    deferredLightingBuffer->create(
+        coreVulkan->getDevice(),
+        coreVulkan->getPhysicalDevice(),
+        swapchainManager->getExtent(),
+        coreVulkan->getMsaaSamples()
+    );
+
+    deferredLightingDescriptorManager =
+        new DeferredLightingDescriptorManager(
+            coreVulkan->getDevice(),
+            deferredLightingBuffer
+        );
+
+    attachmentsVector.clear();
+
+    DeferredLightingFramebufferProvider::build(
+        deferredLightingBuffer->getView(),
+        swapchainManager->getImageViews().size(),
+        attachmentsVector
+    );
+
+    deferredLightingFramebufferManager =
+        new FramebufferManager(
+            coreVulkan->getDevice(),
+            deferredLightRenderPassManager->get(),
+            swapchainManager->getImageViews().size(),
+            swapchainManager->getExtent(),
+            attachmentsVector
+        );
+
+    // ==========================
+    // Composite
+    // ==========================
+    attachmentsVector.clear();
+    CompositeFramebufferProvider::build(
+        swapchainManager->getImageViews(),
+        swapchainManager->getImageViews().size(),
+        attachmentsVector
+    );
+
+    compositeFramebufferManager = new FramebufferManager(
+        coreVulkan->getDevice(),
+        compositeRenderPassManager->get(),
+        swapchainManager->getImageViews().size(),
+        swapchainManager->getExtent(),
+        attachmentsVector
+    );
+}
+
+void Render::createGraphicsPipelineObjects(){
+    PipelineCreationContext pipelineContext{
+        .device = coreVulkan->getDevice(),
+        .gBufferRenderPass = gBufferRenderPassManager->get(),
+        .msaa = coreVulkan->getMsaaSamples(),
+        .supportedFeatures12 = coreVulkan->getSupportedFeatures12(),
+        .config = &config
+    };
+    pipelineContext.globalLayout = globalDescriptorManager->getLayout();
+    pipelineContext.materialLayout = resourceManager->getMaterialManager()->getDescriptorSetLayout();
+    pipelineContext.instanceLayout = instanceDescriptorManager->getLayout();
+    pipelineContext.particleLayout = particleInstanceDescriptorManager->getLayout();
+
+    pipelineContext.lightRenderPass = deferredLightRenderPassManager->get();
+    pipelineContext.compositeRenderPass = compositeRenderPassManager->get();
+
+    pipelineContext.gBufferLayout = gBufferDescriptorManager->getLayout();
+    pipelineContext.transparentGBufferLayout = transparentGBufferDescriptorManager->getLayout();
+    pipelineContext.lightingLayout = lightInstanceManager->getLightDescriptorManager()->getDescriptorSetLayout();
+    pipelineContext.deferredLightingLayout = deferredLightingDescriptorManager->getLayout();
+
+    // Create graphics pipeline
+    graphicsPipeline = new GraphicsPipelineManager(
+        coreVulkan->getDevice(),
+        swapchainManager->getExtent(),
+        pipelineContext,
+        config
+    );
+}
+
+void Render::initInstances() {
+
+    renderInstanceManager = new RenderInstanceManager(resourceManager);
+
+    // ------------------------------------------------------------------
+    // Constants
+    // ------------------------------------------------------------------
+    constexpr float TWO_PI = 6.28318530718f;
+
+    // Tweak these to match the real size of each model.
+    constexpr float MAXWELL_SCALE  = 0.2f;
+    constexpr float CROWN_SCALE    = 1.0f;
+    constexpr float THRESHER_SCALE = 1.0f;
+
+    // ------------------------------------------------------------------
+    // Meshes (fetched once, reused by every instance)
+    // ------------------------------------------------------------------
+    auto floorMesh    = resourceManager->getMesh("models/floor/Untitled.gltf");
+    auto maxwellMesh  = resourceManager->getMesh("models/Maxwell/Untitled.gltf");
+    auto globeMesh    = resourceManager->getMesh("models/GLASSGLOBE/GLASSGLOBE.gltf");
+    auto paneMesh     = resourceManager->getMesh("models/GlassPane/glasspane.gltf");
+
+    // ------------------------------------------------------------------
+    // Helper: creates an instance, places it and updates its model matrix.
+    // The registration is not stored; instances can be retrieved later by
+    // iterating the manager's vector.
+    // ------------------------------------------------------------------
+    auto spawn = [this](auto mesh, const glm::vec3& position, const glm::vec3& scale) {
+        RenderInstanceRegistration* registration =
+            renderInstanceManager->createRenderInstance(mesh);
+
+        RenderInstance* instance =
+            renderInstanceManager->getRenderInstance(registration->indexInVector);
+
+        instance->scale = scale;
+        instance->position += position;
+        instance->updateModelMatrix();
+    };
+
+    // ------------------------------------------------------------------
+    // Base scene (original instances)
+    // ------------------------------------------------------------------
+    spawn(floorMesh,   {0.0f, -5.0f,  0.0f}, glm::vec3(100.0f));  // main floor
+    spawn(floorMesh,   {0.0f, 4.0f,  0.0f}, glm::vec3(0.2f));    // small floating floor
+    spawn(maxwellMesh, {0.0f, 1.0f,  0.0f}, glm::vec3(0.2f));
+    spawn(maxwellMesh, {2.0f, 5.0f,  0.0f}, glm::vec3(0.2f));
+    spawn(globeMesh,   {0.0f, 3.0f,  2.0f}, glm::vec3(2.0f));
+    spawn(paneMesh,    {0.0f, 3.0f, -4.0f}, glm::vec3(0.5f));
+    spawn(paneMesh,    {0.0f, 6.0f, -4.0f}, glm::vec3(0.5f));
+
+    // ------------------------------------------------------------------
+    // BVH stress test (fully deterministic, no randomness)
+    // Each pattern produces a different spatial distribution for the TLAS.
+    // ------------------------------------------------------------------
+
+    // 1) Maxwell grid: 6x6, spacing 6. Scale cycles over 4 values so
+    //    neighbouring AABBs have different sizes.
+    {
+        constexpr int   COUNT   = 6;
+        constexpr float SPACING = 6.0f;
+        const glm::vec3 origin(-15.0f, 0.0f, 5.0f);
+
+        for (int x = 0; x < COUNT; ++x) {
+            for (int z = 0; z < COUNT; ++z) {
+                const int   i = x * COUNT + z;
+                const float s = MAXWELL_SCALE * (1.0f + 0.5f * float(i % 4));
+                spawn(
+                    maxwellMesh,
+                    origin + glm::vec3(x * SPACING, 0.0f, z * SPACING),
+                    glm::vec3(s)
+                );
+            }
+        }
+    }
+
+    // 3x3x3 dense cluster: heavy AABB overlap, a harsh case for BVH splits.
+    {
+        constexpr int   COUNT   = 3;
+        constexpr float SPACING = 0.8f;
+        const glm::vec3 origin(30.0f, 1.0f, 10.0f);
+
+        for (int x = 0; x < COUNT; ++x)
+            for (int y = 0; y < COUNT; ++y)
+                for (int z = 0; z < COUNT; ++z)
+                    spawn(
+                        maxwellMesh,
+                        origin + glm::vec3(x, y, z) * SPACING,
+                        glm::vec3(0.1f)
+                    );
+    }
+
+    // 5) Glass pane column: long thin AABBs stacked vertically.
+    for (int i = 0; i < 8; ++i) {
+        spawn(paneMesh, {-30.0f, 2.0f + float(i) * 3.0f, 0.0f}, glm::vec3(0.5f));
+    }
+
+    // 6) Glass globe line along X, growing in size.
+    for (int i = 0; i < 5; ++i) {
+        spawn(globeMesh, {-20.0f + float(i) * 8.0f, 3.0f, 40.0f}, glm::vec3(1.0f + 0.5f * float(i)));
+    }
+
+    // ------------------------------------------------------------------
+    // Lights
+    // ------------------------------------------------------------------
+    lightInstanceManager->createLight({
+        .position  = glm::vec3(0.0f, 100.0f, 0.0f),
+        .intensity = 20000.0f,
+        .color     = glm::vec3(1.0f),
+        .radius    = 10.0f,
+        .type      = Config::LightType::Point,
+        .range     = 1000.0f,
+        ._pad0     = 0.0f,
+        ._pad1     = 0.0f
+    });
+}
+
+void Render::updateInstances(
+    double time,
+    double deltaTime
+){
+    // Update UBOs for this frame
+    {
+        cameraBufferManager->updateCamera(
+            currentFrame,
+            static_cast<float>(deltaTime),
+            swapchainManager->getExtent()
+        );
+    }
+
+    // Update render instances
+    {
+        std::vector<RenderInstance>& renderInstances = renderInstanceManager->getRenderInstances();
+        const std::size_t renderInstancesSize = renderInstances.size();
+
+        // Lazily capture the base positions (instances are created in initInstances).
+        if (instanceBasePositions.size() != renderInstancesSize) {
+            instanceBasePositions.resize(renderInstancesSize);
+            for (std::size_t i = 0; i < renderInstancesSize; i++) {
+                instanceBasePositions[i] = renderInstances[i].position;
+            }
+        }
+
+        const float t = static_cast<float>(time);
+
+        // Index 0 is the floor and never moves.
+        for (std::size_t i = 1; i < renderInstancesSize; i++)
+        {
+            // Deterministic per-instance parameters derived only from the index.
+            const float phase     = float(i) * 0.5f;
+            const float amplitude = 2.0f + float(i % 5);          // 2..6 units
+            const float speed     = 0.4f + 0.1f * float(i % 4);   // 0.4..0.7 rad/s
+
+            glm::vec3 offset(0.0f);
+
+            switch (i % 5) {
+                case 0: // slide along X
+                    offset.x = std::sin(t * speed + phase) * amplitude;
+                    break;
+                case 1: // slide along Z
+                    offset.z = std::sin(t * speed + phase) * amplitude;
+                    break;
+                case 2: // bob up and down (never goes below the base height)
+                    offset.y = (0.5f + 0.5f * std::sin(t * speed + phase)) * amplitude;
+                    break;
+                case 3: // orbit around the base position on the XZ plane
+                    offset.x = std::cos(t * speed + phase) * amplitude;
+                    offset.z = std::sin(t * speed + phase) * amplitude;
+                    break;
+                default: // static: keeps part of the TLAS unchanged between frames
+                    break;
+            }
+
+            renderInstances[i].position = instanceBasePositions[i] + offset;
+            renderInstances[i].updateModelMatrix();
+        }
+
+        uint32_t currentOffset = 0;
+        renderInstanceManager->forEachBatch(
+            [&](RenderBatch& batch)
+            {
+                instanceDescriptorManager->update(
+                    currentFrame,
+                    currentOffset,
+                    batch.getInstancesData()
+                );
+                currentOffset += static_cast<uint32_t>(batch.getInstancesData().size());
+            }
+        );
+    }
+
+    // Lights
+    this->lightInstanceManager->update(currentFrame);
+
+    // TLAS
+    renderInstanceManager->rebuildTLAS();
 }
 
 void Render::drawFrame(){
-    double time = glfwGetTime();
-    // double deltaTime = time - lastTime;
-    // double lastTime = currentTime;
-
     // Wait for this frame to be free
     vkWaitForFences(coreVulkan->getDevice(), 1, &this->inFlightFences[this->currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
-    VkResult next_img_result = vkAcquireNextImageKHR(coreVulkan->getDevice(), this->swapchainManager->getSwapchain(),
-            UINT64_MAX, this->imageAvailableSemaphores[this->currentFrame], VK_NULL_HANDLE, &imageIndex);
+    VkResult next_img_result = vkAcquireNextImageKHR(
+        coreVulkan->getDevice(),
+        this->swapchainManager->getSwapchain(),
+        UINT64_MAX,
+        this->imageAvailableSemaphores[this->currentFrame],
+        VK_NULL_HANDLE,
+        &imageIndex
+    );
 
     if (next_img_result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
@@ -318,81 +697,46 @@ void Render::drawFrame(){
     // Reset the fence for the current frame
     vkResetFences(coreVulkan->getDevice(), 1, &this->inFlightFences[this->currentFrame]);
 
-    // Update UBOs for this frame
-    UniformBufferGlobal ubg{};
-    iCameraProvider->fill(
-        ubg,
-        time,
-        swapchainManager->getExtent()
-    );
-    this->cameraBufferManager->update(currentFrame, ubg);
-    renderInstance->rotation = glm::vec3(
-        0.5* time,
-        0.3,
-        0.6
-    );
-    renderInstance->updateModelMatrix();
-
-    // platicles
-    float timetester = (time * 5);
-    float phaseA = sin(timetester);
-    float phaseB = sin(timetester + 2.094395f);  // 120°
-    float phaseC = sin(timetester + 4.18879f);   // 240°
-
-    ParticleData particle{};
-    ParticleData particle1{};
-
-    particle.positionSize = glm::vec4(
-        0.6f * phaseA,
-        0.6f  * phaseB,
-        0.6f  * phaseC,
-        60 // (timetester*60) + 10.0f
-    );
-    particle1.positionSize = glm::vec4(
-        -0.6f * phaseA,
-        -0.6f  * phaseB,
-        -0.6f  * phaseC,
-        60 // (timetester*60) + 10.0f
-    );
-
-    particle.color = glm::vec4(
-        (phaseA + 1.0f) * 0.5f,
-        (phaseB + 1.0f) * 0.5f,
-        (phaseC + 1.0f) * 0.5f,
-        1.0f
-    );
-    particle1.color = glm::vec4(
-        (phaseA + 1.0f) * 0.5f,
-        (phaseB + 1.0f) * 0.5f,
-        (phaseC + 1.0f) * 0.5f,
-        1.0f
-    );
-
     // Reset + record only the command buffer for this swapchain image
     VkCommandBuffer cmd = this->commandManager->getCommandBuffers()[imageIndex];
+
     vkResetCommandBuffer(cmd, 0);
+    std::vector<VkFramebuffer> auxVkFramebuffers = {};
+
     this->commandManager->recordCommandBuffer(
         imageIndex,
         currentFrame,
-        this->renderPass->get(),
-        this->graphicsPipeline,
-        this->framebufferManager->getFramebuffers(),
-        this->swapchainManager->getExtent(),
+        gBufferRenderPassManager->get(),
+        transparentRenderPassManager->get(),
+        deferredLightRenderPassManager->get(),
+        compositeRenderPassManager->get(),
+        graphicsPipeline,
+        gBufferFramebufferManager->getFramebuffers(),
+        transparentFramebufferManager->getFramebuffers(),
+        deferredLightingFramebufferManager->getFramebuffers(),
+        compositeFramebufferManager->getFramebuffers(),
+        swapchainManager->getExtent(),
         globalDescriptorManager,
         instanceDescriptorManager,
         particleInstanceDescriptorManager,
-        renderBatchManager,
-        {particle, particle1},
+        renderInstanceManager,
+        gBufferDescriptorManager,
+        transparentGBufferDescriptorManager,
+        resourceManager->getMaterialManager(),
+        lightInstanceManager,
+        deferredLightingDescriptorManager,
+        particlesData,
         {},
         {},
         {},
-        {&UI::ImGuiCommandBufferRecorder::instance()}
+        {},
+        config
     );
 
     // --- Submit work ---
     VkSemaphore waitSemaphores[] = { this->imageAvailableSemaphores[this->currentFrame] };
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    VkSemaphore signalSemaphores[] = { this->renderFinishedSemaphores[this->currentFrame] };
+    VkSemaphore signalSemaphores[] = { this->renderFinishedSemaphores[imageIndex] };
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -454,31 +798,21 @@ void Render::cleanup(){
         this->inFlightFences.clear(); this->inFlightFences.shrink_to_fit();
 
         // 3) Managers: destroy in strict reverse-creation order.
-        //    (Everything that depends on the swapchain must go BEFORE swapchain.)
-        //    Delete pointers and null them to avoid accidental double free later.
-        if (renderInstance ){ delete renderInstance; renderInstance = nullptr; }
-        if (renderBatchManager){ delete renderBatchManager; renderBatchManager = nullptr; }
+        if (renderInstanceManager){ delete renderInstanceManager; renderInstanceManager = nullptr; }
+        if (lightInstanceManager){ delete lightInstanceManager; lightInstanceManager = nullptr; }
+
         if (samplerManagerForStaticTextures) { delete samplerManagerForStaticTextures; samplerManagerForStaticTextures = nullptr; }
-        if (defaultTextures.metallic)
-        {
-            defaultTextures.metallic.reset();
-            defaultTextures.normal.reset();
-            defaultTextures.white.reset();
-        }
         if ( resourceManager ){ delete resourceManager; resourceManager = nullptr; }
         if (this->commandManager){ delete this->commandManager; this->commandManager = nullptr; }
-        if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
-        if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
-        if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
-        if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
+
+        // 4) Swapchain Dependents
+        destroySwapchainDependentResources();
+
+        // 5) Not Swapchain Dependents
         if (globalDescriptorManager){ delete globalDescriptorManager; globalDescriptorManager = nullptr; }
-        if (materialDescriptorManager){ delete materialDescriptorManager; materialDescriptorManager = nullptr; }
         if (instanceDescriptorManager){ delete instanceDescriptorManager; instanceDescriptorManager = nullptr; }
         if (particleInstanceDescriptorManager){ delete particleInstanceDescriptorManager; particleInstanceDescriptorManager = nullptr; }
-        if (iCameraProvider){ delete iCameraProvider; iCameraProvider = nullptr; }
         if (this->cameraBufferManager){ delete this->cameraBufferManager; this->cameraBufferManager = nullptr; }
-        if (this->ui) { this->ui->cleanup(); delete this->ui; this->ui = nullptr; }
-        if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
         if ( bufferManager ){ delete bufferManager; bufferManager = nullptr; }
 
         // Swapchain and resources that own VkSwapchainKHR should be last among managers.
@@ -488,7 +822,7 @@ void Render::cleanup(){
             this->swapchainManager = nullptr;
         }
 
-        // 4) Vulkan core teardown (device, surface, instance, debug messenger, etc.).
+        // 6) Vulkan core teardown (device, surface, instance, debug messenger, etc.).
         //    Ensure CoreVulkan::destroy() destroys in the order:
         //    - vkDeviceWaitIdle (if not already) -> vkDestroyDevice
         //    - vkDestroySurfaceKHR
@@ -500,7 +834,7 @@ void Render::cleanup(){
         }
     }
 
-    // 5) Windowing. Destroy the window AFTER you've destroyed the VkSurfaceKHR.
+    // 7) Windowing. Destroy the window AFTER you've destroyed the VkSurfaceKHR.
     if (this->window) {
         glfwDestroyWindow(this->window);
         this->window = nullptr;
@@ -508,26 +842,52 @@ void Render::cleanup(){
     glfwTerminate();
 }
 
-void Render::createSyncObjects() {
-    this->imageAvailableSemaphores.resize(Render::MAX_FRAMES_IN_FLIGHT);
-    this->renderFinishedSemaphores.resize(Render::MAX_FRAMES_IN_FLIGHT);
-    this->inFlightFences.resize(Render::MAX_FRAMES_IN_FLIGHT);
+void Render::createSyncObjects()
+{
+    imageAvailableSemaphores.resize(Render::MAX_FRAMES_IN_FLIGHT);
+    inFlightFences.resize(Render::MAX_FRAMES_IN_FLIGHT);
+    renderFinishedSemaphores.resize(swapchainManager->getImages().size());
 
-    VkSemaphoreCreateInfo semaphoreInfo{ };
+    VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    VkFenceCreateInfo fenceInfo{ };
+    VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // start signaled so first frame doesn't block
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     VkDevice device = coreVulkan->getDevice();
-    for (uint32_t i = 0; i < Render::MAX_FRAMES_IN_FLIGHT; ++i) {
+
+    for (uint32_t i = 0; i < Render::MAX_FRAMES_IN_FLIGHT; ++i)
+    {
         if (
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(device, &fenceInfo, nullptr, &this->inFlightFences[i]) != VK_SUCCESS
-        ) {
-            throw std::runtime_error("failed to create per-frame sync objects!");
+            vkCreateSemaphore(
+                device,
+                &semaphoreInfo,
+                nullptr,
+                &imageAvailableSemaphores[i]
+            ) != VK_SUCCESS ||
+            vkCreateFence(
+                device,
+                &fenceInfo,
+                nullptr,
+                &inFlightFences[i]
+            ) != VK_SUCCESS
+        )
+        {
+            throw std::runtime_error("failed to create frame sync objects!");
+        }
+    }
+
+    for (uint32_t i = 0; i < renderFinishedSemaphores.size(); ++i)
+    {
+        if (vkCreateSemaphore(
+                device,
+                &semaphoreInfo,
+                nullptr,
+                &renderFinishedSemaphores[i]
+            ) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to create renderFinished semaphore!");
         }
     }
 }
@@ -536,9 +896,56 @@ void Render::initImagesInFlight(uint32_t swapchainImageCount) {
     this->imagesInFlight.assign(swapchainImageCount, VK_NULL_HANDLE);
 }
 
-void Render::cleanupSwapChain() {
+void Render::destroySwapchainDependentResources() {
 
-    // Command Buffers
+    if (this->gBufferFramebufferManager){ delete this->gBufferFramebufferManager; this->gBufferFramebufferManager = nullptr; }
+    if (this->deferredLightingFramebufferManager){ delete this->deferredLightingFramebufferManager; this->deferredLightingFramebufferManager = nullptr; }
+    if (this->transparentFramebufferManager) { delete this->transparentFramebufferManager; this->transparentFramebufferManager = nullptr; }
+    if (this->compositeFramebufferManager) { delete this->compositeFramebufferManager; this->compositeFramebufferManager = nullptr; }
+    if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
+
+    if (this->gBufferDescriptorManager) { delete this->gBufferDescriptorManager; this->gBufferDescriptorManager = nullptr; }
+    if (this->gBuffer) { gBuffer->destroy(coreVulkan->getDevice()); delete this->gBuffer; this->gBuffer = nullptr;}
+    if (this->transparentGBufferDescriptorManager) { delete this->transparentGBufferDescriptorManager; this->transparentGBufferDescriptorManager = nullptr; }
+    if (this->transparentGBuffer) { this->transparentGBuffer->destroy(coreVulkan->getDevice()); delete this->transparentGBuffer; this->transparentGBuffer = nullptr; }
+    if (this->deferredLightingDescriptorManager) { delete this->deferredLightingDescriptorManager; this->deferredLightingDescriptorManager = nullptr; }
+    if (this->deferredLightingBuffer) { this->deferredLightingBuffer->destroy(coreVulkan->getDevice()); delete this->deferredLightingBuffer; this->deferredLightingBuffer = nullptr; }
+
+    if (this->gBufferRenderPassManager){ delete this->gBufferRenderPassManager; this->gBufferRenderPassManager = nullptr; }
+    if (this->transparentRenderPassManager){ delete this->transparentRenderPassManager; this->transparentRenderPassManager = nullptr; }
+    if (this->deferredLightRenderPassManager){ delete this->deferredLightRenderPassManager; this->deferredLightRenderPassManager = nullptr; }
+    if (this->compositeRenderPassManager){ delete this->compositeRenderPassManager; this->compositeRenderPassManager = nullptr; }
+}
+
+void Render::recreateSwapChain()
+{
+    #ifndef NDEBUG
+        std::cout << "swap chain recreated" << std::endl;
+    #endif
+
+    vkDeviceWaitIdle(coreVulkan->getDevice());
+
+    int width = 0;
+    int height = 0;
+
+    glfwGetFramebufferSize(this->window, &width, &height);
+
+
+    while (width == 0 || height == 0)
+    {
+        glfwGetFramebufferSize(
+            this->window,
+            &width,
+            &height
+        );
+
+        glfwWaitEvents();
+    }
+
+    // ------------------------------------------------------------
+    // 1. Destroy swapchain-dependent resources
+    // ------------------------------------------------------------
+
     vkFreeCommandBuffers(
         coreVulkan->getDevice(),
         commandManager->getCommandPool(),
@@ -546,31 +953,12 @@ void Render::cleanupSwapChain() {
         commandManager->getCommandBuffers().data()
     );
 
-    if (this->framebufferManager){ delete this->framebufferManager; this->framebufferManager = nullptr; }
-    if (this->imageColor){ delete this->imageColor; this->imageColor = nullptr; }
-    if (this->depthBufferManager){ delete this->depthBufferManager; this->depthBufferManager = nullptr; }
-    if (this->graphicsPipeline){ delete this->graphicsPipeline; this->graphicsPipeline = nullptr; }
-    if (this->ui) { vkDeviceWaitIdle(coreVulkan->getDevice()); ImGui_ImplVulkan_Shutdown(); }
-    if (this->renderPass){ delete this->renderPass; this->renderPass = nullptr; }
-}
+    destroySwapchainDependentResources();
 
-void Render::recreateSwapChain() {
-    #ifndef NDEBUG
-    std::cout << "swap chain recreated" << std::endl;
-    #endif
-    vkDeviceWaitIdle(coreVulkan->getDevice());
-
-    int width = 0, height = 0;
-    glfwGetFramebufferSize(this->window, &width, &height);
-    while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(this->window, &width, &height);
-        glfwWaitEvents();
-    }
-
-    // 1. Destroy old swapchain + dependents
-    cleanupSwapChain();
-
+    // ------------------------------------------------------------
     // 2. Recreate swapchain
+    // ------------------------------------------------------------
+
     coreVulkan->updateSwapchainDetails();
 
     this->swapchainManager->recreate(
@@ -581,73 +969,25 @@ void Render::recreateSwapChain() {
         {}
     );
 
-    // 3. Recreate render pass (might depend on swapchain format)
-    this->renderPass = new RenderPass(
-        coreVulkan->getDevice(),
-        swapchainManager->getImageFormat(),
-        coreVulkan->getMsaaSamples(),
-        coreVulkan->getDepthFormat(),
-        {}
+
+    createRenderPasses();
+    createSwapchainDependentResources();
+    createGraphicsPipelineObjects();
+
+    // ------------------------------------------------------------
+    // 4. Recreate command buffers
+    // ------------------------------------------------------------
+
+    commandManager->allocateCommandBuffers(
+        gBufferFramebufferManager->getFramebuffers()
     );
 
-    // 4. Recreate pipeline (depends on render pass + extent)
-    graphicsPipeline = new GraphicsPipeline(
-        coreVulkan->getDevice(),
-        swapchainManager->getExtent(),
-        renderPass->get(),
-        globalDescriptorManager->getLayout(),
-        materialDescriptorManager->getLayout(),
-        instanceDescriptorManager->getLayout(),
-        particleInstanceDescriptorManager->getLayout(),
-        coreVulkan->getMsaaSamples(),
-        coreVulkan->getSupportedFeatures12()
-    );
+    // ------------------------------------------------------------
+    // 5. Images in flight
+    // ------------------------------------------------------------
 
-    // 5. Recreate Multisampling
-    imageColor = new ImageColor(
-        coreVulkan->getPhysicalDevice(),
-        coreVulkan->getDevice(),
-        swapchainManager->getImageFormat(),
-        swapchainManager->getExtent(),
-        coreVulkan->getMsaaSamples()
-    );
-
-    // 6. Recreate depth buffer
-    depthBufferManager = new DepthBufferManager(
-        coreVulkan->getPhysicalDevice(),
-        coreVulkan->getDevice(),
-        swapchainManager->getExtent(),
-        coreVulkan->getMsaaSamples(),
-        coreVulkan->getDepthFormat(),
-        VK_IMAGE_ASPECT_DEPTH_BIT
-    );
-
-    // 7. Recreate framebuffers
-    framebufferManager = new FramebufferManager(
-        coreVulkan->getDevice(),
-        renderPass->get(),
-        swapchainManager->getImageViews(),
-        imageColor->getColorImageView(),
-        depthBufferManager->getDepthImageView(),
-        swapchainManager->getExtent(),
-        (coreVulkan->getMsaaSamples() != VK_SAMPLE_COUNT_1_BIT)
-    );
-
-    // 8. Recreate command buffers
-    this->commandManager->allocateCommandBuffers(framebufferManager->getFramebuffers());
-
-    // 9. Resize imagesInFlight vector to match new swapchain image count
-    initImagesInFlight(this->swapchainManager->getImages().size());
-
-    // 10. Recreate ImGui resources
-    this->ui->initSwapchainResources(
-        coreVulkan->getInstance(),
-        coreVulkan->getPhysicalDevice(),
-        coreVulkan->getGraphicsQueueFamilyIndices(),
-        coreVulkan->getGraphicsQueue(),
-        renderPass->get(),
-        swapchainManager->getImages().size(),
-        coreVulkan->getMsaaSamples()
+    initImagesInFlight(
+        swapchainManager->getImages().size()
     );
 }
 

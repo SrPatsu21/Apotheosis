@@ -223,10 +223,18 @@ set(COMPILED_SHADER_DIR ${CMAKE_BINARY_DIR}/shaders)
 file(MAKE_DIRECTORY ${COMPILED_SHADER_DIR})
 
 set(SHADERS
-    triangle.frag.glsl
-    triangle.vert.glsl
+    deferred_lighting.frag.glsl
+    geometry_mesh_blend.frag.glsl
     particle.frag.glsl
+    triangle.vert.glsl
+    composite.frag.glsl
+    deferred_lighting.vert.glsl
+    geometry_mesh_mask.frag.glsl
     particle.vert.glsl
+    composite.vert.glsl
+    geometry_mesh.vert.glsl
+    geometry_mesh_opaque.frag.glsl
+    triangle.frag.glsl
 )
 
 set(SHADER_OUTPUTS "")
@@ -245,7 +253,7 @@ foreach(SHADER_NAME IN LISTS SHADERS)
 
     add_custom_command(
         OUTPUT ${SPV}
-        COMMAND ${GLSLANG_VALIDATOR} -V --target-env vulkan1.3 -S ${STAGE} ${SHADER} -o ${SPV}
+        COMMAND ${GLSLANG_VALIDATOR} -V --target-env vulkan1.2 -S ${STAGE} ${SHADER} -o ${SPV}
         DEPENDS ${SHADER}
         COMMENT "Compiling ${SHADER_NAME} to SPIR-V"
         VERBATIM

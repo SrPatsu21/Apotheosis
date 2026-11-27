@@ -334,8 +334,6 @@ AccelerationStructureManager<
 {
     std::shared_ptr<BLAS> blas = std::make_shared<BLAS>();
     {
-        NGFXCPUMarker cpuMarker("BLAS Build - CPU");
-
         auto it = blasMap.find(mesh);
 
         if (it != blasMap.end())
@@ -403,7 +401,6 @@ AccelerationStructureManager<
         //     << std::endl;
     }
     {
-        NGFXCPUMarker cpuMarker("BLAS Upload - CPU");
         uploadBLAS();
     }
 
@@ -431,8 +428,6 @@ AccelerationStructureManager<
 )
 {
     {
-        NGFXCPUMarker cpuMarker("TLAS Build - CPU");
-
         tlas.nodes.clear();
         tlas.instances.clear();
 
@@ -537,7 +532,6 @@ AccelerationStructureManager<
         //     << std::endl;
     }
     {
-        NGFXCPUMarker cpuMarker2("TLAS Upload");
         uploadTLAS();
     }
 }

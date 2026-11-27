@@ -25,7 +25,58 @@ void BufferManager::createBuffer(
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create vertex buffer!");
+        throw std::runtime_error("failed to create buffer!");
+    }
+}
+
+void BufferManager::allocateBufferMemory(
+    VkBuffer buffer,
+    VkMemoryPropertyFlags properties,
+    VkDeviceMemory& bufferMemory,
+    bool deviceAddress
+)
+{
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(
+        device,
+        buffer,
+        &memRequirements
+    );
+
+    VkMemoryAllocateFlagsInfo flagsInfo{};
+    flagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+    flagsInfo.flags =
+        deviceAddress
+            ? VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT
+            : 0;
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.pNext =
+        deviceAddress
+            ? &flagsInfo
+            : nullptr;
+
+    allocInfo.allocationSize = memRequirements.size;
+
+    allocInfo.memoryTypeIndex =
+        CoreVulkan::findMemoryType(
+            physicalDevice,
+            memRequirements.memoryTypeBits,
+            properties,
+            0
+        );
+
+    if (vkAllocateMemory(
+            device,
+            &allocInfo,
+            nullptr,
+            &bufferMemory
+        ) != VK_SUCCESS)
+    {
+        throw std::runtime_error(
+            "failed to allocate buffer memory!"
+        );
     }
 }
 
@@ -43,7 +94,7 @@ void BufferManager::allocateBufferMemory(
     allocInfo.memoryTypeIndex = CoreVulkan::findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties, 0);
 
     if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate vertex buffer memory!");
+        throw std::runtime_error("failed to allocate buffer memory!");
     }
 };
 
@@ -73,7 +124,6 @@ void BufferManager::allocateBufferMemory(
         throw std::runtime_error("failed to allocate buffer memory!");
     }
 
-    // Descobrir flags reais da memória escolhida
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
@@ -86,15 +136,25 @@ void BufferManager::allocateBufferMemory(
 void BufferManager::copyBuffer(
     VkBuffer srcBuffer,
     VkBuffer dstBuffer,
-    VkDeviceSize size
-) {
+    VkDeviceSize size,
+    VkDeviceSize srcOffset,
+    VkDeviceSize dstOffset
+)
+{
     VkCommandBuffer commandBuffer = beginImmediate();
 
     VkBufferCopy copyRegion{};
-    copyRegion.srcOffset = 0; // Optional
-    copyRegion.dstOffset = 0; // Optional
+    copyRegion.srcOffset = srcOffset;
+    copyRegion.dstOffset = dstOffset;
     copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+    vkCmdCopyBuffer(
+        commandBuffer,
+        srcBuffer,
+        dstBuffer,
+        1,
+        &copyRegion
+    );
 
     endImmediate();
 }
@@ -214,7 +274,7 @@ void BufferManager::uploadToImageMipLevel(
     uint32_t layerCount
 )
 {
-    // Criar staging buffer
+    // Create staging buffer
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
 
@@ -233,7 +293,7 @@ void BufferManager::uploadToImageMipLevel(
 
     vkBindBufferMemory(device, stagingBuffer, stagingMemory, 0);
 
-    // Copiar dados CPU → staging
+    // Copy data CPU → staging
     void* mapped;
     vkMapMemory(device, stagingMemory, 0, size, 0, &mapped);
     memcpy(mapped, data, (size_t)size);
@@ -271,6 +331,166 @@ void BufferManager::uploadToImageMipLevel(
     vkFreeMemory(device, stagingMemory, nullptr);
 }
 
+void BufferManager::uploadBuffer(
+    VkBuffer dstBuffer,
+    const void* data,
+    VkDeviceSize size,
+    VkDeviceSize dstOffset
+)
+{
+    if (!data || size == 0)
+        return;
+
+    VkBuffer stagingBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory stagingMemory = VK_NULL_HANDLE;
+
+    // Staging buffer
+    createBuffer(
+        size,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        stagingBuffer
+    );
+
+    allocateBufferMemory(
+        stagingBuffer,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        stagingMemory
+    );
+
+    vkBindBufferMemory(
+        device,
+        stagingBuffer,
+        stagingMemory,
+        0
+    );
+
+    // CPU -> staging
+    void* mapped = nullptr;
+
+    if (vkMapMemory(
+        device,
+        stagingMemory,
+        0,
+        size,
+        0,
+        &mapped
+    ) != VK_SUCCESS)
+    {
+        vkDestroyBuffer(
+            device,
+            stagingBuffer,
+            nullptr
+        );
+
+        vkFreeMemory(
+            device,
+            stagingMemory,
+            nullptr
+        );
+
+        throw std::runtime_error(
+            "failed to map staging buffer memory!"
+        );
+    }
+
+    memcpy(
+        mapped,
+        data,
+        static_cast<size_t>(size)
+    );
+
+    vkUnmapMemory(
+        device,
+        stagingMemory
+    );
+
+    // staging -> GPU
+    copyBuffer(
+        stagingBuffer,
+        dstBuffer,
+        size,
+        0,
+        dstOffset
+    );
+
+    // Cleanup
+    vkDestroyBuffer(
+        device,
+        stagingBuffer,
+        nullptr
+    );
+
+    vkFreeMemory(
+        device,
+        stagingMemory,
+        nullptr
+    );
+}
+
 BufferManager::~BufferManager() {
     destroyImmediateContext();
+}
+
+VkDeviceAddress BufferManager::getBufferDeviceAddress(
+    VkBuffer buffer
+) const
+{
+    VkBufferDeviceAddressInfo info{};
+    info.sType =
+        VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+
+    info.buffer = buffer;
+
+    return vkGetBufferDeviceAddress(
+        device,
+        &info
+    );
+}
+
+VkBuffer BufferManager::createDeviceBuffer(
+    VkDeviceSize size,
+    VkBufferUsageFlags usage,
+    VkDeviceMemory& memory,
+    VkDeviceAddress* address
+)
+{
+    VkBuffer buffer;
+
+    createBuffer(
+        size,
+        usage |
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        buffer
+    );
+
+    allocateBufferMemory(
+        buffer,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        memory,
+        true
+    );
+
+    vkBindBufferMemory(
+        device,
+        buffer,
+        memory,
+        0
+    );
+
+    if (address)
+    {
+        VkBufferDeviceAddressInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        info.buffer = buffer;
+
+        *address =
+            vkGetBufferDeviceAddress(
+                device,
+                &info
+            );
+    }
+
+    return buffer;
 }

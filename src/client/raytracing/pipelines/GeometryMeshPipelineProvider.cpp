@@ -170,7 +170,7 @@ void GeometryMeshPipelineProvider::createPipelines(
     VkPipelineRasterizationStateCreateInfo rasterizationState;
 
     // ==================================================
-    // OPAQUE MATERIAL / TRIANGLES / CULL BACK
+    // OPAQUE_MODE MATERIAL / TRIANGLES / CULL BACK
     // ==================================================
 
     GraphicsPipelineHelper::createRasterizerState(
@@ -207,7 +207,7 @@ void GeometryMeshPipelineProvider::createPipelines(
     );
 
     // ==================================================
-    // MASK MATERIAL / TRIANGLES / CULL BACK
+    // MASK_MODE MATERIAL / TRIANGLES / CULL BACK
     // ==================================================
 
     VkPipeline pipelineMask;
@@ -239,7 +239,7 @@ void GeometryMeshPipelineProvider::createPipelines(
     );
 
     // ==================================================
-    // BLEND TRIANGLES / CULL NONE
+    // BLEND_MODE TRIANGLES / CULL NONE
     // ==================================================
 
     GraphicsPipelineHelper::createRasterizerState(

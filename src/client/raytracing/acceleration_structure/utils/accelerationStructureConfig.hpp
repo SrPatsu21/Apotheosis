@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../cpu/builder/BVHBuilder.hpp"
-#include "../cpu/builder/LBVHBuilder.hpp"
 #include "../cpu/builder/BVH8Builder.hpp"
 #include "../cpu/builder/BinnedSAHBuilder.hpp"
 
