@@ -1,9 +1,6 @@
 #* libs
 lib/
 build
-build-windows
-build-release
-build-windows-release
 .vscode
 
 src/client/assets/**/*.gif
