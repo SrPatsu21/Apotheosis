@@ -167,58 +167,57 @@ void RenderInstanceManager::rebuildSortedBatches()
     for (auto& [key, batch] : batches_map)
         batches_sorted.push_back(batch.get());
 
-    std::sort(
+    // Draw-order bucket: 0 = opaque, 1 = alpha test (mask), 2 = blend
+    auto getType = [](const RenderBatch* batch)
+    {
+        const auto flags = batch->getKey().pipelineFlags;
+
+        if (flags & GraphicsPipelineManager::PIPE_BLEND)
+            return 2;
+
+        if (flags & GraphicsPipelineManager::PIPE_ALPHA_TEST)
+            return 1;
+
+        return 0;
+    };
+
+    std::stable_sort(
         batches_sorted.begin(),
         batches_sorted.end(),
-        [](RenderBatch* a, RenderBatch* b)
+        [&](const RenderBatch* a, const RenderBatch* b)
         {
-            const auto& flagsA = a->getKey().pipelineFlags;
-            const auto& flagsB = b->getKey().pipelineFlags;
-
-            auto getType = [](auto flags)
-            {
-                if (flags & GraphicsPipelineManager::PIPE_BLEND)
-                    return 2;
-
-                if (flags & GraphicsPipelineManager::PIPE_ALPHA_TEST)
-                    return 1;
-
-                return 0;
-            };
-
-            return getType(flagsA) < getType(flagsB);
+            return getType(a) < getType(b);
         }
     );
 
+    // Count batches per bucket. The vector is sorted, so buckets are contiguous.
+    // An empty bucket gives start == end, so a range is never lost.
+    uint32_t opaqueCount = 0;
+    uint32_t maskCount = 0;
+    uint32_t blendCount = 0;
+
+    for (const RenderBatch* batch : batches_sorted)
+    {
+        switch (getType(batch))
+        {
+            case 0: opaqueCount++; break;
+            case 1: maskCount++;   break;
+            case 2: blendCount++;  break;
+        }
+    }
+
     batchRanges.opaqueStart = 0;
+    batchRanges.maskStart = opaqueCount;
+    batchRanges.blendStart = opaqueCount + maskCount;
+    batchRanges.end = opaqueCount + maskCount + blendCount;
 
-    for (uint32_t i = 0; i < batches_sorted.size(); i++)
-    {
-        auto flags = batches_sorted[i]->getKey().pipelineFlags;
-
-        if (flags & GraphicsPipelineManager::PIPE_ALPHA_TEST)
-        {
-            batchRanges.maskStart = i;
-            break;
-        }
-    }
-
-    for (uint32_t i = batchRanges.maskStart; i < batches_sorted.size(); i++)
-    {
-        auto flags = batches_sorted[i]->getKey().pipelineFlags;
-
-        if (flags & GraphicsPipelineManager::PIPE_BLEND)
-        {
-            batchRanges.blendStart = i;
-            break;
-        }
-    }
-
-    batchRanges.end = static_cast<uint32_t>(batches_sorted.size());
-
-    #ifndef NDEBUG
-        std::cout << "batches map: " << batches_map.size() << " batch sorted:" << batches_sorted.size() << std::endl;
-    #endif
+#ifndef NDEBUG
+    std::cout << "batches map: " << batches_map.size()
+              << " batch sorted: " << batches_sorted.size()
+              << " | opaque: " << opaqueCount
+              << " mask: " << maskCount
+              << " blend: " << blendCount << std::endl;
+#endif
 
     rebuildTLAS();
 

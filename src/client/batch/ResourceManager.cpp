@@ -45,8 +45,7 @@ std::shared_ptr<Mesh> ResourceManager::getMesh(
             return mesh;
     }
 
-    MeshImportData importData =
-        AssimpModelLoader::load(meshPath);
+    MeshImportData importData = AssimpModelLoader::load(meshPath);
 
     std::shared_ptr<Mesh> mesh =
         std::make_shared<Mesh>(
@@ -58,14 +57,11 @@ std::shared_ptr<Mesh> ResourceManager::getMesh(
         );
 
     std::vector<uint32_t> materialIndices;
-    materialIndices.resize(
-        importData.materials.size()
-    );
+    materialIndices.resize(importData.materials.size());
 
     for (uint32_t i = 0; i < importData.materials.size(); i++)
     {
-        const auto& materialData =
-            importData.materials[i];
+        const auto& materialData = importData.materials[i];
 
         MaterialData material{};
 

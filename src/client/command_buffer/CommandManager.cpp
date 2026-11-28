@@ -381,7 +381,7 @@ void CommandManager::recordCommandBuffer(
             materialManager->getDescriptorSet(),
             instanceSet,
             renderInstanceManager,
-            0,
+            renderInstanceManager->getBatchRanges().opaqueStart,
             renderInstanceManager->getBatchRanges().blendStart,
             currentOffset
         );
